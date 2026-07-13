@@ -1,0 +1,14 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/assistant-query/route": "app/api/assistant-query/route.js",
+  "/api/database-csv/route": "app/api/database-csv/route.js",
+  "/api/extract-task/route": "app/api/extract-task/route.js",
+  "/api/notebooks/[id]/activate/route": "app/api/notebooks/[id]/activate/route.js",
+  "/api/notebooks/[id]/route": "app/api/notebooks/[id]/route.js",
+  "/api/notebooks/route": "app/api/notebooks/route.js",
+  "/api/settings/route": "app/api/settings/route.js",
+  "/api/tasks/route": "app/api/tasks/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
+}

@@ -1,0 +1,49 @@
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3003
+- Network:       http://192.168.1.22:3003
+✓ Ready in 341ms
+
+○ Compiling / ...
+ GET / 200 in 10.9s (next.js: 10.2s, application-code: 673ms)
+ GET / 200 in 137ms (next.js: 6ms, application-code: 131ms)
+ GET / 200 in 290ms (next.js: 8ms, application-code: 283ms)
+○ Compiling /api/settings ...
+ GET /api/settings 200 in 4.4s (next.js: 4.0s, application-code: 336ms)
+ GET /api/tasks 200 in 4.4s (next.js: 4.1s, application-code: 341ms)
+ GET / 200 in 1242ms (next.js: 780ms, application-code: 463ms)
+ GET /api/settings 200 in 1542ms (next.js: 1515ms, application-code: 26ms)
+ GET /api/tasks 200 in 1552ms (next.js: 1521ms, application-code: 31ms)
+ GET / 200 in 727ms (next.js: 169ms, application-code: 558ms)
+ GET / 200 in 411ms (next.js: 63ms, application-code: 349ms)
+ GET / 200 in 326ms (next.js: 11ms, application-code: 315ms)
+○ Compiling /api/settings ...
+ GET /api/settings 200 in 3.4s (next.js: 3.4s, application-code: 65ms)
+ GET /api/tasks 200 in 3.5s (next.js: 3.4s, application-code: 64ms)
+ GET / 200 in 700ms (next.js: 176ms, application-code: 524ms)
+ GET / 200 in 2.2s (next.js: 8ms, application-code: 2.2s)
+○ Compiling /api/settings ...
+ GET /api/settings 200 in 4.6s (next.js: 4.6s, application-code: 70ms)
+ GET /api/tasks 200 in 4.7s (next.js: 4.6s, application-code: 69ms)
+ POST /api/tasks 200 in 31ms (next.js: 6ms, application-code: 26ms)
+ POST /api/tasks 200 in 33ms (next.js: 6ms, application-code: 27ms)
+ GET / 200 in 717ms (next.js: 187ms, application-code: 530ms)
+ GET / 200 in 313ms (next.js: 8ms, application-code: 305ms)
+○ Compiling /api/settings ...
+ GET /api/settings 200 in 3.7s (next.js: 3.6s, application-code: 75ms)
+ GET /api/tasks 200 in 3.7s (next.js: 3.6s, application-code: 80ms)
+ GET / 200 in 665ms (next.js: 124ms, application-code: 541ms)
+ GET / 200 in 325ms (next.js: 8ms, application-code: 317ms)
+○ Compiling /api/settings ...
+ GET /api/settings 200 in 5.3s (next.js: 5.2s, application-code: 67ms)
+ GET /api/tasks 200 in 5.3s (next.js: 5.2s, application-code: 72ms)
+ POST /api/tasks 200 in 33ms (next.js: 6ms, application-code: 28ms)
+ POST /api/tasks 200 in 16ms (next.js: 4ms, application-code: 13ms)
+ GET / 200 in 632ms (next.js: 74ms, application-code: 558ms)
+ GET /api/tasks 200 in 12ms (next.js: 4ms, application-code: 8ms)
+ GET /api/settings 200 in 7ms (next.js: 3ms, application-code: 5ms)
+ GET / 200 in 1806ms (next.js: 353ms, application-code: 1453ms)
+○ Compiling /api/extract-task ...
+ POST /api/extract-task 200 in 9.6s (next.js: 4.0s, application-code: 5.6s)
+○ Compiling /api/assistant-query ...
+ POST /api/assistant-query 200 in 14.1s (next.js: 6.9s, application-code: 7.2s)
+ POST /api/assistant-query 200 in 27.4s (next.js: 12ms, application-code: 27.4s)

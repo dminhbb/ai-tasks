@@ -1,0 +1,65 @@
+
+> task-manager@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.52.75.55:3000
+✓ Ready in 469ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+○ Compiling / ...
+ GET / 200 in 7.6s (next.js: 6.9s, application-code: 711ms)
+ GET /api/notebooks 200 in 359ms (next.js: 320ms, application-code: 39ms)
+ POST /api/notebooks/1/activate 200 in 807ms (next.js: 796ms, application-code: 11ms)
+ GET /api/settings?notebookId=1 200 in 139ms (next.js: 133ms, application-code: 6ms)
+ GET /api/tasks?notebookId=1 200 in 187ms (next.js: 181ms, application-code: 6ms)
+ GET /api/notebooks 200 in 10ms (next.js: 3ms, application-code: 7ms)
+ GET / 200 in 179ms (next.js: 6ms, application-code: 172ms)
+ GET /api/settings?notebookId=1 200 in 20ms (next.js: 11ms, application-code: 9ms)
+ GET /api/tasks?notebookId=1 200 in 8ms (next.js: 3ms, application-code: 5ms)
+ GET / 200 in 196ms (next.js: 10ms, application-code: 186ms)
+ GET /api/notebooks 200 in 13ms (next.js: 6ms, application-code: 7ms)
+ POST /api/notebooks/1/activate 200 in 18ms (next.js: 11ms, application-code: 7ms)
+ GET /api/tasks?notebookId=1 200 in 15ms (next.js: 3ms, application-code: 12ms)
+ GET /api/settings?notebookId=1 200 in 11ms (next.js: 4ms, application-code: 7ms)
+ POST /api/tasks?notebookId=1 200 in 12ms (next.js: 2ms, application-code: 10ms)
+ POST /api/tasks?notebookId=1 200 in 8ms (next.js: 2ms, application-code: 6ms)
+ POST /api/tasks?notebookId=1 200 in 7ms (next.js: 1890µs, application-code: 5ms)
+ POST /api/tasks?notebookId=1 200 in 8ms (next.js: 2ms, application-code: 6ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 3ms, application-code: 7ms)
+ GET /?notebookId=1 200 in 135ms (next.js: 5ms, application-code: 131ms)
+ GET /api/notebooks 200 in 10ms (next.js: 4ms, application-code: 6ms)
+ POST /api/notebooks/1/activate 200 in 15ms (next.js: 10ms, application-code: 5ms)
+ GET /api/tasks?notebookId=1 200 in 10ms (next.js: 4ms, application-code: 6ms)
+ GET /api/settings?notebookId=1 200 in 9ms (next.js: 3ms, application-code: 5ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 2ms, application-code: 7ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 4ms, application-code: 6ms)
+ POST /api/tasks?notebookId=1 200 in 8ms (next.js: 2ms, application-code: 5ms)
+✓ Compiled in 129ms
+ GET /?notebookId=1 200 in 174ms (next.js: 121ms, application-code: 54ms)
+✓ Compiled in 64ms
+ GET /?notebookId=1 200 in 153ms (next.js: 113ms, application-code: 40ms)
+✓ Compiled in 56ms
+ GET /?notebookId=1 200 in 200ms (next.js: 133ms, application-code: 67ms)
+✓ Compiled in 33ms
+ GET /?notebookId=1 200 in 185ms (next.js: 134ms, application-code: 52ms)
+✓ Compiled in 43ms
+ GET /?notebookId=1 200 in 140ms (next.js: 95ms, application-code: 45ms)
+ POST /api/tasks?notebookId=1 200 in 56ms (next.js: 39ms, application-code: 17ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 3ms, application-code: 6ms)
+ POST /api/tasks?notebookId=1 200 in 11ms (next.js: 3ms, application-code: 8ms)
+ POST /api/tasks?notebookId=1 200 in 10ms (next.js: 3ms, application-code: 6ms)
+ POST /api/tasks?notebookId=1 200 in 10ms (next.js: 2ms, application-code: 8ms)
+ POST /api/tasks?notebookId=1 200 in 10ms (next.js: 2ms, application-code: 8ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 1971µs, application-code: 7ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 3ms, application-code: 6ms)
+ POST /api/tasks?notebookId=1 200 in 9ms (next.js: 2ms, application-code: 7ms)
+ GET /?notebookId=1 200 in 529ms (next.js: 5ms, application-code: 524ms)
+ GET /api/notebooks 200 in 47ms (next.js: 40ms, application-code: 7ms)
+ POST /api/notebooks/1/activate 200 in 62ms (next.js: 52ms, application-code: 10ms)
+ GET /api/tasks?notebookId=1 200 in 10ms (next.js: 4ms, application-code: 6ms)
+ GET /api/settings?notebookId=1 200 in 50ms (next.js: 44ms, application-code: 7ms)

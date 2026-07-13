@@ -1,0 +1,194 @@
+/* Neo Mint Enterprise UI tokens */
+:root {
+  /* App structure */
+  --app-bg: #DDE7EA;
+  --main-bg: #BFC9D1;
+  --surface: #FFFFFF;
+  --surface-soft: #F8FAFC;
+  --surface-muted: #EEF4F5;
+
+  /* Sidebar / Panel */
+  --sidebar-bg: #F4F8F9;
+  --sidebar-border: #CBD5DA;
+  --sidebar-text: #1E293B;
+  --sidebar-text-muted: #64748B;
+  --sidebar-hover: #E6F3F1;
+  --sidebar-active-bg: #D6F3EF;
+  --sidebar-active-text: #0F766E;
+
+  /* Assistant / Slide panel */
+  --panel-bg: #F1F6F7;
+  --panel-border: #C7D2DA;
+  --panel-card-bg: #FFFFFF;
+
+  /* Card */
+  --card-bg: #FFFFFF;
+  --card-border: #BFCBD3;
+  --card-border-soft: #CBD5DA;
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.07), 0 8px 24px rgba(15, 23, 42, 0.06);
+
+  /* Brand */
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-soft: #D6F3EF;
+  --primary-subtle: #ECFDF5;
+  --accent: #14B8A6;
+
+  /* State */
+  --success: #16A34A;
+  --success-bg: #DCFCE7;
+  --warning: #D97706;
+  --warning-bg: #FEF3C7;
+  --danger: #DC2626;
+  --danger-bg: #FEE2E2;
+  --info: #2563EB;
+  --info-bg: #DBEAFE;
+  --due-date-change: #7C3AED;
+  --due-date-change-bg: #F3E8FF;
+
+  /* Text */
+  --text-title: #0B1220;
+  --text-body: #334155;
+  --text-muted: #64748B;
+  --text-subtle: #7C8A9A;
+  --text-inverse: #F8FAFC;
+
+  /* Form */
+  --input-bg: #FFFFFF;
+  --input-border: #BFCBD3;
+  --input-focus: #0F766E;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Legacy aliases used by existing components during the staged migration */
+  --color-midnight-indigo: var(--text-title);
+  --color-action-blue: var(--primary);
+  --color-lavender-glow: #e55cff;
+  --color-royal-amethyst: #8247f5;
+  --color-sunset-gold: #ffa600;
+  --color-skybound-blue: #0099ff;
+  --color-ocean-glimmer: #BB32D5;
+  --color-glacier-blue: var(--primary-hover);
+  --color-snow-white: var(--surface);
+  --color-cloud-mist: var(--surface-soft);
+  --color-pale-gray: var(--surface-muted);
+  --color-slate-blue: var(--text-body);
+  --color-steel-gray: var(--text-muted);
+  --color-platinum-tint: var(--card-border-soft);
+  --color-outline-gray: var(--surface-muted);
+  --color-text-black: var(--text-title);
+
+  /* Typography */
+  --font-gilroy: 'Montserrat', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-size-body: 14px;
+  --leading-body: 1.71;
+  --text-body-lg: 16px;
+  --leading-body-lg: 1.6;
+  --text-subheading: 18px;
+  --leading-subheading: 1.6;
+  --text-heading: 24px;
+  --leading-heading: 1.4;
+  --text-heading-lg: 28px;
+  --leading-heading-lg: 1.2;
+  --text-display-sm: 38px;
+  --leading-display-sm: 1.21;
+  --text-display: 50px;
+  --leading-display: 1.1;
+  --text-display-lg: 68px;
+  --leading-display-lg: 1.1;
+  --text-display-xl: 80px;
+  --leading-display-xl: 1;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing */
+  --spacing-unit: 8px;
+  --spacing-8: 8px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-56: 56px;
+  --spacing-64: 64px;
+  --spacing-72: 72px;
+  --spacing-96: 96px;
+  --section-gap: 40px;
+  --card-padding: 0px;
+  --element-gap: 8px;
+
+  /* Legacy radius aliases */
+  --radius-cards: var(--radius-lg);
+  --radius-large: 24px;
+  --radius-small: 4px;
+  --radius-badges: 50px;
+  --radius-medium: var(--radius-md);
+  --radius-buttons: var(--radius-md);
+
+  /* Legacy shadow aliases */
+  --shadow-sm: var(--card-shadow);
+  --shadow-sm-2: var(--card-shadow);
+  --shadow-sm-3: var(--card-shadow);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-gilroy);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  color: var(--text-body);
+  background-color: var(--app-bg);
+  min-height: 100vh;
+  margin: 0;
+  font-size: var(--font-size-body);
+  line-height: var(--leading-body);
+  font-family: var(--font-gilroy);
+}
+
+.ql-toolbar.ql-snow {
+  border: 1px solid var(--card-border-soft) !important;
+  background-color: var(--surface-soft);
+  border-radius: 8px 8px 0 0;
+  font-family: inherit;
+}
+
+.ql-container.ql-snow {
+  border: 1px solid var(--card-border-soft) !important;
+  border-top: none !important;
+  border-radius: 0 0 8px 8px;
+  font-size: var(--font-size-body);
+  font-family: inherit;
+}
+
+.ql-editor {
+  color: var(--text-title);
+  min-height: 120px;
+}

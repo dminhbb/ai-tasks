@@ -1,0 +1,14 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/assistant-query/route": "/api/assistant-query",
+  "/api/database-csv/route": "/api/database-csv",
+  "/api/extract-task/route": "/api/extract-task",
+  "/api/notebooks/[id]/activate/route": "/api/notebooks/[id]/activate",
+  "/api/notebooks/[id]/route": "/api/notebooks/[id]",
+  "/api/notebooks/route": "/api/notebooks",
+  "/api/settings/route": "/api/settings",
+  "/api/tasks/route": "/api/tasks",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/"
+}

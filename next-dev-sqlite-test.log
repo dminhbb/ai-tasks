@@ -1,0 +1,16 @@
+
+> task-manager@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3019
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://127.0.0.1:3019
+- Network:       http://127.0.0.1:3019
+✓ Ready in 475ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+ GET /api/tasks 200 in 229ms (next.js: 171ms, application-code: 58ms)
+ GET /api/tasks 200 in 10ms (next.js: 4ms, application-code: 6ms)
+ GET /api/settings 200 in 33ms (next.js: 27ms, application-code: 6ms)

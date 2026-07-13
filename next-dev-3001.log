@@ -1,0 +1,9 @@
+
+> task-manager@0.1.0 dev
+> next dev --port 3001
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://172.20.10.3:3001
+✓ Ready in 423ms
+[?25h

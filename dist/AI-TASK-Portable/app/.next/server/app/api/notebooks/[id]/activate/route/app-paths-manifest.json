@@ -1,0 +1,3 @@
+{
+  "/api/notebooks/[id]/activate/route": "app/api/notebooks/[id]/activate/route.js"
+}

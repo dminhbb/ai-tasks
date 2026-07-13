@@ -1,0 +1,8 @@
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          3248
+- Dir:          C:\Users\Admin\.gemini\antigravity\scratch\task-manager
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 3248 /F to stop it.

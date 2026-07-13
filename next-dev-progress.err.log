@@ -1,0 +1,242 @@
+(node:11832) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+⨯ ./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-client] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-ssr] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-client] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-ssr] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-client] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-ssr] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-client] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  [90m10 |[0m ...{ [33mTask[0m, [33mTaskStatus[0m } [36mfrom[0m [32m'@/types'[0m;
+  [90m11 |[0m ...{ [33mNEO_MINT[0m } [36mfrom[0m [32m'@/styles/neoMintTokens'[0m;
+[31m[1m>[0m [90m12 |[0m ...{ applyProgressStatus, getTaskProgress, [33mMANUAL_PROGRESS_OPTIONS[0m } [36mfrom[0m [32m'@/utils/taskPro...[0m
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m ...
+  [90m14 |[0m ...
+  [90m15 |[0m ...[33mTATUS_ORDER[0m: [33mRecord[0m<[33mTaskStatus[0m, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-ssr] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+[browser] Uncaught Error: ./src/components/TaskDetailDialog.tsx:12:1
+Export applyProgressStatus doesn't exist in target module
+  10 | ...{ Task, TaskStatus } from '@/types';
+  11 | ...{ NEO_MINT } from '@/styles/neoMintTokens';
+> 12 | ...{ applyProgressStatus, getTaskProgress, MANUAL_PROGRESS_OPTIONS } from '@/utils/taskPro...
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 | ...
+  14 | ...
+  15 | ...TATUS_ORDER: Record<TaskStatus, number> = {
+
+The export applyProgressStatus was not found in module [project]/src/utils/taskProgress.ts [app-client] (ecmascript).
+Did you mean to import applyProgressRules?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/components/TaskDetailDialog.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/TaskDetailDialog.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/components/TaskDetailDialog.tsx:12:1)
+    at <unknown> (Error: (./src/components/TaskDetailDialog.tsx:12:1)

@@ -1,0 +1,15 @@
+
+> task-manager@0.1.0 dev
+> next dev -p 3002
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://192.168.1.22:3002
+✓ Ready in 413ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Minh\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+○ Compiling / ...
+ GET / 200 in 220ms (next.js: 29ms, application-code: 191ms)

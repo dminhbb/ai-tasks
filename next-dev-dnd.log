@@ -1,0 +1,42 @@
+
+> task-manager@0.1.0 dev
+> next dev -p 3000
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.20.10.7:3000
+✓ Ready in 741ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+ GET / 200 in 898ms (next.js: 223ms, application-code: 675ms)
+ GET / 200 in 346ms (next.js: 11ms, application-code: 336ms)
+ GET /api/tasks 200 in 178ms (next.js: 120ms, application-code: 58ms)
+ GET /api/settings 200 in 223ms (next.js: 215ms, application-code: 7ms)
+ POST /api/tasks 200 in 25ms (next.js: 6ms, application-code: 19ms)
+ POST /api/tasks 200 in 16ms (next.js: 5ms, application-code: 12ms)
+ POST /api/tasks 200 in 11ms (next.js: 3ms, application-code: 8ms)
+ POST /api/settings 200 in 15ms (next.js: 7ms, application-code: 8ms)
+ POST /api/tasks 200 in 22ms (next.js: 8ms, application-code: 14ms)
+ POST /api/tasks 200 in 17ms (next.js: 6ms, application-code: 11ms)
+ POST /api/tasks 200 in 14ms (next.js: 3ms, application-code: 11ms)
+ POST /api/tasks 200 in 18ms (next.js: 4ms, application-code: 14ms)
+ POST /api/tasks 200 in 11ms (next.js: 3ms, application-code: 8ms)
+ POST /api/tasks 200 in 15ms (next.js: 5ms, application-code: 10ms)
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.20.10.7:3000
+✓ Ready in 684ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+ GET / 200 in 955ms (next.js: 234ms, application-code: 721ms)
+ GET /api/tasks 200 in 165ms (next.js: 126ms, application-code: 39ms)
+ GET /api/settings 200 in 214ms (next.js: 205ms, application-code: 9ms)
+ GET / 200 in 320ms (next.js: 10ms, application-code: 310ms)
+ GET /api/tasks 200 in 17ms (next.js: 8ms, application-code: 9ms)
+ GET /api/settings 200 in 27ms (next.js: 20ms, application-code: 7ms)

@@ -1,0 +1,19 @@
+
+> task-manager@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.3:3000
+✓ Ready in 593ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Minh\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+○ Compiling / ...
+ GET / 200 in 15.3s (next.js: 14.1s, application-code: 1202ms)
+ GET / 200 in 416ms (next.js: 16ms, application-code: 400ms)
+ GET /api/tasks 200 in 913ms (next.js: 826ms, application-code: 87ms)
+ GET /api/settings 200 in 1026ms (next.js: 1008ms, application-code: 18ms)
+ POST /api/tasks 200 in 38ms (next.js: 9ms, application-code: 29ms)

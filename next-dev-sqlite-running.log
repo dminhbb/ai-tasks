@@ -1,0 +1,168 @@
+
+> task-manager@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3020
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://127.0.0.1:3020
+- Network:       http://127.0.0.1:3020
+✓ Ready in 430ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\task-manager',
+  testMode: true
+}
+
+ GET /api/settings 200 in 225ms (next.js: 190ms, application-code: 35ms)
+ GET / 200 in 981ms (next.js: 301ms, application-code: 681ms)
+ GET /api/tasks 200 in 38ms (next.js: 32ms, application-code: 6ms)
+ GET /api/settings 200 in 46ms (next.js: 42ms, application-code: 4ms)
+ GET /api/tasks 200 in 8ms (next.js: 3ms, application-code: 5ms)
+ GET /api/settings 200 in 14ms (next.js: 10ms, application-code: 4ms)
+ POST /api/assistant-query 200 in 19.5s (next.js: 80ms, application-code: 19.4s)
+ POST /api/assistant-query 500 in 13.5s (next.js: 3ms, application-code: 13.5s)
+ GET / 200 in 132ms (next.js: 50ms, application-code: 82ms)
+ POST /api/assistant-query 500 in 10.0s (next.js: 42ms, application-code: 10.0s)
+ POST /api/assistant-query 200 in 15.1s (next.js: 3ms, application-code: 15.1s)
+ GET / 200 in 431ms (next.js: 8ms, application-code: 423ms)
+ GET /api/tasks 200 in 41ms (next.js: 34ms, application-code: 7ms)
+ GET /api/settings 200 in 31ms (next.js: 27ms, application-code: 4ms)
+ POST /api/assistant-query 200 in 13.1s (next.js: 3ms, application-code: 13.1s)
+✓ Compiled in 33ms
+ GET / 200 in 135ms (next.js: 65ms, application-code: 69ms)
+ GET / 200 in 45ms (next.js: 4ms, application-code: 40ms)
+✓ Compiled in 29ms
+ GET / 200 in 167ms (next.js: 74ms, application-code: 93ms)
+ GET / 200 in 51ms (next.js: 5ms, application-code: 46ms)
+ GET / 200 in 269ms (next.js: 4ms, application-code: 265ms)
+ GET /api/tasks 200 in 62ms (next.js: 49ms, application-code: 13ms)
+ GET /api/settings 200 in 88ms (next.js: 84ms, application-code: 4ms)
+ GET / 200 in 129ms (next.js: 6ms, application-code: 123ms)
+ GET /api/tasks 200 in 13ms (next.js: 4ms, application-code: 10ms)
+ GET /api/settings 200 in 22ms (next.js: 16ms, application-code: 6ms)
+ POST /api/extract-task 200 in 4.7s (next.js: 45ms, application-code: 4.7s)
+ POST /api/tasks 200 in 11ms (next.js: 2ms, application-code: 9ms)
+ POST /api/tasks 200 in 7ms (next.js: 2ms, application-code: 5ms)
+ POST /api/tasks 200 in 8ms (next.js: 2ms, application-code: 6ms)
+ POST /api/tasks 200 in 8ms (next.js: 3ms, application-code: 5ms)
+ POST /api/tasks 200 in 9ms (next.js: 2ms, application-code: 6ms)
+✓ Compiled in 390ms
+✓ Compiled in 337ms
+ GET / 200 in 355ms (next.js: 99ms, application-code: 256ms)
+ GET / 200 in 203ms (next.js: 23ms, application-code: 180ms)
+ GET / 200 in 81ms (next.js: 41ms, application-code: 40ms)
+ GET / 200 in 569ms (next.js: 69ms, application-code: 500ms)
+ GET / 200 in 84ms (next.js: 10ms, application-code: 74ms)
+ GET / 200 in 217ms (next.js: 9ms, application-code: 208ms)
+ GET /api/tasks 200 in 63ms (next.js: 49ms, application-code: 14ms)
+ GET /api/settings 200 in 92ms (next.js: 87ms, application-code: 5ms)
+✓ Compiled in 67ms
+ GET / 200 in 131ms (next.js: 85ms, application-code: 45ms)
+✓ Compiled in 16ms
+ GET / 200 in 136ms (next.js: 89ms, application-code: 47ms)
+✓ Compiled in 75ms
+ GET / 200 in 117ms (next.js: 78ms, application-code: 39ms)
+✓ Compiled in 27ms
+ GET / 200 in 118ms (next.js: 81ms, application-code: 37ms)
+✓ Compiled in 16ms
+ GET / 200 in 118ms (next.js: 85ms, application-code: 33ms)
+ GET / 200 in 232ms (next.js: 3ms, application-code: 229ms)
+ GET / 200 in 101ms (next.js: 4ms, application-code: 97ms)
+ GET /api/tasks 200 in 55ms (next.js: 44ms, application-code: 11ms)
+ GET /api/settings 200 in 88ms (next.js: 81ms, application-code: 7ms)
+ POST /api/tasks 200 in 9ms (next.js: 3ms, application-code: 7ms)
+ POST /api/assistant-query 200 in 2.9s (next.js: 35ms, application-code: 2.8s)
+✓ Compiled in 22ms
+ GET / 200 in 114ms (next.js: 75ms, application-code: 39ms)
+✓ Compiled in 18ms
+ GET / 200 in 110ms (next.js: 82ms, application-code: 28ms)
+✓ Compiled in 22ms
+ GET / 200 in 118ms (next.js: 78ms, application-code: 40ms)
+✓ Compiled in 27ms
+ GET / 200 in 140ms (next.js: 76ms, application-code: 64ms)
+✓ Compiled in 13ms
+ GET / 200 in 115ms (next.js: 83ms, application-code: 32ms)
+✓ Compiled in 36ms
+ GET / 200 in 120ms (next.js: 78ms, application-code: 42ms)
+ GET / 200 in 344ms (next.js: 3ms, application-code: 341ms)
+✓ Compiled in 28ms
+ GET / 200 in 109ms (next.js: 73ms, application-code: 37ms)
+✓ Compiled in 17ms
+ GET / 200 in 97ms (next.js: 64ms, application-code: 33ms)
+✓ Compiled in 19ms
+ GET / 200 in 96ms (next.js: 65ms, application-code: 31ms)
+✓ Compiled in 17ms
+ GET / 200 in 100ms (next.js: 73ms, application-code: 27ms)
+✓ Compiled in 18ms
+ GET / 200 in 121ms (next.js: 81ms, application-code: 40ms)
+✓ Compiled in 22ms
+ GET / 200 in 108ms (next.js: 70ms, application-code: 38ms)
+✓ Compiled in 25ms
+ GET / 200 in 108ms (next.js: 73ms, application-code: 35ms)
+ GET / 200 in 389ms (next.js: 3ms, application-code: 386ms)
+✓ Compiled in 269ms
+ GET / 200 in 395ms (next.js: 55ms, application-code: 340ms)
+ GET / 200 in 57ms (next.js: 10ms, application-code: 48ms)
+ GET / 200 in 399ms (next.js: 78ms, application-code: 321ms)
+ GET /api/tasks 200 in 55ms (next.js: 44ms, application-code: 11ms)
+ GET /api/settings 200 in 35ms (next.js: 28ms, application-code: 7ms)
+✓ Compiled in 33ms
+ GET / 200 in 493ms (next.js: 88ms, application-code: 405ms)
+ GET / 200 in 367ms (next.js: 330ms, application-code: 38ms)
+ GET / 200 in 371ms (next.js: 6ms, application-code: 366ms)
+ GET /api/tasks 200 in 60ms (next.js: 49ms, application-code: 12ms)
+ GET /api/settings 200 in 89ms (next.js: 83ms, application-code: 5ms)
+✓ Compiled in 81ms
+ GET / 200 in 114ms (next.js: 78ms, application-code: 35ms)
+ GET / 200 in 237ms (next.js: 3ms, application-code: 234ms)
+ GET / 200 in 106ms (next.js: 3ms, application-code: 102ms)
+ GET / 200 in 109ms (next.js: 3ms, application-code: 106ms)
+ GET / 200 in 104ms (next.js: 4ms, application-code: 99ms)
+ GET /api/tasks 200 in 51ms (next.js: 40ms, application-code: 11ms)
+ GET /api/settings 200 in 83ms (next.js: 78ms, application-code: 5ms)
+ GET / 200 in 101ms (next.js: 3ms, application-code: 99ms)
+ GET /api/tasks 200 in 7ms (next.js: 3ms, application-code: 4ms)
+ GET /api/settings 200 in 13ms (next.js: 9ms, application-code: 4ms)
+✓ Compiled in 52ms
+ GET / 200 in 177ms (next.js: 119ms, application-code: 58ms)
+ GET / 200 in 347ms (next.js: 3ms, application-code: 344ms)
+ GET /api/tasks 200 in 47ms (next.js: 36ms, application-code: 11ms)
+ GET /api/settings 200 in 81ms (next.js: 76ms, application-code: 5ms)
+ GET / 200 in 108ms (next.js: 3ms, application-code: 105ms)
+ GET /api/tasks 200 in 8ms (next.js: 3ms, application-code: 5ms)
+ GET /api/settings 200 in 13ms (next.js: 9ms, application-code: 4ms)
+ GET / 200 in 105ms (next.js: 5ms, application-code: 101ms)
+ GET /api/tasks 200 in 15ms (next.js: 6ms, application-code: 9ms)
+ GET /api/settings 200 in 23ms (next.js: 18ms, application-code: 5ms)
+ POST /api/tasks 200 in 9ms (next.js: 2ms, application-code: 7ms)
+ POST /api/settings 200 in 11ms (next.js: 3ms, application-code: 7ms)
+ GET / 200 in 95ms (next.js: 4ms, application-code: 91ms)
+ GET /api/tasks 200 in 12ms (next.js: 4ms, application-code: 8ms)
+ GET /api/settings 200 in 6ms (next.js: 2ms, application-code: 4ms)
+ POST /api/settings 200 in 7ms (next.js: 2ms, application-code: 4ms)
+ POST /api/assistant-query 200 in 3.4s (next.js: 39ms, application-code: 3.4s)
+ POST /api/tasks 200 in 7ms (next.js: 2ms, application-code: 5ms)
+✓ Compiled in 14ms
+✓ Compiled in 16ms
+ GET / 200 in 325ms (next.js: 159ms, application-code: 166ms)
+ GET / 200 in 206ms (next.js: 70ms, application-code: 136ms)
+ GET / 200 in 105ms (next.js: 3ms, application-code: 102ms)
+ GET / 200 in 62ms (next.js: 5ms, application-code: 57ms)
+ GET / 200 in 62ms (next.js: 22ms, application-code: 40ms)
+ GET / 200 in 62ms (next.js: 38ms, application-code: 24ms)
+ GET / 200 in 222ms (next.js: 96ms, application-code: 126ms)
+ GET / 200 in 85ms (next.js: 3ms, application-code: 82ms)
+ GET / 200 in 56ms (next.js: 4ms, application-code: 52ms)
+ GET / 200 in 107ms (next.js: 64ms, application-code: 44ms)
+ GET / 200 in 180ms (next.js: 88ms, application-code: 92ms)
+ GET / 200 in 115ms (next.js: 71ms, application-code: 44ms)
+✓ Compiled in 36ms
+ GET / 200 in 191ms (next.js: 134ms, application-code: 57ms)
+✓ Compiled in 28ms
+ GET / 200 in 225ms (next.js: 122ms, application-code: 103ms)
+ GET / 200 in 48ms (next.js: 4ms, application-code: 44ms)
+ GET /api/tasks 200 in 49ms (next.js: 39ms, application-code: 10ms)
+ GET / 200 in 413ms (next.js: 4ms, application-code: 409ms)
+ GET /api/tasks 200 in 11ms (next.js: 4ms, application-code: 7ms)
+ GET /api/settings 200 in 68ms (next.js: 57ms, application-code: 11ms)
+ POST /api/tasks 200 in 12ms (next.js: 3ms, application-code: 9ms)
+ POST /api/tasks 200 in 9ms (next.js: 2ms, application-code: 7ms)
+ POST /api/tasks 200 in 7ms (next.js: 1905µs, application-code: 5ms)

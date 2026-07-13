@@ -1,0 +1,77 @@
+Assistant query error: SqliteError: near "LIMIT": syntax error
+    at executeSafePlannerSql (src\utils\assistantSqlPlanner.ts:87:29)
+    at POST (src\app\api\assistant-query\route.ts:41:46)
+  85 |
+  86 |   try {
+> 87 |     const rows = readOnlyDb.prepare(limitedSql).all(...params) as Record<string, unknown>[];
+     |                             ^
+  88 |     return {
+  89 |       sql: limitedSql,
+  90 |       rows: rows.slice(0, 100), {
+  code: 'SQLITE_ERROR'
+}
+Assistant query error: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent: [503 ] This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.
+    at handleResponseNotOk (C:\Users\Admin\.gemini\antigravity\scratch\task-manager\.next\dev\server\chunks\[root-of-the-server]__11a7.08._.js:16679:11)
+    at async makeRequest (C:\Users\Admin\.gemini\antigravity\scratch\task-manager\.next\dev\server\chunks\[root-of-the-server]__11a7.08._.js:16651:9)
+    at async generateContent (C:\Users\Admin\.gemini\antigravity\scratch\task-manager\.next\dev\server\chunks\[root-of-the-server]__11a7.08._.js:17093:22)
+    at async planSqlQuestion (src\app\api\assistant-query\route.ts:188:18)
+    at async POST (src\app\api\assistant-query\route.ts:40:29)
+  186 | `;
+  187 |
+> 188 |   const result = await model.generateContent(prompt);
+      |                  ^
+  189 |   const rawText = (await result.response).text();
+  190 |   const parsed = parseJsonObject(rawText);
+  191 | {
+  status: 503,
+  statusText: '',
+  errorDetails: undefined
+}
+[browser] Uncaught Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <InnerScrollAndFocusHandlerOld focusAndScrollRef={{scrollRef:null, ...}} cacheNode={{rsc:{...}, ...}}>
+      <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+        <LoadingBoundary name="/" loading={null}>
+          <HTTPAccessFallbackBoundary notFound={{...}} forbidden={undefined} unauthorized={undefined}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={{...}} forbidden={undefined} unauthorized={undefined} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+                    <SegmentViewNode type="page" pagePath="page.tsx">
+                      <SegmentTrieNode>
+                      <ClientPageRoot Component={function Home} serverProvidedParams={{...}}>
+                        <Home params={Promise} searchParams={Promise}>
+                          <Box sx={{display:"flex", ...}}>
+                            <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} ...>
+                              <Insertion>
++                             <div className="MuiBox-root css-16rz2of">
+-                             <style data-emotion="css-global 5aaoq1" data-s="">
+                    ...
+                  ...
+      ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at div (<anonymous>)
+    at Home (src/app/page.tsx:116:46)
+  114 |     });
+  115 |
+> 116 |     return () => window.cancelAnimationFrame(frameId);
+      |                                              ^
+  117 |   }, []);
+  118 |
+  119 |   const handleStartResize = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+(node:9604) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+⚠ Fast Refresh had to perform a full reload when ./src/components/ThemeProvider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/ThemeProvider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

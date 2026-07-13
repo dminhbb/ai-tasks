@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/assistant-query": {},
+    "/api/database-csv": {},
+    "/api/extract-task": {},
+    "/api/notebooks": {},
+    "/api/notebooks/[id]": {},
+    "/api/notebooks/[id]/activate": {},
+    "/api/settings": {},
+    "/api/tasks": {}
+  }
+}

@@ -1,0 +1,14 @@
+(node:1144) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+⨯ ./src/components/TaskMindmapDialog.tsx
+Module parse failed: Identifier 'TASK_X' has already been declared (25:6)
+| const TASK_MAX_WIDTH = 400;
+| const SUBTASK_MAX_WIDTH = 600;
+> const TASK_X = 360;
+| const SUBTASK_X = 820;
+| const MIN_ZOOM = 0.45;
+
+Import trace for requested module:
+./src/components/TaskMindmapDialog.tsx
+./src/app/page.tsx
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
