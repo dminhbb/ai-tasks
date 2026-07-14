@@ -32,6 +32,8 @@ const subtaskRowSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   completed: z.boolean(),
+  is_today: z.boolean(),
+  completed_at: z.string().nullable(),
   sort_order: z.number(),
 });
 
@@ -193,7 +195,7 @@ export async function readTasks(notebookId: string): Promise<Task[]> {
     .select(`
       id, title, details, assignee, status, progress, sort_order,
       start_date, due_date, notes, created_at, in_progress_at, done_at,
-      subtasks(id, title, completed, sort_order),
+      subtasks(id, title, completed, is_today, completed_at, sort_order),
       task_tags(tag),
       task_due_date_events(id)
     `)
@@ -224,6 +226,8 @@ export async function readTasks(notebookId: string): Promise<Task[]> {
         id: subtask.id,
         title: subtask.title,
         completed: subtask.completed,
+        isToday: subtask.is_today,
+        completedAt: subtask.completed_at,
         sortOrder: subtask.sort_order,
       })),
   }));
@@ -269,7 +273,13 @@ export async function saveTasks(
         dueDate: task.dueDate,
         notes: task.notes,
       },
-      subtask_data: task.subtasks,
+      subtask_data: task.subtasks.map((subtask) => ({
+        id: subtask.id,
+        title: subtask.title,
+        completed: subtask.completed,
+        isToday: subtask.isToday,
+        sortOrder: subtask.sortOrder ?? 0,
+      })),
       tag_data: task.tags,
     });
     if (error) throw new Error('Không thể lưu task. Vui lòng tải lại dữ liệu và thử lại.');

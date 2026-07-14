@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
-import { AutoAwesome, RestartAlt, Send } from '@mui/icons-material';
+import { RestartAlt, Send } from '@mui/icons-material';
 import type { AssistantConfiguredIntent, Task } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { askTaskAssistant } from '@/lib/supabase/functions';
@@ -61,34 +61,10 @@ export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId
   return (
     <Box
       sx={{
-        mb: 2.5,
-        p: 1.5,
-        borderRadius: '12px',
-        border: '1px solid var(--panel-border)',
-        backgroundColor: 'var(--panel-bg)',
-        boxShadow: NEO_MINT.shadowSm,
+        p: 0.5,
+        backgroundColor: 'transparent',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-        <Box
-          sx={{
-            width: 24,
-            height: 24,
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'var(--primary-soft)',
-            color: NEO_MINT.primary,
-          }}
-        >
-          <AutoAwesome sx={{ fontSize: 15 }} />
-        </Box>
-        <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NEO_MINT.textTitle }}>
-          Ask your task data
-        </Typography>
-      </Box>
-
       <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
         <TextField
           fullWidth

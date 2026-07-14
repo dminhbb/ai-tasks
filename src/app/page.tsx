@@ -3,9 +3,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { 
   Box, AppBar, Toolbar, Typography, IconButton, Button, 
-  Drawer, CircularProgress
+  Dialog, DialogContent, DialogTitle, Drawer, CircularProgress
 } from '@mui/material';
-import { Settings as SettingsIcon, Add as AddIcon, Menu as MenuIcon, Close as CloseIcon, AccountTree as AccountTreeIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import {
+  Settings as SettingsIcon,
+  Add as AddIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  AccountTree as AccountTreeIcon,
+  AutoAwesome as AiSearchIcon,
+  Logout as LogoutIcon,
+  Today as TodayIcon,
+  ViewSidebar as ViewSidebarIcon,
+} from '@mui/icons-material';
 import TaskList from '@/components/TaskList';
 import FilterPanel, { type FilterState } from '@/components/FilterPanel';
 import AddTaskDialog from '@/components/AddTaskDialog';
@@ -14,6 +24,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskAssistantPanel from '@/components/TaskAssistantPanel';
 import TaskMindmapDialog from '@/components/TaskMindmapDialog';
 import NotebookDialog from '@/components/NotebookDialog';
+import TodayWorkspace from '@/components/TodayWorkspace';
 import type { Notebook, Task, Settings, UserProfile } from '@/types';
 import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
@@ -36,6 +47,18 @@ import {
 const DEFAULT_DRAWER_WIDTH = 288;
 const MIN_DRAWER_WIDTH = 220;
 const MAX_DRAWER_WIDTH = 520;
+
+const TOP_ACTION_BUTTON_SX = {
+  borderRadius: '9px',
+  px: { xs: 0.75, md: 1.1 },
+  py: 0.5,
+  minWidth: 0,
+  fontSize: '11px',
+  lineHeight: 1.35,
+  fontWeight: 600,
+  textTransform: 'none',
+  '& .MuiButton-startIcon': { mr: 0.5, ml: 0 },
+};
 
 const normalizeAssigneeName = (value: string) =>
   value
@@ -78,11 +101,16 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddManualOpen, setIsAddManualOpen] = useState(false);
   const [isMindmapOpen, setIsMindmapOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(DEFAULT_DRAWER_WIDTH);
+  const [isTodayDialogOpen, setIsTodayDialogOpen] = useState(false);
+  const [returnToTodayAfterTaskDetails, setReturnToTodayAfterTaskDetails] = useState(false);
+  const [isTodayPanelOpen, setIsTodayPanelOpen] = useState(false);
+  const [todayPanelWidth, setTodayPanelWidth] = useState(DEFAULT_DRAWER_WIDTH);
   const [filters, setFilters] = useState<Partial<FilterState>>({});
 
   const uniqueAssignees = Array.from(
@@ -165,6 +193,14 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       if (!Number.isNaN(savedWidth) && savedWidth >= MIN_DRAWER_WIDTH && savedWidth <= MAX_DRAWER_WIDTH) {
         setDrawerWidth(savedWidth);
       }
+      const savedTodayWidth = Number(window.localStorage.getItem('task-manager-today-panel-width'));
+      if (
+        !Number.isNaN(savedTodayWidth)
+        && savedTodayWidth >= MIN_DRAWER_WIDTH
+        && savedTodayWidth <= MAX_DRAWER_WIDTH
+      ) {
+        setTodayPanelWidth(savedTodayWidth);
+      }
     });
 
     return () => window.cancelAnimationFrame(frameId);
@@ -200,6 +236,36 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     document.addEventListener('mouseup', handleMouseUp);
   }, [drawerWidth]);
 
+  const handleStartTodayResize = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    const startX = event.clientX;
+    const startWidth = todayPanelWidth;
+    let latestWidth = startWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const nextWidth = Math.min(
+        MAX_DRAWER_WIDTH,
+        Math.max(MIN_DRAWER_WIDTH, startWidth + startX - moveEvent.clientX)
+      );
+      latestWidth = nextWidth;
+      setTodayPanelWidth(nextWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.localStorage.setItem('task-manager-today-panel-width', String(latestWidth));
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [todayPanelWidth]);
+
   const handleSaveTasks = async (newTasks: Task[]) => {
     if (!activeNotebook?.permissions.manageTasks) {
       window.alert('Bạn không có quyền thay đổi task trong notebook này.');
@@ -212,6 +278,14 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     } catch (saveError: unknown) {
       setTasks(tasks);
       window.alert(saveError instanceof Error ? saveError.message : 'Không thể lưu task.');
+    }
+  };
+
+  const closeTaskDetails = () => {
+    setSelectedTask(null);
+    if (returnToTodayAfterTaskDetails) {
+      setReturnToTodayAfterTaskDetails(false);
+      setIsTodayDialogOpen(true);
     }
   };
 
@@ -232,14 +306,14 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           color: NEO_MINT.textTitle,
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1.5, md: 3 }, minHeight: '64px !important', gap: { xs: 1, md: 2 } }}>
+        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, md: 2 }, minHeight: '64px !important', gap: { xs: 0.5, md: 1 } }}>
           {/* Left: hamburger + brand */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 }, minWidth: 0 }}>
             <IconButton
               edge="start"
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
               sx={{
-                p: 0.9,
+                p: 0.65,
                 color: NEO_MINT.textTitle,
                 border: `1px solid ${NEO_MINT.cardBorderSoft}`,
                 borderRadius: '8px',
@@ -247,26 +321,26 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                 '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
               }}
             >
-              {isDrawerOpen ? <CloseIcon sx={{ fontSize: 24 }} /> : <MenuIcon sx={{ fontSize: 24 }} />}
+              {isDrawerOpen ? <CloseIcon sx={{ fontSize: 20 }} /> : <MenuIcon sx={{ fontSize: 20 }} />}
             </IconButton>
 
             {/* Logo mark — Action Blue square with radius */}
             <Box sx={{
-              width: 32, height: 32,
+              width: 28, height: 28,
               borderRadius: '8px',
               backgroundColor: 'var(--primary)',
               boxShadow: '0 6px 16px rgba(15, 118, 110, 0.18)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <Typography sx={{ color: NEO_MINT.surface, fontWeight: 700, fontSize: '16px', lineHeight: 1 }}>C</Typography>
+              <Typography sx={{ color: NEO_MINT.surface, fontWeight: 700, fontSize: '14px', lineHeight: 1 }}>C</Typography>
             </Box>
 
             <Typography
               component="div"
               sx={{
                 fontWeight: 700,
-                fontSize: { xs: '18px', md: '20px' },
+                fontSize: { xs: '16px', md: '18px' },
                 color: NEO_MINT.textTitle,
                 letterSpacing: 0,
                 userSelect: 'none',
@@ -278,18 +352,14 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           </Box>
 
           {/* Center: primary actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, md: 1 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.25, md: 0.4 } }}>
             {/* Primary CTA — Action Blue */}
             <Button
               variant="text"
-              startIcon={<MenuBookIcon sx={{ fontSize: '19px !important' }} />}
+              startIcon={<MenuBookIcon sx={{ fontSize: '17px !important' }} />}
               onClick={() => setIsNotebookOpen(true)}
               sx={{
-                borderRadius: '12px',
-                px: { xs: 1.25, md: 1.75 },
-                py: 0.85,
-                fontSize: '13px',
-                fontWeight: 600,
+                ...TOP_ACTION_BUTTON_SX,
                 color: NEO_MINT.textBody,
                 textTransform: 'none',
                 '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
@@ -306,13 +376,10 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             <Button
               variant="contained"
               disableElevation
-              startIcon={<AddIcon sx={{ fontSize: '20px !important' }} />}
+              startIcon={<AddIcon sx={{ fontSize: '17px !important' }} />}
               onClick={() => setIsAddOpen(true)}
               sx={{
-                borderRadius: '12px',
-                px: { xs: 1.25, md: 2 },
-                py: 0.85,
-                fontSize: '13px',
+                ...TOP_ACTION_BUTTON_SX,
                 fontWeight: 700,
                 backgroundColor: NEO_MINT.primary,
                 color: NEO_MINT.surface,
@@ -330,14 +397,10 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             {/* Ghost button — secondary action */}
             <Button
               variant="text"
-              startIcon={<AddIcon sx={{ fontSize: '20px !important' }} />}
+              startIcon={<AddIcon sx={{ fontSize: '17px !important' }} />}
               onClick={() => setIsAddManualOpen(true)}
               sx={{
-                borderRadius: '12px',
-                px: { xs: 1.25, md: 1.75 },
-                py: 0.85,
-                fontSize: '13px',
-                fontWeight: 600,
+                ...TOP_ACTION_BUTTON_SX,
                 color: NEO_MINT.textBody,
                 textTransform: 'none',
                 '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
@@ -349,14 +412,10 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
 
             <Button
               variant="text"
-              startIcon={<AccountTreeIcon sx={{ fontSize: '20px !important' }} />}
+              startIcon={<AccountTreeIcon sx={{ fontSize: '17px !important' }} />}
               onClick={() => setIsMindmapOpen(true)}
               sx={{
-                borderRadius: '12px',
-                px: { xs: 1.25, md: 1.75 },
-                py: 0.85,
-                fontSize: '13px',
-                fontWeight: 600,
+                ...TOP_ACTION_BUTTON_SX,
                 color: NEO_MINT.textBody,
                 textTransform: 'none',
                 '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
@@ -365,15 +424,44 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
               <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Mindmap</Box>
               <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Map</Box>
             </Button>
+
+            <Button
+              variant="text"
+              startIcon={<TodayIcon sx={{ fontSize: '17px !important' }} />}
+              onClick={() => setIsTodayDialogOpen(true)}
+              sx={{
+                ...TOP_ACTION_BUTTON_SX,
+                color: NEO_MINT.textBody,
+                textTransform: 'none',
+                '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Today Tasks</Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Today</Box>
+            </Button>
+
+            <Button
+              variant="text"
+              startIcon={<AiSearchIcon sx={{ fontSize: '17px !important' }} />}
+              onClick={() => setIsAssistantOpen(true)}
+              sx={{
+                ...TOP_ACTION_BUTTON_SX,
+                color: NEO_MINT.textBody,
+                '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>AI Search</Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Search</Box>
+            </Button>
           </Box>
 
           {/* Right: icon actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
             <Typography
               sx={{
                 display: { xs: 'none', md: 'block' },
                 color: 'var(--text-subtle)',
-                fontSize: '13px',
+                fontSize: '11px',
                 fontWeight: 600,
                 textTransform: 'none',
                 whiteSpace: 'nowrap',
@@ -385,7 +473,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             <IconButton
               onClick={() => void onSignOut()}
               sx={{
-                p: 0.9,
+                p: 0.65,
                 color: NEO_MINT.textTitle,
                 borderRadius: '8px',
                 border: `1px solid ${NEO_MINT.cardBorderSoft}`,
@@ -393,13 +481,13 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                 '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
               }}
             >
-              <LogoutIcon sx={{ fontSize: 22 }} />
+              <LogoutIcon sx={{ fontSize: 19 }} />
             </IconButton>
             {activeNotebook?.permissions.manageSettings && (
               <IconButton
                 onClick={() => setIsSettingsOpen(true)}
                 sx={{
-                  p: 0.9,
+                  p: 0.65,
                   color: NEO_MINT.textTitle,
                   borderRadius: '8px',
                   border: `1px solid ${NEO_MINT.cardBorderSoft}`,
@@ -407,9 +495,25 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                   '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
                 }}
               >
-                <SettingsIcon sx={{ fontSize: 22 }} />
+                <SettingsIcon sx={{ fontSize: 19 }} />
               </IconButton>
             )}
+            <IconButton
+              aria-label={isTodayPanelOpen ? 'Close Today panel' : 'Open Today panel'}
+              onClick={() => setIsTodayPanelOpen((current) => !current)}
+              sx={{
+                p: 0.65,
+                color: NEO_MINT.textTitle,
+                border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                borderRadius: '8px',
+                backgroundColor: isTodayPanelOpen ? 'var(--primary-subtle)' : 'var(--surface-soft)',
+                '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
+              }}
+            >
+              {isTodayPanelOpen
+                ? <CloseIcon sx={{ fontSize: 20 }} />
+                : <ViewSidebarIcon sx={{ fontSize: 20 }} />}
+            </IconButton>
           </Box>
         </Toolbar>
       </AppBar>
@@ -529,19 +633,15 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             mx: 'auto',
             minHeight: 0,
           }}>
-            <TaskAssistantPanel
-              tasks={tasks}
-              assistantIntents={settings.assistantIntents || []}
-              notebookId={activeNotebook?.id || ''}
-              onTaskClick={(task) => setSelectedTask(task)}
-            />
-
             <TaskList
               tasks={tasks}
               filters={filters}
               onSaveTasks={handleSaveTasks}
               availableTags={settings.tags}
-              onRowClick={(task) => setSelectedTask(task)}
+              onRowClick={(task) => {
+                setReturnToTodayAfterTaskDetails(false);
+                setSelectedTask(task);
+              }}
             />
 
             {/* Footer */}
@@ -554,7 +654,115 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         )}
       </Box>
 
+      {/* Right Today Drawer */}
+      <Drawer
+        anchor="right"
+        variant="persistent"
+        open={isTodayPanelOpen}
+        sx={{
+          width: isTodayPanelOpen ? todayPanelWidth : 0,
+          flexShrink: 0,
+          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          [`& .MuiDrawer-paper`]: {
+            width: todayPanelWidth,
+            boxSizing: 'border-box',
+            backgroundColor: 'var(--sidebar-bg)',
+            borderLeft: `1px solid ${NEO_MINT.cardBorderSoft}`,
+            boxShadow: 'none',
+            overflow: 'visible',
+            transition: 'width 0.15s ease',
+          },
+        }}
+      >
+        <Toolbar sx={{ minHeight: '64px !important' }} />
+        <Box
+          onMouseDown={handleStartTodayResize}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize Today panel"
+          sx={{
+            position: 'absolute',
+            top: 64,
+            left: -5,
+            bottom: 0,
+            width: 10,
+            cursor: 'col-resize',
+            zIndex: 2,
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 12,
+              bottom: 12,
+              left: '50%',
+              width: 2,
+              borderRadius: 1,
+              backgroundColor: NEO_MINT.cardBorderSoft,
+              opacity: 0,
+              transition: 'opacity 0.15s ease, background-color 0.15s ease',
+            },
+            '&:hover::after': {
+              opacity: 1,
+              backgroundColor: NEO_MINT.primary,
+            },
+          }}
+        />
+        <Box sx={{ height: 'calc(100vh - 64px)', minWidth: 0 }}>
+          <TodayWorkspace
+            tasks={tasks}
+            canManageTasks={activeNotebook?.permissions.manageTasks ?? false}
+            isDialogOpen={isTodayDialogOpen}
+            onCloseDialog={() => setIsTodayDialogOpen(false)}
+            onSaveTasks={handleSaveTasks}
+            onOpenTask={(task) => {
+              setReturnToTodayAfterTaskDetails(true);
+              setSelectedTask(task);
+            }}
+          />
+        </Box>
+      </Drawer>
+
       {/* ── Dialogs ── */}
+      <Dialog
+        open={isAssistantOpen}
+        onClose={() => setIsAssistantOpen(false)}
+        fullWidth
+        maxWidth="md"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '14px',
+              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1.5 }}>
+          <AiSearchIcon sx={{ color: NEO_MINT.primary, fontSize: 21 }} />
+          <Typography component="span" sx={{ flex: 1, fontSize: '17px', fontWeight: 800 }}>
+            Ask your task data
+          </Typography>
+          <IconButton
+            size="small"
+            aria-label="Close AI Search popup"
+            onClick={() => setIsAssistantOpen(false)}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: { xs: 1.5, sm: 2 } }}>
+          <TaskAssistantPanel
+            tasks={tasks}
+            assistantIntents={settings.assistantIntents || []}
+            notebookId={activeNotebook?.id || ''}
+            onTaskClick={(task) => {
+              setIsAssistantOpen(false);
+              setReturnToTodayAfterTaskDetails(false);
+              setSelectedTask(task);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
       {isAddOpen && (
         <AddTaskDialog
           open={isAddOpen}
@@ -633,7 +841,10 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           availableTags={settings.tags}
           notebookId={activeNotebook?.id || ''}
           isTaskDetailsOpen={!!selectedTask}
-          onRequestTaskDetails={(task) => setSelectedTask(task)}
+          onRequestTaskDetails={(task) => {
+            setReturnToTodayAfterTaskDetails(false);
+            setSelectedTask(task);
+          }}
           onSaveTasks={handleSaveTasks}
         />
       )}
@@ -643,12 +854,12 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           key={selectedTask.id}
           open={!!selectedTask}
           task={selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={closeTaskDetails}
           availableTags={settings.tags}
           availableAssignees={uniqueAssignees}
           onDelete={(id) => {
             handleSaveTasks(tasks.filter(t => t.id !== id));
-            setSelectedTask(null);
+            closeTaskDetails();
           }}
           onSave={(updatedTask) => {
             const exists = tasks.some(t => t.id === updatedTask.id);
@@ -656,7 +867,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
               ? tasks.map(t => t.id === updatedTask.id ? updatedTask : t)
               : [...tasks, updatedTask]
             );
-            setSelectedTask(null);
+            closeTaskDetails();
           }}
         />
       )}

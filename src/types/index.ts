@@ -28,6 +28,8 @@ export interface Subtask {
   id: string;
   title: string;
   completed: boolean;
+  isToday: boolean;
+  completedAt: string | null;
   sortOrder?: number;
 }
 

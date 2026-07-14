@@ -68,6 +68,12 @@ Vercel or the portable Node server:
 ```powershell
 npm.cmd run build
 ```
+
+For Vercel, add `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` under Project Settings > Environment
+Variables for both Production and Preview. Redeploy after changing either
+value because Next.js embeds `NEXT_PUBLIC_*` variables during the build.
+
 Cloudflare Pages static export:
 
 ```powershell

@@ -14,12 +14,14 @@ import {
 import {
   Add as AddIcon,
   AssignmentTurnedIn as AssignmentTurnedInIcon,
+  CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
   DragIndicator as DragIndicatorIcon,
   Edit as EditIcon,
   FilterList as FilterListIcon,
   Person as PersonIcon,
   RestartAlt as RestartAltIcon,
+  Today as TodayIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   ZoomIn as ZoomInIcon,
@@ -51,13 +53,13 @@ const MIN_NODE_WIDTH = 56;
 const TAG_MAX_WIDTH = 200;
 const TASK_MAX_WIDTH = 400;
 const SUBTASK_MAX_WIDTH = 600;
-const NODE_ACTION_ZONE_WIDTH = 48;
+const NODE_ACTION_ZONE_WIDTH = 68;
 const MIN_ZOOM = 0.45;
 const MAX_ZOOM = 2.2;
 const ZOOM_STEP = 1.14;
 const MINDMAP_BADGE_SIZE = 26;
 
-type MindmapViewMode = 'tag' | 'assignee' | 'status';
+type MindmapViewMode = 'tag' | 'assignee' | 'status' | 'today';
 type MindmapNodeType = 'root' | 'tag' | 'task' | 'subtask';
 
 type MindmapNode = {
@@ -156,7 +158,11 @@ function readPersistedState(notebookId: string): PersistedMindmapState | null {
         : [],
       filteredTags: Array.isArray(parsed.filteredTags) ? parsed.filteredTags.filter((tag): tag is string => typeof tag === 'string') : [],
       showAllTasks: parsed.showAllTasks === true,
-      viewMode: parsed.viewMode === 'assignee' || parsed.viewMode === 'status' ? parsed.viewMode : 'tag',
+      viewMode: parsed.viewMode === 'assignee'
+        || parsed.viewMode === 'status'
+        || parsed.viewMode === 'today'
+        ? parsed.viewMode
+        : 'tag',
       pan: {
         x: typeof parsed.pan?.x === 'number' ? parsed.pan.x : 0,
         y: typeof parsed.pan?.y === 'number' ? parsed.pan.y : 0,
@@ -301,6 +307,12 @@ export default function TaskMindmapDialog({
     return tasks.filter((task) => task.status !== 'CANCELLED' && task.status !== 'DONE');
   }, [showAllTasks, tasks]);
 
+  const todayMindmapItems = useMemo(() => tasks
+    .flatMap((task) => task.subtasks
+      .filter((subtask) => subtask.isToday)
+      .map((subtask) => ({ task, subtask })))
+    .sort((left, right) => compareSubtaskOrder(left.subtask, right.subtask)), [tasks]);
+
   const tagLabels = useMemo(() => {
     const visibleTaskCounts = new Map<string, number>();
     for (const task of visibleTasks) {
@@ -397,7 +409,46 @@ export default function TaskMindmapDialog({
       };
     };
 
-    if (viewMode === 'tag') {
+    if (viewMode === 'today') {
+      const rootNode: MindmapNode = {
+        id: 'today-root',
+        type: 'root',
+        label: '##TODAY',
+        x: ROOT_X,
+        y: TOP_OFFSET,
+        width: getNodeWidth('##TODAY', 'root'),
+        height: TAG_HEIGHT,
+        childCount: todayMindmapItems.length,
+      };
+
+      todayMindmapItems.forEach(({ task, subtask }, index) => {
+        const subtaskNode: MindmapNode = {
+          id: `today-subtask:${task.id}:${subtask.id}`,
+          type: 'subtask',
+          label: subtask.title,
+          x: TAG_X,
+          y: TOP_OFFSET + index * (SUBTASK_HEIGHT + SUBTASK_GAP),
+          width: getNodeWidth(subtask.title, 'subtask'),
+          height: SUBTASK_HEIGHT,
+          completed: subtask.completed,
+          subtask,
+          parentTask: task,
+        };
+        nodes.push(subtaskNode);
+        connections.push({
+          id: `today-root-subtask:${task.id}:${subtask.id}`,
+          from: rootNode,
+          to: subtaskNode,
+        });
+      });
+
+      const todayListHeight = todayMindmapItems.length > 0
+        ? todayMindmapItems.length * SUBTASK_HEIGHT + (todayMindmapItems.length - 1) * SUBTASK_GAP
+        : TAG_HEIGHT;
+      rootNode.y = TOP_OFFSET + (todayListHeight - TAG_HEIGHT) / 2;
+      nodes.push(rootNode);
+      cursorY = TOP_OFFSET + todayListHeight + TAG_GAP;
+    } else if (viewMode === 'tag') {
       for (const tag of tagLabels) {
         const tagTasks = visibleTasks
           .filter((task) => (task.tags || []).includes(tag))
@@ -554,7 +605,7 @@ export default function TaskMindmapDialog({
       height: maxY + BOTTOM_PADDING,
       rootCount: viewMode === 'tag' ? tagLabels.length : nodes.filter((node) => node.type === 'root').length,
     };
-  }, [allTagLabels, expandedTags, expandedTaskIds, filteredTags, showAllTasks, tagLabels, viewMode, visibleTasks]);
+  }, [allTagLabels, expandedTags, expandedTaskIds, filteredTags, showAllTasks, tagLabels, todayMindmapItems, viewMode, visibleTasks]);
 
   const applyZoom = (nextZoom: number, originX?: number, originY?: number) => {
     const viewport = viewportRef.current;
@@ -658,6 +709,25 @@ export default function TaskMindmapDialog({
   const handleOpenTaskDetails = (event: React.MouseEvent, task: Task) => {
     event.stopPropagation();
     onRequestTaskDetails(task);
+  };
+
+  const handleMarkSubtaskDone = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    parentTask: Task,
+    subtask: Subtask
+  ) => {
+    event.stopPropagation();
+    if (subtask.completed) return;
+
+    const completedAt = new Date().toISOString();
+    onSaveTasks(tasks.map((task) => task.id === parentTask.id ? {
+      ...task,
+      subtasks: task.subtasks.map((candidate) => candidate.id === subtask.id ? {
+        ...candidate,
+        completed: true,
+        completedAt,
+      } : candidate),
+    } : task));
   };
 
   const clearDragState = () => {
@@ -932,6 +1002,36 @@ export default function TaskMindmapDialog({
               </Tooltip>
             )}
 
+            {viewMode === 'today' && isSubtask && node.parentTask && node.subtask && !node.subtask.completed && (
+              <Tooltip title="Mark subtask Done">
+                <Box
+                  component="button"
+                  type="button"
+                  aria-label="Mark subtask Done"
+                  onClick={(event) => handleMarkSubtaskDone(event, node.parentTask!, node.subtask!)}
+                  sx={{
+                    width: 18,
+                    height: 18,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    p: 0,
+                    borderRadius: '6px',
+                    color: NEO_MINT.textBody,
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      color: NEO_MINT.success,
+                      backgroundColor: 'rgba(255, 255, 255, 0.64)',
+                    },
+                  }}
+                >
+                  <CheckCircleIcon sx={{ fontSize: 15 }} />
+                </Box>
+              </Tooltip>
+            )}
+
             {((isTask && node.task) || (isSubtask && node.parentTask)) && (
               <Tooltip title={isTask ? 'Open details' : 'Open task details'}>
                 <Box
@@ -1141,10 +1241,27 @@ export default function TaskMindmapDialog({
               Task mindmap
             </Typography>
             <Typography sx={{ fontSize: '12px', color: NEO_MINT.textMuted, fontWeight: 600 }}>
-              {viewMode === 'tag' ? 'Tag' : viewMode === 'assignee' ? 'Assignee' : 'Status'} view - {layout.rootCount} roots - {visibleTasks.length}/{tasks.length} tasks
+              {viewMode === 'today'
+                ? `Today view - ${todayMindmapItems.length} subtasks`
+                : `${viewMode === 'tag' ? 'Tag' : viewMode === 'assignee' ? 'Assignee' : 'Status'} view - ${layout.rootCount} roots - ${visibleTasks.length}/${tasks.length} tasks`}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Tooltip title={viewMode === 'today' ? 'Back to Tag view' : 'Show Today mindmap'}>
+              <IconButton
+                aria-label="Show Today mindmap"
+                onClick={() => setViewMode('today')}
+                sx={{
+                  borderRadius: '8px',
+                  color: viewMode === 'today' ? NEO_MINT.primary : NEO_MINT.textTitle,
+                  border: `1px solid ${viewMode === 'today' ? NEO_MINT.primary : NEO_MINT.cardBorderSoft}`,
+                  backgroundColor: viewMode === 'today' ? 'var(--primary-subtle)' : NEO_MINT.surfaceSoft,
+                  '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
+                }}
+              >
+                <TodayIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title={showAllTasks ? 'Hide Done, Cancelled, and completed subtasks' : 'Show all tasks'}>
               <IconButton
                 onClick={() => setShowAllTasks((current) => !current)}

@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import type { DragEvent } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Autocomplete, Button, Checkbox, IconButton, TextField, Box, Select, MenuItem, Typography
+  Autocomplete, Button, Checkbox, FormControlLabel, IconButton, Switch, TextField, Box, Select, MenuItem, Typography
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
+import { Add, Delete, DragIndicator } from '@mui/icons-material';
 import 'react-quill-new/dist/quill.snow.css';
 import { Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { applyManualProgress, getTaskProgress, MANUAL_PROGRESS_OPTIONS, syncTaskProgress } from '@/utils/taskProgress';
+import { compareSubtaskOrder } from '@/utils/taskOrdering';
+import { reorderSubtasksWithinTask } from '@/utils/todayTasks';
 
 
 const STATUS_ORDER: Record<TaskStatus, number> = {
@@ -109,8 +112,13 @@ type RichTextEditorProps = {
 };
 
 export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete, availableTags, availableAssignees, topLayer = false }: TaskDetailDialogProps) {
-  const [localTask, setLocalTask] = useState<Task | null>(() => task ? { ...task } : null);
+  const [localTask, setLocalTask] = useState<Task | null>(() => task ? {
+    ...task,
+    subtasks: [...task.subtasks].sort(compareSubtaskOrder),
+  } : null);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
+  const [dragOverSubtaskId, setDragOverSubtaskId] = useState<string | null>(null);
   const [ReactQuill, setReactQuill] = useState<React.ComponentType<RichTextEditorProps> | null>(null);
 
   useEffect(() => {
@@ -159,7 +167,13 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
       ...localTask,
       subtasks: [
         ...(localTask.subtasks || []),
-        { id: crypto.randomUUID(), title, completed: false },
+        {
+          id: crypto.randomUUID(),
+          title,
+          completed: false,
+          isToday: false,
+          completedAt: null,
+        },
       ],
     }));
     setNewSubtaskTitle('');
@@ -169,9 +183,24 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
     setLocalTask(syncTaskProgress({
       ...localTask,
       subtasks: (localTask.subtasks || []).map((subtask) =>
-        subtask.id === id ? { ...subtask, completed: !subtask.completed } : subtask
+        subtask.id === id
+          ? {
+              ...subtask,
+              completed: !subtask.completed,
+              completedAt: subtask.completed ? null : new Date().toISOString(),
+            }
+          : subtask
       ),
     }));
+  };
+
+  const handleToggleToday = (id: string) => {
+    setLocalTask({
+      ...localTask,
+      subtasks: (localTask.subtasks || []).map((subtask) =>
+        subtask.id === id ? { ...subtask, isToday: !subtask.isToday } : subtask
+      ),
+    });
   };
 
   const handleDeleteSubtask = (id: string) => {
@@ -179,6 +208,32 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
       ...localTask,
       subtasks: (localTask.subtasks || []).filter((subtask) => subtask.id !== id),
     }));
+  };
+
+  const handleSubtaskDragStart = (event: DragEvent<HTMLElement>, subtaskId: string) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/x-subtask-id', subtaskId);
+    setDraggedSubtaskId(subtaskId);
+  };
+
+  const handleSubtaskDragOver = (event: DragEvent<HTMLElement>, subtaskId: string) => {
+    if (!draggedSubtaskId || draggedSubtaskId === subtaskId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragOverSubtaskId(subtaskId);
+  };
+
+  const handleSubtaskDrop = (event: DragEvent<HTMLElement>, targetSubtaskId: string) => {
+    event.preventDefault();
+    const sourceSubtaskId = event.dataTransfer.getData('application/x-subtask-id') || draggedSubtaskId;
+    if (sourceSubtaskId) {
+      setLocalTask((current) => current ? {
+        ...current,
+        subtasks: reorderSubtasksWithinTask(current.subtasks, sourceSubtaskId, targetSubtaskId),
+      } : current);
+    }
+    setDraggedSubtaskId(null);
+    setDragOverSubtaskId(null);
   };
 
   const hasSubtasks = (localTask.subtasks || []).length > 0;
@@ -449,6 +504,9 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
                   {(localTask.subtasks || []).map((subtask, index) => (
                     <Box
                       key={subtask.id}
+                      onDragOver={(event) => handleSubtaskDragOver(event, subtask.id)}
+                      onDrop={(event) => handleSubtaskDrop(event, subtask.id)}
+                      onDragLeave={() => setDragOverSubtaskId(null)}
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -456,9 +514,29 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
                         px: 1.25,
                         py: 1,
                         borderTop: index === 0 ? 'none' : '1px solid var(--surface-muted)',
+                        outline: dragOverSubtaskId === subtask.id ? `2px solid ${NEO_MINT.primary}` : 'none',
+                        outlineOffset: -2,
                         '&:hover': { backgroundColor: 'var(--primary-subtle)' },
                       }}
                     >
+                      <Box
+                        component="span"
+                        draggable
+                        aria-label="Drag subtask to change priority"
+                        onDragStart={(event) => handleSubtaskDragStart(event, subtask.id)}
+                        onDragEnd={() => {
+                          setDraggedSubtaskId(null);
+                          setDragOverSubtaskId(null);
+                        }}
+                        sx={{
+                          display: 'inline-flex',
+                          color: NEO_MINT.textMuted,
+                          cursor: 'grab',
+                          '&:active': { cursor: 'grabbing' },
+                        }}
+                      >
+                        <DragIndicator sx={{ fontSize: 18 }} />
+                      </Box>
                       <Checkbox
                         size="small"
                         checked={subtask.completed}
@@ -481,6 +559,28 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
                       >
                         {subtask.title}
                       </Typography>
+                      <FormControlLabel
+                        label="Today"
+                        labelPlacement="start"
+                        control={(
+                          <Switch
+                            size="small"
+                            checked={subtask.isToday}
+                            onChange={() => handleToggleToday(subtask.id)}
+                            color="primary"
+                          />
+                        )}
+                        sx={{
+                          m: 0,
+                          gap: 0.25,
+                          flexShrink: 0,
+                          '& .MuiFormControlLabel-label': {
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: subtask.isToday ? NEO_MINT.primary : NEO_MINT.textMuted,
+                          },
+                        }}
+                      />
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteSubtask(subtask.id)}
@@ -597,7 +697,9 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
           onClick={() => onSave({
             ...syncTaskProgress(localTask),
             assignee: normalizeAssigneeName(localTask.assignee || ''),
-            subtasks: (localTask.subtasks || []).filter((subtask) => subtask.title.trim() !== ''),
+            subtasks: (localTask.subtasks || [])
+              .filter((subtask) => subtask.title.trim() !== '')
+              .map((subtask, index) => ({ ...subtask, sortOrder: index })),
             details: localTask.details.replace(/&nbsp;/g, ' ')
           })}
           variant="contained"
