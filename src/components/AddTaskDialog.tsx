@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import { Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
+import { extractTasksWithAi } from '@/lib/supabase/functions';
 
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
@@ -76,22 +77,15 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
   const handleParse = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/extract-task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: AI_CONTEXT_PREFIX + freetext }),
-      });
-      const data = await res.json();
-      if (data.error) { alert(data.error); return; }
+      const data = await extractTasksWithAi(AI_CONTEXT_PREFIX + freetext);
       if (Array.isArray(data) && data.length > 0) {
         setParsedTasks(data);
         setCurrentIndex(0);
       } else {
         alert('No tasks found. Please check your notes.');
       }
-    } catch (e) {
-      console.error(e);
-      alert('Error extracting tasks. Please try again.');
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Error extracting tasks. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -125,8 +119,8 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
     if (!parsedTasks) return;
     const nonEmpty = parsedTasks.filter(pt => pt.title && pt.title.trim() !== '');
     if (nonEmpty.length === 0) { alert('Please enter a title for at least 1 task.'); return; }
-    const newTasks: Task[] = nonEmpty.map((pt, i) => ({
-      id: Date.now() + i,
+    const newTasks: Task[] = nonEmpty.map((pt) => ({
+      id: crypto.randomUUID(),
       createdAt: pt.createdAt || new Date().toISOString(),
       inProgressAt: pt.inProgressAt || null,
       doneAt: pt.doneAt || null,

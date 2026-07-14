@@ -46,7 +46,7 @@ interface TaskDetailDialogProps {
   task: Task | null;
   onClose: () => void;
   onSave: (task: Task) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   availableTags: string[];
   availableAssignees: string[];
   topLayer?: boolean;
@@ -159,13 +159,13 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
       ...localTask,
       subtasks: [
         ...(localTask.subtasks || []),
-        { id: Date.now(), title, completed: false },
+        { id: crypto.randomUUID(), title, completed: false },
       ],
     }));
     setNewSubtaskTitle('');
   };
 
-  const handleToggleSubtask = (id: number) => {
+  const handleToggleSubtask = (id: string) => {
     setLocalTask(syncTaskProgress({
       ...localTask,
       subtasks: (localTask.subtasks || []).map((subtask) =>
@@ -174,7 +174,7 @@ export default function TaskDetailDialog({ open, task, onClose, onSave, onDelete
     }));
   };
 
-  const handleDeleteSubtask = (id: number) => {
+  const handleDeleteSubtask = (id: string) => {
     setLocalTask(syncTaskProgress({
       ...localTask,
       subtasks: (localTask.subtasks || []).filter((subtask) => subtask.id !== id),

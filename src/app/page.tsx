@@ -5,7 +5,7 @@ import {
   Box, AppBar, Toolbar, Typography, IconButton, Button, 
   Drawer, CircularProgress
 } from '@mui/material';
-import { Settings as SettingsIcon, Add as AddIcon, Menu as MenuIcon, Close as CloseIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon, Add as AddIcon, Menu as MenuIcon, Close as CloseIcon, AccountTree as AccountTreeIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import TaskList from '@/components/TaskList';
 import FilterPanel, { type FilterState } from '@/components/FilterPanel';
 import AddTaskDialog from '@/components/AddTaskDialog';
@@ -14,11 +14,24 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskAssistantPanel from '@/components/TaskAssistantPanel';
 import TaskMindmapDialog from '@/components/TaskMindmapDialog';
 import NotebookDialog from '@/components/NotebookDialog';
-import { Notebook, Task, Settings } from '@/types';
+import type { Notebook, Task, Settings, UserProfile } from '@/types';
 import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import LoginScreen from '@/components/LoginScreen';
+import { useAuth } from '@/components/AuthProvider';
+import {
+  createNotebook,
+  deleteNotebook,
+  listNotebooks,
+  readSettings,
+  readTasks,
+  renameNotebook,
+  saveTasks,
+  touchNotebook,
+  writeSettings,
+} from '@/lib/supabase/data';
 
 const DEFAULT_DRAWER_WIDTH = 288;
 const MIN_DRAWER_WIDTH = 220;
@@ -40,8 +53,24 @@ const todayLabel = new Intl.DateTimeFormat('en-US', {
 
 
 export default function Home() {
+  const { loading, profile, session, signOut } = useAuth();
+
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', backgroundColor: 'var(--app-bg)' }}>
+        <CircularProgress sx={{ color: NEO_MINT.primary }} />
+      </Box>
+    );
+  }
+
+  if (!session || !profile) return <LoginScreen />;
+
+  return <TaskManagerApp profile={profile} onSignOut={signOut} />;
+}
+
+function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOut: () => Promise<void> }) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [settings, setSettings] = useState<Settings>({ geminiApiKey: '', tags: [], assistantIntents: [] });
+  const [settings, setSettings] = useState<Settings>({ tags: [], assistantIntents: [] });
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [activeNotebook, setActiveNotebook] = useState<Notebook | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,32 +101,35 @@ export default function Home() {
       try {
         const url = new URL(window.location.href);
         const requestedNotebookId = url.searchParams.get('notebookId');
-        const notebooksRes = await fetch('/api/notebooks');
-        const notebooksData = await notebooksRes.json();
-        const fallbackNotebook = notebooksData.activeNotebook as Notebook;
-        const notebookId = requestedNotebookId || String(fallbackNotebook.id);
-        const activateRes = await fetch(`/api/notebooks/${notebookId}/activate`, { method: 'POST' });
-        const activateData = await activateRes.json();
-        const currentNotebook = (activateData.activeNotebook || fallbackNotebook) as Notebook;
+        let availableNotebooks = await listNotebooks(profile);
+        if (availableNotebooks.length === 0 && profile.role === 'superadmin') {
+          const mainNotebook = await createNotebook('MAIN', profile);
+          availableNotebooks = [mainNotebook];
+        }
+        const currentNotebook =
+          availableNotebooks.find((notebook) => notebook.id === requestedNotebookId) ?? availableNotebooks[0] ?? null;
+        if (!currentNotebook) {
+          if (isActive) setNotebooks([]);
+          return;
+        }
+        await touchNotebook(currentNotebook.id, currentNotebook.permissions.manageNotebook);
         if (!requestedNotebookId) {
-          url.searchParams.set('notebookId', String(currentNotebook.id));
+          url.searchParams.set('notebookId', currentNotebook.id);
           window.history.replaceState(null, '', url.toString());
         }
 
-        const [tasksRes, settingsRes] = await Promise.all([
-          fetch(`/api/tasks?notebookId=${currentNotebook.id}`),
-          fetch(`/api/settings?notebookId=${currentNotebook.id}`)
+        const [tasksData, settingsData] = await Promise.all([
+          readTasks(currentNotebook.id),
+          readSettings(currentNotebook.id),
         ]);
-        const tasksData = await tasksRes.json();
-        const settingsData = await settingsRes.json();
 
         if (!isActive) return;
-        setNotebooks(Array.isArray(activateData.notebooks) ? activateData.notebooks : notebooksData.notebooks || []);
+        setNotebooks(availableNotebooks);
         setActiveNotebook(currentNotebook);
-        setTasks(Array.isArray(tasksData) ? tasksData : []);
+        setTasks(tasksData);
         setSettings(settingsData);
-      } catch (e) {
-        console.error(e);
+      } catch (loadError: unknown) {
+        window.alert(loadError instanceof Error ? loadError.message : 'Không thể tải dữ liệu ứng dụng.');
       } finally {
         if (isActive) {
           setLoading(false);
@@ -108,22 +140,19 @@ export default function Home() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [profile]);
 
   const reloadNotebookData = async (notebook: Notebook) => {
     setLoading(true);
     try {
-      const [tasksRes, settingsRes, notebooksRes] = await Promise.all([
-        fetch(`/api/tasks?notebookId=${notebook.id}`),
-        fetch(`/api/settings?notebookId=${notebook.id}`),
-        fetch('/api/notebooks'),
+      const [tasksData, settingsData, notebooksData] = await Promise.all([
+        readTasks(notebook.id),
+        readSettings(notebook.id),
+        listNotebooks(profile),
       ]);
-      const tasksData = await tasksRes.json();
-      const settingsData = await settingsRes.json();
-      const notebooksData = await notebooksRes.json();
-      setTasks(Array.isArray(tasksData) ? tasksData : []);
+      setTasks(tasksData);
       setSettings(settingsData);
-      setNotebooks(Array.isArray(notebooksData.notebooks) ? notebooksData.notebooks : []);
+      setNotebooks(notebooksData);
       setActiveNotebook(notebook);
     } finally {
       setLoading(false);
@@ -172,20 +201,21 @@ export default function Home() {
   }, [drawerWidth]);
 
   const handleSaveTasks = async (newTasks: Task[]) => {
+    if (!activeNotebook?.permissions.manageTasks) {
+      window.alert('Bạn không có quyền thay đổi task trong notebook này.');
+      return;
+    }
     const tasksWithTimestamps = applyTaskTimestamps(applyProgressRules(newTasks), tasks);
     setTasks(tasksWithTimestamps);
-    const response = await fetch(`/api/tasks?notebookId=${activeNotebook?.id || ''}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tasksWithTimestamps)
-    });
-    const data = await response.json();
-    if (response.ok && Array.isArray(data.tasks)) {
-      setTasks(data.tasks);
+    try {
+      setTasks(await saveTasks(activeNotebook.id, tasks, tasksWithTimestamps));
+    } catch (saveError: unknown) {
+      setTasks(tasks);
+      window.alert(saveError instanceof Error ? saveError.message : 'Không thể lưu task.');
     }
   };
 
-  const openNotebookWindow = (notebookId: number) => {
+  const openNotebookWindow = (notebookId: string) => {
     window.open(`/?notebookId=${notebookId}`, '_blank');
   };
 
@@ -353,7 +383,7 @@ export default function Home() {
               {todayLabel}
             </Typography>
             <IconButton
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => void onSignOut()}
               sx={{
                 p: 0.9,
                 color: NEO_MINT.textTitle,
@@ -363,8 +393,23 @@ export default function Home() {
                 '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
               }}
             >
-              <SettingsIcon sx={{ fontSize: 22 }} />
+              <LogoutIcon sx={{ fontSize: 22 }} />
             </IconButton>
+            {activeNotebook?.permissions.manageSettings && (
+              <IconButton
+                onClick={() => setIsSettingsOpen(true)}
+                sx={{
+                  p: 0.9,
+                  color: NEO_MINT.textTitle,
+                  borderRadius: '8px',
+                  border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                  backgroundColor: 'var(--surface-soft)',
+                  '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
+                }}
+              >
+                <SettingsIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
@@ -487,7 +532,7 @@ export default function Home() {
             <TaskAssistantPanel
               tasks={tasks}
               assistantIntents={settings.assistantIntents || []}
-              notebookId={activeNotebook?.id || 0}
+              notebookId={activeNotebook?.id || ''}
               onTaskClick={(task) => setSelectedTask(task)}
             />
 
@@ -537,21 +582,9 @@ export default function Home() {
           settings={settings}
           onClose={() => setIsSettingsOpen(false)}
           onSave={async (newSettings) => {
+            if (!activeNotebook) return;
+            await writeSettings(activeNotebook.id, newSettings);
             setSettings(newSettings);
-            await fetch(`/api/settings?notebookId=${activeNotebook?.id || ''}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newSettings)
-            });
-            setIsSettingsOpen(false);
-          }}
-          onImportData={async (newTasks, newSettings) => {
-            setTasks(newTasks);
-            setSettings(newSettings);
-            const notebooksRes = await fetch('/api/notebooks');
-            const notebooksData = await notebooksRes.json();
-            if (Array.isArray(notebooksData.notebooks)) setNotebooks(notebooksData.notebooks);
-            if (notebooksData.activeNotebook) setActiveNotebook(notebooksData.activeNotebook);
             setIsSettingsOpen(false);
           }}
         />
@@ -563,35 +596,29 @@ export default function Home() {
           notebooks={notebooks}
           activeNotebook={activeNotebook}
           onClose={() => setIsNotebookOpen(false)}
+          canCreate={profile.role === 'superadmin'}
           onOpen={openNotebookWindow}
           onCreate={async (name) => {
-            const response = await fetch('/api/notebooks', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name }),
-            });
-            const data = await response.json();
-            if (Array.isArray(data.notebooks)) setNotebooks(data.notebooks);
-            if (data.notebook) openNotebookWindow(data.notebook.id);
+            const notebook = await createNotebook(name, profile);
+            setNotebooks(await listNotebooks(profile));
+            openNotebookWindow(notebook.id);
           }}
           onRename={async (id, name) => {
-            const response = await fetch(`/api/notebooks/${id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name }),
-            });
-            const data = await response.json();
-            if (Array.isArray(data.notebooks)) setNotebooks(data.notebooks);
-            if (data.notebook && activeNotebook?.id === data.notebook.id) setActiveNotebook(data.notebook);
+            await renameNotebook(id, name);
+            const nextNotebooks = await listNotebooks(profile);
+            setNotebooks(nextNotebooks);
+            if (activeNotebook?.id === id) {
+              setActiveNotebook(nextNotebooks.find((notebook) => notebook.id === id) ?? null);
+            }
           }}
           onDelete={async (id) => {
-            const response = await fetch(`/api/notebooks/${id}`, { method: 'DELETE' });
-            const data = await response.json();
-            if (Array.isArray(data.notebooks)) setNotebooks(data.notebooks);
-            if (data.activeNotebook && activeNotebook?.id === id) {
-              await reloadNotebookData(data.activeNotebook);
+            await deleteNotebook(id);
+            const nextNotebooks = await listNotebooks(profile);
+            setNotebooks(nextNotebooks);
+            if (activeNotebook?.id === id && nextNotebooks[0]) {
+              await reloadNotebookData(nextNotebooks[0]);
               const url = new URL(window.location.href);
-              url.searchParams.set('notebookId', String(data.activeNotebook.id));
+              url.searchParams.set('notebookId', nextNotebooks[0].id);
               window.history.replaceState(null, '', url.toString());
             }
           }}
@@ -604,7 +631,7 @@ export default function Home() {
           onClose={() => setIsMindmapOpen(false)}
           tasks={tasks}
           availableTags={settings.tags}
-          notebookId={activeNotebook?.id || 0}
+          notebookId={activeNotebook?.id || ''}
           isTaskDetailsOpen={!!selectedTask}
           onRequestTaskDetails={(task) => setSelectedTask(task)}
           onSaveTasks={handleSaveTasks}

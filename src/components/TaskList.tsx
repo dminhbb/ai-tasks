@@ -78,7 +78,7 @@ const actionBtnSx = {
   textTransform: 'none',
 };
 
-function appendTasksToStatus(tasks: Task[], ids: number[], status: TaskStatus) {
+function appendTasksToStatus(tasks: Task[], ids: string[], status: TaskStatus) {
   let nextSortOrder = Math.max(
     -1,
     ...tasks
@@ -107,10 +107,10 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   const [selectedAssigneeToAssign, setSelectedAssigneeToAssign] = useState('');
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-  const [dragOverTaskId, setDragOverTaskId] = useState<number | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
 
-  const handleStatusChange = (id: number, newStatus: TaskStatus) => {
+  const handleStatusChange = (id: string, newStatus: TaskStatus) => {
     const currentTask = tasks.find(t => t.id === id);
     const nextSortOrder = Math.max(
       -1,
@@ -129,7 +129,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     }));
   };
 
-  const handleDragStart = (event: DragEvent<HTMLElement>, taskId: number) => {
+  const handleDragStart = (event: DragEvent<HTMLElement>, taskId: string) => {
     event.stopPropagation();
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(taskId));
@@ -150,7 +150,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     event.preventDefault();
     event.stopPropagation();
 
-    const draggedId = Number(event.dataTransfer.getData('text/plain') || draggedTaskId);
+    const draggedId = event.dataTransfer.getData('text/plain') || draggedTaskId;
     const draggedTask = tasks.find(t => t.id === draggedId);
     if (!draggedTask || draggedTask.status !== targetTask.status || draggedTask.id === targetTask.id) {
       setDraggedTaskId(null);
@@ -171,8 +171,8 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   const getEventRowTask = (event: DragEvent<HTMLElement>) => {
     const target = event.target instanceof HTMLElement ? event.target : null;
     const rowElement = target?.closest('[data-id]');
-    const rowId = Number(rowElement?.getAttribute('data-id'));
-    return Number.isFinite(rowId) ? tasks.find(t => t.id === rowId) : undefined;
+    const rowId = rowElement?.getAttribute('data-id');
+    return rowId ? tasks.find(t => t.id === rowId) : undefined;
   };
 
   const handleGridDragOver = (event: DragEvent<HTMLElement>) => {
@@ -185,18 +185,18 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     if (targetTask) handleDrop(event, targetTask);
   };
 
-  const handleDeleteSelected = (ids: number[]) => {
+  const handleDeleteSelected = (ids: string[]) => {
     onSaveTasks(tasks.filter(t => !ids.includes(t.id)));
     setSelectionModel({ type: 'include', ids: new Set() });
     setDeleteConfirmOpen(false);
   };
 
-  const handleHideSelected = (ids: number[]) => {
+  const handleHideSelected = (ids: string[]) => {
     onSaveTasks(appendTasksToStatus(tasks, ids, 'CANCELLED'));
     setSelectionModel({ type: 'include', ids: new Set() });
   };
 
-  const handleAssignTag = (ids: number[]) => {
+  const handleAssignTag = (ids: string[]) => {
     if (!selectedTagToAssign) return;
     onSaveTasks(tasks.map(t => {
       if (ids.includes(t.id) && !t.tags.includes(selectedTagToAssign)) {
@@ -208,14 +208,14 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     setTagDialogOpen(false);
   };
 
-  const handleAssignStatus = (ids: number[]) => {
+  const handleAssignStatus = (ids: string[]) => {
     if (!selectedStatusToAssign) return;
     onSaveTasks(appendTasksToStatus(tasks, ids, selectedStatusToAssign as TaskStatus));
     setSelectionModel({ type: 'include', ids: new Set() });
     setStatusDialogOpen(false);
   };
 
-  const handleAssignAssignee = (ids: number[]) => {
+  const handleAssignAssignee = (ids: string[]) => {
     onSaveTasks(tasks.map(t => ids.includes(t.id) ? { ...t, assignee: selectedAssigneeToAssign } : t));
     setSelectionModel({ type: 'include', ids: new Set() });
     setAssigneeDialogOpen(false);
@@ -545,13 +545,13 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     return 0;
   });
 
-  const statusBorderRows = new Set<number>();
+  const statusBorderRows = new Set<string>();
   for (let i = 0; i < rows.length - 1; i++) {
     if (rows[i].statusSort !== rows[i + 1].statusSort) statusBorderRows.add(rows[i].id);
   }
 
   const actualSelectedIds = selectionModel.type === 'include'
-    ? (Array.from(selectionModel.ids || []) as number[])
+    ? Array.from(selectionModel.ids || []).map(String)
     : rows.map(r => r.id).filter(id => !(selectionModel.ids || new Set()).has(id));
 
   const hasSelection = actualSelectedIds.length > 0;

@@ -86,7 +86,7 @@ type MindmapConnection = {
 
 type PersistedMindmapState = {
   expandedTags: string[];
-  expandedTaskIds: number[];
+  expandedTaskIds: string[];
   filteredTags: string[];
   showAllTasks: boolean;
   viewMode: MindmapViewMode;
@@ -99,7 +99,7 @@ interface TaskMindmapDialogProps {
   onClose: () => void;
   tasks: Task[];
   availableTags: string[];
-  notebookId: number;
+  notebookId: string;
   isTaskDetailsOpen: boolean;
   onRequestTaskDetails: (task: Task) => void;
   onSaveTasks: (tasks: Task[]) => void;
@@ -138,11 +138,11 @@ function createPath(from: MindmapNode, to: MindmapNode) {
   return `M ${x1} ${y1} C ${x1 + controlOffset} ${y1}, ${x2 - controlOffset} ${y2}, ${x2} ${y2}`;
 }
 
-function storageKeyForNotebook(notebookId: number) {
+function storageKeyForNotebook(notebookId: string) {
   return `${STORAGE_KEY}:${notebookId || 'default'}`;
 }
 
-function readPersistedState(notebookId: number): PersistedMindmapState | null {
+function readPersistedState(notebookId: string): PersistedMindmapState | null {
   if (typeof window === 'undefined') return null;
 
   try {
@@ -152,7 +152,7 @@ function readPersistedState(notebookId: number): PersistedMindmapState | null {
     return {
       expandedTags: Array.isArray(parsed.expandedTags) ? parsed.expandedTags.filter((tag): tag is string => typeof tag === 'string') : [],
       expandedTaskIds: Array.isArray(parsed.expandedTaskIds)
-        ? parsed.expandedTaskIds.filter((id): id is number => typeof id === 'number' && Number.isFinite(id))
+        ? parsed.expandedTaskIds.filter((id): id is string => typeof id === 'string')
         : [],
       filteredTags: Array.isArray(parsed.filteredTags) ? parsed.filteredTags.filter((tag): tag is string => typeof tag === 'string') : [],
       showAllTasks: parsed.showAllTasks === true,
@@ -168,7 +168,7 @@ function readPersistedState(notebookId: number): PersistedMindmapState | null {
   }
 }
 
-function getInitialMindmapState(notebookId: number): PersistedMindmapState {
+function getInitialMindmapState(notebookId: string): PersistedMindmapState {
   return readPersistedState(notebookId) || getDefaultMindmapState();
 }
 
@@ -188,7 +188,7 @@ function makeTaskForTag(tag: string): Task {
   const now = new Date().toISOString();
 
   return {
-    id: Date.now(),
+    id: crypto.randomUUID(),
     createdAt: now,
     inProgressAt: null,
     doneAt: null,
@@ -223,10 +223,10 @@ export default function TaskMindmapDialog({
   const [mindmapState, setMindmapState] = useState<PersistedMindmapState>(() => getInitialMindmapState(notebookId));
   const [isPanning, setIsPanning] = useState(false);
   const [tagFilterAnchor, setTagFilterAnchor] = useState<HTMLElement | null>(null);
-  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-  const [dragOverTaskId, setDragOverTaskId] = useState<number | null>(null);
-  const [draggedSubtask, setDraggedSubtask] = useState<{ taskId: number; subtaskId: number } | null>(null);
-  const [dragOverSubtask, setDragOverSubtask] = useState<{ taskId: number; subtaskId: number } | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [draggedSubtask, setDraggedSubtask] = useState<{ taskId: string; subtaskId: string } | null>(null);
+  const [dragOverSubtask, setDragOverSubtask] = useState<{ taskId: string; subtaskId: string } | null>(null);
   const { expandedTags, expandedTaskIds, filteredTags, showAllTasks, viewMode, pan, zoom } = mindmapState;
 
   const setExpandedTags = (value: React.SetStateAction<string[]>) => {
@@ -236,7 +236,7 @@ export default function TaskMindmapDialog({
     }));
   };
 
-  const setExpandedTaskIds = (value: React.SetStateAction<number[]>) => {
+  const setExpandedTaskIds = (value: React.SetStateAction<string[]>) => {
     setMindmapState((current) => ({
       ...current,
       expandedTaskIds: typeof value === 'function' ? value(current.expandedTaskIds) : value,
@@ -690,7 +690,7 @@ export default function TaskMindmapDialog({
     event.preventDefault();
     event.stopPropagation();
 
-    const draggedId = Number(event.dataTransfer.getData('application/x-task-id') || draggedTaskId);
+    const draggedId = event.dataTransfer.getData('application/x-task-id') || draggedTaskId;
     const sourceTask = tasks.find((task) => task.id === draggedId);
     if (sourceTask && sourceTask.id !== targetTask.id && sourceTask.status === targetTask.status) {
       onSaveTasks(reorderTasksWithinStatus(tasks, sourceTask.id, targetTask.id));

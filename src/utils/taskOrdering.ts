@@ -20,7 +20,7 @@ export function compareTaskPriority(a: Task, b: Task) {
   if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   if (a.dueDate) return -1;
   if (b.dueDate) return 1;
-  return a.id - b.id;
+  return a.id.localeCompare(b.id);
 }
 
 export function compareTaskListOrder(a: Task, b: Task) {
@@ -34,10 +34,10 @@ export function compareSubtaskOrder(a: Subtask, b: Subtask) {
   const aOrder = Number.isFinite(a.sortOrder) ? a.sortOrder! : Number.MAX_SAFE_INTEGER;
   const bOrder = Number.isFinite(b.sortOrder) ? b.sortOrder! : Number.MAX_SAFE_INTEGER;
   if (aOrder !== bOrder) return aOrder - bOrder;
-  return a.id - b.id;
+  return a.id.localeCompare(b.id);
 }
 
-export function reorderTasksWithinStatus(tasks: Task[], draggedTaskId: number, targetTaskId: number) {
+export function reorderTasksWithinStatus(tasks: Task[], draggedTaskId: string, targetTaskId: string) {
   const draggedTask = tasks.find((task) => task.id === draggedTaskId);
   const targetTask = tasks.find((task) => task.id === targetTaskId);
   if (!draggedTask || !targetTask || draggedTask.status !== targetTask.status || draggedTask.id === targetTask.id) {

@@ -1,4 +1,18 @@
 export type TaskStatus = 'URGENT' | 'IN PROGRESS' | 'TO DO' | 'PENDING' | 'CANCELLED' | 'DONE';
+export type AppRole = 'superadmin' | 'admin' | 'user';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: AppRole;
+  isActive: boolean;
+}
+
+export interface NotebookPermissions {
+  manageTasks: boolean;
+  manageNotebook: boolean;
+  manageSettings: boolean;
+}
 export type AssistantIntent =
   | 'TASKS_BY_TAG'
   | 'DUE_WITHIN_DAYS'
@@ -11,14 +25,14 @@ export type AssistantIntent =
   | 'UNKNOWN';
 
 export interface Subtask {
-  id: number;
+  id: string;
   title: string;
   completed: boolean;
   sortOrder?: number;
 }
 
 export interface Task {
-  id: number;
+  id: string;
   createdAt: string; // ISO String
   inProgressAt: string | null; // ISO String or empty
   doneAt: string | null; // ISO String or empty
@@ -37,15 +51,16 @@ export interface Task {
 }
 
 export interface Notebook {
-  id: number;
+  id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
   lastAccessedAt: string;
+  ownerId: string;
+  permissions: NotebookPermissions;
 }
 
 export interface Settings {
-  geminiApiKey: string;
   tags: string[];
   assistantIntents: AssistantConfiguredIntent[];
 }

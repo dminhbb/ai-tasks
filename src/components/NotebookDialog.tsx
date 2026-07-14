@@ -21,10 +21,11 @@ type NotebookDialogProps = {
   notebooks: Notebook[];
   activeNotebook: Notebook | null;
   onClose: () => void;
+  canCreate: boolean;
   onCreate: (name: string) => Promise<void>;
-  onRename: (id: number, name: string) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
-  onOpen: (id: number) => void;
+  onRename: (id: string, name: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onOpen: (id: string) => void;
 };
 
 export default function NotebookDialog({
@@ -32,13 +33,14 @@ export default function NotebookDialog({
   notebooks,
   activeNotebook,
   onClose,
+  canCreate,
   onCreate,
   onRename,
   onDelete,
   onOpen,
 }: NotebookDialogProps) {
   const [newName, setNewName] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
   const handleCreate = async () => {
@@ -61,7 +63,7 @@ export default function NotebookDialog({
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: '12px', p: 0.75 } } }}>
       <DialogTitle sx={{ fontWeight: 800, color: NEO_MINT.textTitle }}>Notebooks</DialogTitle>
       <DialogContent>
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        {canCreate && <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
           <TextField
             size="small"
             fullWidth
@@ -85,7 +87,7 @@ export default function NotebookDialog({
           >
             Create
           </Button>
-        </Box>
+        </Box>}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {notebooks.map((notebook) => {
@@ -139,7 +141,7 @@ export default function NotebookDialog({
                     <IconButton size="small" onClick={() => onOpen(notebook.id)} sx={{ color: NEO_MINT.primary }}>
                       <Launch sx={{ fontSize: 18 }} />
                     </IconButton>
-                    <IconButton
+                    {notebook.permissions.manageNotebook && <IconButton
                       size="small"
                       onClick={() => {
                         setEditingId(notebook.id);
@@ -148,8 +150,8 @@ export default function NotebookDialog({
                       sx={{ color: NEO_MINT.textBody }}
                     >
                       <Edit sx={{ fontSize: 18 }} />
-                    </IconButton>
-                    <IconButton
+                    </IconButton>}
+                    {notebook.permissions.manageNotebook && <IconButton
                       size="small"
                       onClick={() => {
                         if (window.confirm(`Delete notebook "${notebook.name}" and all of its data?`)) {
@@ -159,7 +161,7 @@ export default function NotebookDialog({
                       sx={{ color: NEO_MINT.danger }}
                     >
                       <Delete sx={{ fontSize: 18 }} />
-                    </IconButton>
+                    </IconButton>}
                   </>
                 )}
               </Box>

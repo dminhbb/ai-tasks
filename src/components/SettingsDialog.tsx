@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography,
   FormControl, InputLabel, Select, MenuItem, Checkbox
 } from '@mui/material';
-import { AssistantConfiguredIntent, AssistantIntent, Settings, Task, TaskStatus } from '@/types';
+import { AssistantConfiguredIntent, AssistantIntent, Settings, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 
 
@@ -12,7 +12,6 @@ interface SettingsDialogProps {
   settings: Settings;
   onClose: () => void;
   onSave: (settings: Settings) => void;
-  onImportData: (newTasks: Task[], newSettings: Settings) => void;
 }
 
 const ASSISTANT_INTENTS: AssistantIntent[] = [
@@ -51,7 +50,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     </Typography>
   );
 }
-export default function SettingsDialog({ open, settings, onClose, onSave, onImportData }: SettingsDialogProps) {
+export default function SettingsDialog({ open, settings, onClose, onSave }: SettingsDialogProps) {
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
   const [newTag, setNewTag] = useState('');
   const [intentDraft, setIntentDraft] = useState<AssistantConfiguredIntent>(() => createBlankIntent());
@@ -114,45 +113,6 @@ export default function SettingsDialog({ open, settings, onClose, onSave, onImpo
     });
   };
 
-  const handleExport = async () => {
-    const response = await fetch('/api/database-csv');
-    if (!response.ok) {
-      alert('Export CSV failed. Please try again.');
-      return;
-    }
-
-    const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', 'task-manager-database.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  };
-
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-
-    const response = await fetch('/api/database-csv', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/csv; charset=utf-8' },
-      body: await file.text(),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      alert(data.error || 'Import CSV failed. Please check the file and try again.');
-      return;
-    }
-
-    setLocalSettings(data.settings);
-    onImportData(data.tasks, data.settings);
-  };
-
   return (
     <Dialog 
       open={open} 
@@ -188,26 +148,6 @@ export default function SettingsDialog({ open, settings, onClose, onSave, onImpo
       <DialogTitle sx={{ fontWeight: 700, color: NEO_MINT.textTitle }}>System Settings</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-
-          {/* API Key */}
-          <Box sx={{ mt: 1 }}>
-            <SectionLabel>Gemini API Key</SectionLabel>
-            <TextField
-              fullWidth
-              type="password"
-              placeholder="Enter your API Key..."
-              value={localSettings.geminiApiKey}
-              onChange={(e) => setLocalSettings({ ...localSettings, geminiApiKey: e.target.value })}
-              helperText="Get your key at aistudio.google.com"
-              sx={{ 
-                '& .MuiOutlinedInput-root': { 
-                  borderRadius: '10px',
-                  backgroundColor: NEO_MINT.surface,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: NEO_MINT.cardBorderSoft }
-                } 
-              }}
-            />
-          </Box>
 
           {/* Tags management */}
           <Box>
@@ -486,45 +426,6 @@ export default function SettingsDialog({ open, settings, onClose, onSave, onImpo
             </Box>
           </Box>
 
-          {/* Import / Export */}
-          <Box>
-            <SectionLabel>Data Management</SectionLabel>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                onClick={handleExport}
-                variant="outlined"
-                sx={{
-                  borderRadius: '10px',
-                  borderColor: NEO_MINT.cardBorderSoft,
-                  color: NEO_MINT.textTitle,
-                  fontWeight: 600,
-                  fontSize: '12px',
-                  px: 2,
-                  textTransform: 'none',
-                  '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary },
-                }}
-              >
-                Export CSV
-              </Button>
-              <Button
-                component="label"
-                variant="outlined"
-                sx={{
-                  borderRadius: '10px',
-                  borderColor: NEO_MINT.cardBorderSoft,
-                  color: NEO_MINT.textTitle,
-                  fontWeight: 600,
-                  fontSize: '12px',
-                  px: 2,
-                  textTransform: 'none',
-                  '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary },
-                }}
-              >
-                Import CSV
-                <input type="file" hidden accept=".csv" onChange={handleImport} />
-              </Button>
-            </Box>
-          </Box>
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 3 }}>

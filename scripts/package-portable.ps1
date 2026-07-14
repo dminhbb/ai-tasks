@@ -26,14 +26,7 @@ try {
   }
 
   New-Item -ItemType Directory -Path $AppDir -Force | Out-Null
-  $DataDir = Join-Path $PackageDir "data"
-  New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
-
   Copy-Item -Path (Join-Path $Root ".next\standalone\*") -Destination $AppDir -Recurse -Force
-  $TracedDataDir = Join-Path $AppDir "data"
-  if (Test-Path $TracedDataDir) {
-    Remove-Item -LiteralPath $TracedDataDir -Recurse -Force
-  }
   Copy-Item -Path (Join-Path $Root ".next\static") -Destination (Join-Path $AppDir ".next") -Recurse -Force
   if (Test-Path (Join-Path $Root "public")) {
     Copy-Item -Path (Join-Path $Root "public") -Destination $AppDir -Recurse -Force
@@ -47,8 +40,6 @@ setlocal
 cd /d "%~dp0"
 set PORT=$Port
 set HOSTNAME=127.0.0.1
-
-if not exist "data" mkdir "data"
 
 echo Starting AI TASK...
 echo.
@@ -75,10 +66,10 @@ How to use:
 3. Keep the black window open while using the app.
 4. Close that window to stop the app.
 
-Data:
-- Your tasks are saved in the "data" folder.
-- To back up your tasks, copy the "data" folder.
-- To move to another computer, copy the whole extracted folder.
+Data and login:
+- This app connects to Supabase and requires internet access.
+- Tasks are stored in Supabase, not inside this portable folder.
+- Use the same account to access the same data on every frontend.
 
 Notes:
 - This package is for Windows.
@@ -86,8 +77,6 @@ Notes:
 - If Windows Firewall asks for permission, allow access for private networks.
 "@
   Set-Content -Path (Join-Path $PackageDir "README.txt") -Value $Readme -Encoding ASCII
-  Set-Content -Path (Join-Path $DataDir "README-DATA.txt") -Value "AI TASK stores its local database in this folder after first run. Back up this folder to keep your tasks." -Encoding ASCII
-
   Compress-Archive -Path (Join-Path $PackageDir "*") -DestinationPath $ZipPath -Force
 
   Write-Host "Portable package created:"

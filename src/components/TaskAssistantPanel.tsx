@@ -3,6 +3,7 @@ import { Box, Button, CircularProgress, TextField, Typography } from '@mui/mater
 import { AutoAwesome, RestartAlt, Send } from '@mui/icons-material';
 import type { AssistantConfiguredIntent, Task } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
+import { askTaskAssistant } from '@/lib/supabase/functions';
 
 
 type AssistantTask = Pick<Task, 'id' | 'title' | 'assignee' | 'status' | 'dueDate' | 'tags'>;
@@ -17,7 +18,7 @@ type AssistantResponse = {
 type TaskAssistantPanelProps = {
   tasks: Task[];
   assistantIntents: AssistantConfiguredIntent[];
-  notebookId: number;
+  notebookId: string;
   onTaskClick: (task: Task) => void;
 };
 
@@ -37,24 +38,12 @@ export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId
     setError('');
 
     try {
-      const response = await fetch('/api/assistant-query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: trimmed, notebookId }),
-      });
-      const data = await response.json() as AssistantResponse;
-
-      if (!response.ok) {
-        setError(data.error || 'Assistant query failed.');
-        setAnswer('');
-        setRelatedTasks([]);
-        return;
-      }
+      const data: AssistantResponse = await askTaskAssistant(trimmed, notebookId);
 
       setAnswer(data.answer || '');
       setRelatedTasks(data.tasks || []);
-    } catch {
-      setError('Assistant query failed.');
+    } catch (requestError: unknown) {
+      setError(requestError instanceof Error ? requestError.message : 'Assistant query failed.');
       setAnswer('');
       setRelatedTasks([]);
     } finally {
