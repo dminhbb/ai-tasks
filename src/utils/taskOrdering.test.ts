@@ -14,6 +14,7 @@ describe('task ordering', () => {
     const urgentTask = makeTask({ title: 'Urgent', status: 'URGENT' });
     expect([urgentTask, todayTask].sort(compareTaskListOrder)[0]).toBe(todayTask);
     expect(isTodayTask(todayTask)).toBe(true);
+    expect(isTodayTask(makeTask({ title: '##Today Task' }))).toBe(true);
   });
 
   it('reorders only tasks in the same status', () => {

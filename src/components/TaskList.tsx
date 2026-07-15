@@ -16,7 +16,15 @@ import {
   Tooltip,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridSortModel, GridRowSelectionModel } from '@mui/x-data-grid';
-import { Delete, Label, VisibilityOff, Person, AssignmentTurnedIn, DragIndicator } from '@mui/icons-material';
+import {
+  Delete,
+  Label,
+  VisibilityOff,
+  Person,
+  AssignmentTurnedIn,
+  DragIndicator,
+  PushPin,
+} from '@mui/icons-material';
 import { Task, TaskStatus } from '@/types';
 import { isToday, isPast, parseISO, startOfDay, isBefore, endOfWeek, addWeeks, endOfDay } from 'date-fns';
 import { FilterState } from './FilterPanel';
@@ -322,12 +330,18 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       minWidth: 160,
       renderCell: (p) => {
         const dueDateChangeCount = Number(p.row.dueDateChangeCount || 0);
+        const pinned = isTodayTask(p.row as Task);
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, width: '100%' }}>
+            {pinned && (
+              <Tooltip title="Pinned task for uncategorized Today entries">
+                <PushPin sx={{ flexShrink: 0, fontSize: 16, color: NEO_MINT.primary }} />
+              </Tooltip>
+            )}
             <Typography
               sx={{
                 fontSize: TASK_LIST_TEXT.title,
-                fontWeight: 600,
+                fontWeight: pinned ? 800 : 600,
                 color: NEO_MINT.textTitle,
                 whiteSpace: 'normal',
                 lineHeight: 1.45,

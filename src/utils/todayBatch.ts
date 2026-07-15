@@ -34,6 +34,7 @@ export function addBatchSubtasksToTodayTask(
     completed: false,
     isToday: true,
     completedAt: null,
+    workHours: 0,
     sortOrder: nextSubtaskSortOrder + index,
   }));
 
@@ -56,7 +57,7 @@ export function addBatchSubtasksToTodayTask(
       inProgressAt: null,
       doneAt: null,
       title: TODAY_TASK_TITLE,
-      details: 'Task created automatically for Today batch entries.',
+      details: 'Task created automatically for uncategorized Today batch entries.',
       assignee: '',
       tags: [],
       status: 'TO DO',

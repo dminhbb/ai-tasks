@@ -16,7 +16,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Close, Delete, DragIndicator, PlaylistAdd } from '@mui/icons-material';
+import { Close, Delete, DragIndicator, DriveFileMoveOutlined, PlaylistAdd } from '@mui/icons-material';
 import type { Subtask, Task } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { compareSubtaskOrder } from '@/utils/taskOrdering';
@@ -28,6 +28,9 @@ import {
 import type { TodaySubtaskItem } from '@/utils/todayTasks';
 import { addBatchSubtasksToTodayTask } from '@/utils/todayBatch';
 import TodayBatchAddDialog from '@/components/TodayBatchAddDialog';
+import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
+import TodayMoveSubtaskDialog from '@/components/TodayMoveSubtaskDialog';
+import { setSubtaskWorkHours, toggleSubtaskCompletion } from '@/utils/subtaskWork';
 
 const VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000;
 
@@ -37,6 +40,7 @@ interface TodayWorkspaceProps {
   isDialogOpen: boolean;
   onCloseDialog: () => void;
   onSaveTasks: (tasks: Task[]) => void | Promise<void>;
+  onMoveSubtask: (subtaskId: string, targetTaskId: string) => void | Promise<void>;
   onOpenTask: (task: Task) => void;
 }
 
@@ -65,6 +69,7 @@ export default function TodayWorkspace({
   isDialogOpen,
   onCloseDialog,
   onSaveTasks,
+  onMoveSubtask,
   onOpenTask,
 }: TodayWorkspaceProps) {
   const [visibilityReferenceTime, setVisibilityReferenceTime] = useState(0);
@@ -72,6 +77,7 @@ export default function TodayWorkspace({
   const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
   const [dragOverSubtaskId, setDragOverSubtaskId] = useState<string | null>(null);
   const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
+  const [movingItem, setMovingItem] = useState<TodaySubtaskItem | null>(null);
 
   useEffect(() => {
     const refreshVisibilityTime = () => setVisibilityReferenceTime(Date.now());
@@ -116,11 +122,13 @@ export default function TodayWorkspace({
   };
 
   const toggleCompleted = (item: TodaySubtaskItem) => {
-    updateSubtask(item.task.id, item.subtask.id, (subtask) => ({
-      ...subtask,
-      completed: !subtask.completed,
-      completedAt: subtask.completed ? null : new Date().toISOString(),
-    }));
+    updateSubtask(item.task.id, item.subtask.id, (subtask) =>
+      toggleSubtaskCompletion(subtask, new Date().toISOString())
+    );
+  };
+
+  const updateWorkHours = (item: TodaySubtaskItem, workHours: number) => {
+    updateSubtask(item.task.id, item.subtask.id, (subtask) => setSubtaskWorkHours(subtask, workHours));
   };
 
   const toggleToday = (item: TodaySubtaskItem) => {
@@ -141,6 +149,7 @@ export default function TodayWorkspace({
 
   const closeTodayDialog = () => {
     setIsBatchAddOpen(false);
+    setMovingItem(null);
     onCloseDialog();
   };
 
@@ -225,6 +234,13 @@ export default function TodayWorkspace({
                     {item.subtask.title}
                   </TruncatedText>
                 </ButtonBase>
+                {item.subtask.completed && (
+                  <SubtaskWorkLogSelect
+                    value={item.subtask.workHours}
+                    disabled={!canManageTasks}
+                    onChange={(workHours) => updateWorkHours(item, workHours)}
+                  />
+                )}
               </Box>
             ))
           )}
@@ -236,9 +252,9 @@ export default function TodayWorkspace({
         onClose={closeTodayDialog}
         fullWidth
         maxWidth="md"
-        disableEnforceFocus={isBatchAddOpen}
-        disableAutoFocus={isBatchAddOpen}
-        disableRestoreFocus={isBatchAddOpen}
+        disableEnforceFocus={isBatchAddOpen || movingItem !== null}
+        disableAutoFocus={isBatchAddOpen || movingItem !== null}
+        disableRestoreFocus={isBatchAddOpen || movingItem !== null}
         slotProps={{
           paper: { sx: { borderRadius: '14px', border: `1px solid ${NEO_MINT.cardBorderSoft}` } },
         }}
@@ -357,6 +373,26 @@ export default function TodayWorkspace({
                     slotProps={{ input: { 'aria-label': 'Toggle subtask Today status' } }}
                   />
                 </Tooltip>
+                {item.subtask.completed && (
+                  <SubtaskWorkLogSelect
+                    value={item.subtask.workHours}
+                    disabled={!canManageTasks}
+                    onChange={(workHours) => updateWorkHours(item, workHours)}
+                  />
+                )}
+                <Tooltip title="Move to another parent task">
+                  <span>
+                    <IconButton
+                      size="small"
+                      disabled={!canManageTasks}
+                      aria-label="Move subtask"
+                      onClick={() => setMovingItem(item)}
+                      sx={{ color: NEO_MINT.textMuted, '&:hover': { color: NEO_MINT.primary } }}
+                    >
+                      <DriveFileMoveOutlined fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
                 <Tooltip title="Delete subtask">
                   <span>
                     <IconButton
@@ -432,6 +468,19 @@ export default function TodayWorkspace({
         disabled={!canManageTasks}
         onClose={() => setIsBatchAddOpen(false)}
         onAdd={handleBatchAdd}
+      />
+      <TodayMoveSubtaskDialog
+        open={isDialogOpen && movingItem !== null}
+        sourceTaskId={movingItem?.task.id ?? null}
+        subtaskTitle={movingItem?.subtask.title ?? ''}
+        tasks={tasks}
+        disabled={!canManageTasks}
+        onClose={() => setMovingItem(null)}
+        onMove={async (targetTaskId) => {
+          if (!movingItem) return;
+          await onMoveSubtask(movingItem.subtask.id, targetTaskId);
+          setMovingItem(null);
+        }}
       />
     </>
   );

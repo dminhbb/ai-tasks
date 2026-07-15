@@ -34,6 +34,7 @@ const subtaskRowSchema = z.object({
   completed: z.boolean(),
   is_today: z.boolean(),
   completed_at: z.string().nullable(),
+  work_hours: z.number().int().min(0).max(24),
   sort_order: z.number(),
 });
 
@@ -197,7 +198,7 @@ export async function readTasks(notebookId: string): Promise<Task[]> {
       `
       id, title, details, assignee, status, progress, sort_order,
       start_date, due_date, notes, created_at, in_progress_at, done_at,
-      subtasks(id, title, completed, is_today, completed_at, sort_order),
+      subtasks(id, title, completed, is_today, completed_at, work_hours, sort_order),
       task_tags(tag),
       task_due_date_events(id)
     `
@@ -234,6 +235,7 @@ export async function readTasks(notebookId: string): Promise<Task[]> {
           completed: subtask.completed,
           isToday: subtask.is_today,
           completedAt: subtask.completed_at,
+          workHours: subtask.work_hours,
           sortOrder: subtask.sort_order,
         })),
     }));
@@ -262,7 +264,7 @@ export async function saveTasks(
   });
 
   for (const task of changedTasks) {
-    const { error } = await supabase.rpc('save_task_bundle', {
+    const { error } = await supabase.rpc('save_task_bundle_with_work_hours', {
       requested_notebook_id: notebookId,
       task_data: {
         id: task.id,
@@ -284,9 +286,14 @@ export async function saveTasks(
         title: subtask.title,
         completed: subtask.completed,
         isToday: subtask.isToday,
+        workHours: subtask.workHours,
         sortOrder: subtask.sortOrder ?? 0,
       })),
       tag_data: task.tags,
+      work_hour_data: task.subtasks.map((subtask) => ({
+        id: subtask.id,
+        workHours: subtask.workHours,
+      })),
     });
     if (error) throw new Error('Không thể lưu task. Vui lòng tải lại dữ liệu và thử lại.');
   }
@@ -301,6 +308,20 @@ export async function saveTasks(
     if (error) throw new Error('Không thể xóa task.');
   }
 
+  return readTasks(notebookId);
+}
+
+export async function moveSubtask(
+  notebookId: string,
+  subtaskId: string,
+  targetTaskId: string
+): Promise<Task[]> {
+  const { error } = await getSupabaseBrowserClient().rpc('move_subtask', {
+    requested_notebook_id: notebookId,
+    requested_subtask_id: subtaskId,
+    target_task_id: targetTaskId,
+  });
+  if (error) throw new Error('Không thể chuyển subtask sang task đã chọn.');
   return readTasks(notebookId);
 }
 

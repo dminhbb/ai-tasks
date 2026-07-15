@@ -45,6 +45,7 @@ import {
   createNotebook,
   deleteNotebook,
   listNotebooks,
+  moveSubtask,
   readSettings,
   readTasks,
   renameNotebook,
@@ -296,6 +297,19 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     } catch (saveError: unknown) {
       setTasks(tasks);
       window.alert(saveError instanceof Error ? saveError.message : 'Không thể lưu task.');
+    }
+  };
+
+  const handleMoveSubtask = async (subtaskId: string, targetTaskId: string) => {
+    if (!activeNotebook?.permissions.manageTasks) {
+      throw new Error('Bạn không có quyền chuyển subtask trong notebook này.');
+    }
+    const previousTasks = tasks;
+    try {
+      setTasks(await moveSubtask(activeNotebook.id, subtaskId, targetTaskId));
+    } catch (moveError: unknown) {
+      setTasks(previousTasks);
+      throw moveError instanceof Error ? moveError : new Error('Không thể chuyển subtask.');
     }
   };
 
@@ -787,6 +801,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             isDialogOpen={isTodayDialogOpen}
             onCloseDialog={() => setIsTodayDialogOpen(false)}
             onSaveTasks={handleSaveTasks}
+            onMoveSubtask={handleMoveSubtask}
             onOpenTask={(task) => {
               setReturnToTodayAfterTaskDetails(true);
               setSelectedTask(task);

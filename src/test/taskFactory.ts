@@ -7,6 +7,7 @@ export function makeSubtask(overrides: Partial<Subtask> = {}): Subtask {
     completed: false,
     isToday: false,
     completedAt: null,
+    workHours: 0,
     sortOrder: 0,
     ...overrides,
   };

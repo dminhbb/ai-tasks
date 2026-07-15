@@ -32,6 +32,8 @@ import { compareSubtaskOrder } from '@/utils/taskOrdering';
 import { reorderSubtasksWithinTask } from '@/utils/todayTasks';
 import { sanitizeRichText } from '@/utils/richText';
 import TaskRichTextEditor from '@/components/TaskRichTextEditor';
+import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
+import { setSubtaskWorkHours, toggleSubtaskCompletion } from '@/utils/subtaskWork';
 
 const STATUS_ORDER: Record<TaskStatus, number> = {
   URGENT: 0,
@@ -184,6 +186,7 @@ export default function TaskDetailDialog({
             completed: false,
             isToday: false,
             completedAt: null,
+            workHours: 0,
           },
         ],
       })
@@ -196,16 +199,19 @@ export default function TaskDetailDialog({
       syncTaskProgress({
         ...localTask,
         subtasks: (localTask.subtasks || []).map((subtask) =>
-          subtask.id === id
-            ? {
-                ...subtask,
-                completed: !subtask.completed,
-                completedAt: subtask.completed ? null : new Date().toISOString(),
-              }
-            : subtask
+          subtask.id === id ? toggleSubtaskCompletion(subtask, new Date().toISOString()) : subtask
         ),
       })
     );
+  };
+
+  const handleWorkHoursChange = (id: string, workHours: number) => {
+    setLocalTask({
+      ...localTask,
+      subtasks: localTask.subtasks.map((subtask) =>
+        subtask.id === id ? setSubtaskWorkHours(subtask, workHours) : subtask
+      ),
+    });
   };
 
   const handleToggleToday = (id: string) => {
@@ -616,6 +622,12 @@ export default function TaskDetailDialog({
                           },
                         }}
                       />
+                      {subtask.completed && (
+                        <SubtaskWorkLogSelect
+                          value={subtask.workHours}
+                          onChange={(workHours) => handleWorkHoursChange(subtask.id, workHours)}
+                        />
+                      )}
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteSubtask(subtask.id)}

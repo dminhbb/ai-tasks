@@ -1,9 +1,13 @@
 import type { Subtask, Task, TaskStatus } from '@/types';
 
-export const TODAY_TASK_TITLE = '##Today Task';
+export const TODAY_TASK_TITLE = '(Untitle Tasks)';
+const LEGACY_TODAY_TASK_TITLES = ['##Today Task'];
 
 export function isTodayTask(task: Pick<Task, 'title'>): boolean {
-  return task.title.trim().toLocaleLowerCase() === TODAY_TASK_TITLE.toLocaleLowerCase();
+  const normalizedTitle = task.title.trim().toLocaleLowerCase();
+  return [TODAY_TASK_TITLE, ...LEGACY_TODAY_TASK_TITLES].some(
+    (title) => normalizedTitle === title.toLocaleLowerCase()
+  );
 }
 
 export const STATUS_ORDER: Record<TaskStatus, number> = {

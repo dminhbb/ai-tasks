@@ -30,6 +30,7 @@ export interface Subtask {
   completed: boolean;
   isToday: boolean;
   completedAt: string | null;
+  workHours: number;
   sortOrder?: number;
 }
 
