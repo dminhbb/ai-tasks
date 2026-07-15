@@ -21,14 +21,40 @@ export default function SpaceSelectionScreen({ spaces, onSelect, onSignOut }: Sp
         flexDirection: 'column',
         alignItems: 'center',
         backgroundColor: 'var(--app-bg)',
-        px: 2,
-        py: 5,
+        px: { xs: 2, sm: 3 },
+        py: { xs: 3, sm: 6 },
       }}
     >
-      <Box sx={{ width: '100%', maxWidth: 900 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ width: '100%', maxWidth: 1040 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+            mb: { xs: 3, sm: 4 },
+          }}
+        >
           <Box>
-            <Typography sx={{ fontSize: '28px', fontWeight: 900, color: NEO_MINT.textTitle }}>
+            <Typography
+              sx={{
+                fontSize: '11px',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                color: NEO_MINT.primary,
+                mb: 0.75,
+              }}
+            >
+              AI TASK / WORKSPACE
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: { xs: '28px', sm: '34px' },
+                fontWeight: 800,
+                letterSpacing: '-0.04em',
+                color: NEO_MINT.textTitle,
+              }}
+            >
               Choose a Space
             </Typography>
             <Typography sx={{ mt: 0.5, color: NEO_MINT.textMuted }}>
@@ -43,7 +69,14 @@ export default function SpaceSelectionScreen({ spaces, onSelect, onSignOut }: Sp
         {spaces.length === 0 ? (
           <Box
             role="status"
-            sx={{ p: 4, borderRadius: '14px', backgroundColor: NEO_MINT.surface, textAlign: 'center' }}
+            sx={{
+              p: 5,
+              borderRadius: '20px',
+              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+              backgroundColor: 'var(--surface-raised)',
+              boxShadow: NEO_MINT.shadowSm,
+              textAlign: 'center',
+            }}
           >
             <Typography sx={{ fontWeight: 800, color: NEO_MINT.textTitle }}>No Space available</Typography>
             <Typography sx={{ mt: 0.75, color: NEO_MINT.textMuted }}>
@@ -54,8 +87,8 @@ export default function SpaceSelectionScreen({ spaces, onSelect, onSignOut }: Sp
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: 2,
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: { xs: 1.25, sm: 2 },
             }}
           >
             {spaces.map((space) => (
@@ -65,24 +98,38 @@ export default function SpaceSelectionScreen({ spaces, onSelect, onSignOut }: Sp
                 aria-label={`Open ${space.name}`}
                 sx={{
                   aspectRatio: '1 / 1',
-                  minHeight: 150,
+                  minHeight: 180,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 1.5,
-                  borderRadius: '14px',
+                  borderRadius: '18px',
                   border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-                  backgroundColor: NEO_MINT.surface,
+                  backgroundColor: 'var(--surface-raised)',
                   color: NEO_MINT.textTitle,
                   textTransform: 'none',
                   boxShadow: NEO_MINT.shadowSm,
+                  transition:
+                    'transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast)',
                   '&:hover': {
                     borderColor: NEO_MINT.primary,
                     backgroundColor: 'var(--primary-subtle)',
                     transform: 'translateY(-2px)',
+                    boxShadow: NEO_MINT.shadowMd,
                   },
                 }}
               >
-                <Apps sx={{ fontSize: 40, color: NEO_MINT.primary }} />
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    display: 'grid',
+                    placeItems: 'center',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--primary-soft)',
+                  }}
+                >
+                  <Apps sx={{ fontSize: 25, color: NEO_MINT.primary }} />
+                </Box>
                 <Typography
                   sx={{
                     maxWidth: '100%',

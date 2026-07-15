@@ -40,7 +40,7 @@ import {
 // ── Status configuration ─────────────────────────────────────────────────────
 const STATUS_STYLE: Record<TaskStatus, { bg: string; color: string; border: string }> = {
   URGENT: { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
-  'IN PROGRESS': { bg: 'rgba(15,118,110,0.10)', color: NEO_MINT.primary, border: 'rgba(15,118,110,0.24)' },
+  'IN PROGRESS': { bg: 'var(--primary-subtle)', color: NEO_MINT.primary, border: 'var(--primary-soft)' },
   'TO DO': { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
   PENDING: { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
   CANCELLED: { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
@@ -57,6 +57,24 @@ const TASK_LIST_TEXT = {
   toolbar: '12px',
   meta: '11px',
 };
+
+function EmptyTaskListOverlay() {
+  return (
+    <Box
+      role="status"
+      sx={{ height: '100%', display: 'grid', placeItems: 'center', px: 3, textAlign: 'center' }}
+    >
+      <Box>
+        <Typography sx={{ fontSize: '15px', fontWeight: 800, color: NEO_MINT.textTitle }}>
+          No tasks match this view
+        </Typography>
+        <Typography sx={{ mt: 0.5, fontSize: '12px', color: NEO_MINT.textMuted }}>
+          Clear filters or create a task to keep your work moving.
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
 interface TaskListProps {
   tasks: Task[];
@@ -116,12 +134,12 @@ function compareGridValues(left: unknown, right: unknown): number {
 
 // ── Action button shared style ────────────────────────────────────────────────
 const actionBtnSx = {
-  borderRadius: '10px',
+  borderRadius: '8px',
   fontSize: TASK_LIST_TEXT.toolbar,
   fontWeight: 600,
-  px: 1.25,
-  py: 0.5,
-  minHeight: 30,
+  px: 1.1,
+  py: 0.45,
+  minHeight: 32,
   textTransform: 'none',
 };
 
@@ -769,19 +787,19 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, md: 2 } }}>
       {/* Toolbar strip */}
       <Box
         sx={{
           display: 'flex',
-          gap: 1,
+          gap: 0.75,
           alignItems: 'center',
           flexWrap: 'wrap',
-          px: 2,
-          py: 1.5,
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '12px',
-          border: '1px solid var(--card-border)',
+          px: { xs: 1.25, sm: 1.5 },
+          py: 1.15,
+          backgroundColor: 'var(--surface-raised)',
+          borderRadius: '16px',
+          border: '1px solid var(--card-border-soft)',
           boxShadow: NEO_MINT.shadowSm,
         }}
       >
@@ -905,11 +923,11 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
         sx={{
           minHeight: 500,
           height: rows.length > 0 ? Math.max(500, Math.min(rows.length * 56 + 112, 1200)) : 500,
-          borderRadius: '12px',
-          border: '1px solid var(--card-border)',
+          borderRadius: '16px',
+          border: '1px solid var(--card-border-soft)',
           overflowX: 'auto',
           overflowY: 'hidden',
-          backgroundColor: 'var(--card-bg)',
+          backgroundColor: 'var(--surface-raised)',
           boxShadow: NEO_MINT.shadowSm,
         }}
         onDragOver={handleGridDragOver}
@@ -930,6 +948,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           onSortModelChange={(model) => setSortModel(model)}
           onRowSelectionModelChange={setSelectionModel}
           rowSelectionModel={selectionModel}
+          slots={{ noRowsOverlay: EmptyTaskListOverlay }}
           onRowClick={(params) => onRowClick && onRowClick(params.row as Task)}
           getRowClassName={(params) => {
             const cls: string[] = ['custom-row'];
@@ -952,19 +971,19 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
             },
             '& .MuiDataGrid-columnHeaders': {
               backgroundColor: 'var(--surface-soft)',
-              borderBottom: '1px solid var(--card-border)',
+              borderBottom: '1px solid var(--card-border-soft)',
               fontSize: TASK_LIST_TEXT.header,
               fontWeight: 700,
               color: NEO_MINT.textTitle,
               textTransform: 'uppercase',
-              letterSpacing: 0,
+              letterSpacing: '0.06em',
             },
             '& .MuiDataGrid-columnHeaderTitle': {
               fontWeight: 700,
             },
             '& .MuiDataGrid-row': {
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              transition: 'background-color var(--transition-fast), opacity var(--transition-fast)',
               '&:hover': {
                 backgroundColor: 'var(--primary-subtle)',
               },
@@ -980,7 +999,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
               opacity: 0.55,
             },
             '& .row-drag-over': {
-              backgroundColor: 'rgba(15,118,110,0.12)',
+              backgroundColor: 'var(--primary-soft)',
               outline: `2px solid ${NEO_MINT.primary}`,
               outlineOffset: '-2px',
             },
@@ -995,8 +1014,8 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
               '&.Mui-checked': { color: NEO_MINT.primary },
             },
             '& .MuiDataGrid-row.Mui-selected': {
-              backgroundColor: 'rgba(15,118,110,0.06)',
-              '&:hover': { backgroundColor: 'rgba(15,118,110,0.10)' },
+              backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+              '&:hover': { backgroundColor: 'color-mix(in srgb, var(--primary) 13%, transparent)' },
             },
             '& .MuiDataGrid-columnSeparator': { display: 'none' },
           }}

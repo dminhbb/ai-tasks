@@ -87,7 +87,11 @@ function createBlankIntent(): AssistantConfiguredIntent {
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
     <Box sx={{ mb: 2 }}>
-      <Typography sx={{ fontSize: '18px', fontWeight: 800, color: NEO_MINT.textTitle }}>{title}</Typography>
+      <Typography
+        sx={{ fontSize: '19px', fontWeight: 800, letterSpacing: '-0.03em', color: NEO_MINT.textTitle }}
+      >
+        {title}
+      </Typography>
       <Typography sx={{ mt: 0.4, fontSize: '12px', color: NEO_MINT.textMuted }}>{description}</Typography>
     </Box>
   );
@@ -113,7 +117,7 @@ function AppearancePanel() {
                 alignItems: 'stretch',
                 gap: 1,
                 textAlign: 'left',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 border: `2px solid ${selected ? NEO_MINT.primary : NEO_MINT.cardBorderSoft}`,
                 backgroundColor: selected ? 'var(--primary-subtle)' : 'var(--surface-soft)',
               }}
@@ -931,9 +935,11 @@ export default function SettingsDialog({
       slotProps={{
         paper: {
           sx: {
-            height: '86vh',
-            maxHeight: 920,
-            borderRadius: '14px',
+            height: '88vh',
+            maxHeight: 960,
+            borderRadius: '20px',
+            border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+            boxShadow: NEO_MINT.shadowLg,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -942,7 +948,14 @@ export default function SettingsDialog({
       }}
     >
       <DialogTitle
-        sx={{ flexShrink: 0, fontWeight: 800, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}
+        sx={{
+          flexShrink: 0,
+          px: { xs: 2, md: 2.75 },
+          py: 2,
+          fontWeight: 800,
+          letterSpacing: '-0.03em',
+          borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
+        }}
       >
         System Settings · {activeSpace.name}
       </DialogTitle>
@@ -950,25 +963,48 @@ export default function SettingsDialog({
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '160px 1fr', md: '240px 1fr' },
+            gridTemplateColumns: { xs: '132px minmax(0, 1fr)', md: '248px minmax(0, 1fr)' },
             height: '100%',
             minHeight: 0,
           }}
         >
-          <Box sx={{ p: 1.25, overflowY: 'auto', borderRight: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
+          <Box
+            sx={{
+              p: 1.25,
+              overflowY: 'auto',
+              backgroundColor: 'var(--surface-soft)',
+              borderRight: `1px solid ${NEO_MINT.cardBorderSoft}`,
+            }}
+          >
             {menuItems.map((item) => (
               <Button
                 key={item.id}
                 fullWidth
                 onClick={() => setActiveSection(item.id)}
                 variant={activeSection === item.id ? 'contained' : 'text'}
-                sx={{ mb: 0.5, justifyContent: 'flex-start', textTransform: 'none', fontWeight: 700 }}
+                sx={{
+                  mb: 0.5,
+                  minHeight: 36,
+                  justifyContent: 'flex-start',
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: { xs: '11px', md: '12px' },
+                  boxShadow: 'none',
+                }}
               >
                 {item.label}
               </Button>
             ))}
           </Box>
-          <Box sx={{ p: { xs: 1.5, md: 2.5 }, minWidth: 0, overflowY: 'auto' }}>
+          <Box
+            sx={{
+              p: { xs: 1.75, md: 3 },
+              minWidth: 0,
+              overflowY: 'auto',
+              backgroundColor: 'var(--surface-raised)',
+            }}
+          >
             {activeSection === 'appearance' && <AppearancePanel />}
             {activeSection === 'tags' && <TagPanel settings={localSettings} onChange={setLocalSettings} />}
             {activeSection === 'assistant' && (
@@ -994,7 +1030,14 @@ export default function SettingsDialog({
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ flexShrink: 0, p: 2, borderTop: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
+      <DialogActions
+        sx={{
+          flexShrink: 0,
+          px: { xs: 2, md: 2.75 },
+          py: 1.75,
+          borderTop: `1px solid ${NEO_MINT.cardBorderSoft}`,
+        }}
+      >
         <Button onClick={onClose} sx={{ textTransform: 'none' }}>
           Close
         </Button>

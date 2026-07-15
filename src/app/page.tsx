@@ -63,15 +63,18 @@ const MIN_DRAWER_WIDTH = 220;
 const MAX_DRAWER_WIDTH = 520;
 
 const TOP_ACTION_BUTTON_SX = {
-  borderRadius: '9px',
-  px: { xs: 0.75, md: 1.1 },
-  py: 0.5,
+  minHeight: 34,
+  borderRadius: '8px',
+  px: { xs: 0.7, md: 1 },
+  py: 0.45,
   minWidth: 0,
-  fontSize: '11px',
+  fontSize: '0.6875rem',
   lineHeight: 1.35,
-  fontWeight: 600,
+  fontWeight: 700,
+  letterSpacing: '0.01em',
   textTransform: 'none',
-  '& .MuiButton-startIcon': { mr: 0.5, ml: 0 },
+  whiteSpace: 'nowrap',
+  '& .MuiButton-startIcon': { mr: 0.45, ml: 0 },
 };
 
 const normalizeAssigneeName = (value: string) =>
@@ -88,17 +91,44 @@ const todayLabel = new Intl.DateTimeFormat('en-US', {
   day: '2-digit',
 }).format(new Date());
 
+function AppLoadingScreen({ label }: { label: string }) {
+  return (
+    <Box
+      role="status"
+      aria-live="polite"
+      sx={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        px: 2,
+        backgroundColor: 'var(--app-bg)',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1.5,
+          p: 3,
+          borderRadius: '20px',
+          border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+          backgroundColor: 'var(--surface-raised)',
+          boxShadow: NEO_MINT.shadowMd,
+        }}
+      >
+        <CircularProgress size={28} sx={{ color: NEO_MINT.primary }} />
+        <Typography sx={{ fontSize: '13px', fontWeight: 700, color: NEO_MINT.textBody }}>{label}</Typography>
+      </Box>
+    </Box>
+  );
+}
+
 export default function Home() {
   const { loading, profile, session, signOut } = useAuth();
 
   if (loading) {
-    return (
-      <Box
-        sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', backgroundColor: 'var(--app-bg)' }}
-      >
-        <CircularProgress sx={{ color: NEO_MINT.primary }} />
-      </Box>
-    );
+    return <AppLoadingScreen label="Preparing your workspace..." />;
   }
 
   if (!session || !profile) return <LoginScreen />;
@@ -350,13 +380,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
 
   if (!activeSpace) {
     if (loading) {
-      return (
-        <Box
-          sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', backgroundColor: 'var(--app-bg)' }}
-        >
-          <CircularProgress sx={{ color: NEO_MINT.primary }} />
-        </Box>
-      );
+      return <AppLoadingScreen label="Loading your spaces..." />;
     }
     if (spaces.length === 0) {
       return <AccessErrorScreen message="Lỗi: Chưa được phân quyền vào Space" onSignOut={onSignOut} />;
@@ -382,7 +406,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         display: 'flex',
         height: '100vh',
         overflow: 'hidden',
-        backgroundColor: 'var(--app-bg)',
+        backgroundColor: 'var(--main-bg)',
         fontFamily: 'var(--font-gilroy)',
       }}
     >
@@ -391,24 +415,25 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         position="fixed"
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          backgroundColor: 'var(--surface)',
+          backgroundColor: 'color-mix(in srgb, var(--surface) 94%, transparent)',
           borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
-          boxShadow: 'none',
+          boxShadow: '0 1px 0 color-mix(in srgb, var(--text-title) 4%, transparent)',
           color: NEO_MINT.textTitle,
         }}
       >
         <Toolbar
           sx={{
             justifyContent: 'space-between',
-            px: { xs: 1, md: 2 },
-            minHeight: '64px !important',
-            gap: { xs: 0.5, md: 1 },
+            px: { xs: 1, md: 2.25 },
+            minHeight: '68px !important',
+            gap: { xs: 0.6, md: 1.25 },
           }}
         >
           {/* Left: hamburger + brand */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 }, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, md: 1.5 }, minWidth: 0 }}>
             <IconButton
               edge="start"
+              aria-label={isDrawerOpen ? 'Close filters panel' : 'Open filters panel'}
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
               sx={{
                 p: 0.65,
@@ -425,29 +450,29 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             {/* Logo mark — Action Blue square with radius */}
             <Box
               sx={{
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
                 borderRadius: '8px',
                 backgroundColor: 'var(--primary)',
-                boxShadow: '0 6px 16px color-mix(in srgb, var(--primary) 22%, transparent)',
+                boxShadow: '0 6px 14px color-mix(in srgb, var(--primary) 22%, transparent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              <Typography sx={{ color: NEO_MINT.surface, fontWeight: 700, fontSize: '14px', lineHeight: 1 }}>
-                C
+              <Typography sx={{ color: NEO_MINT.surface, fontWeight: 800, fontSize: '13px', lineHeight: 1 }}>
+                A
               </Typography>
             </Box>
 
             <Typography
               component="div"
               sx={{
-                fontWeight: 700,
-                fontSize: { xs: '16px', md: '18px' },
+                fontWeight: 800,
+                fontSize: { xs: '15px', md: '17px' },
                 color: NEO_MINT.textTitle,
-                letterSpacing: 0,
+                letterSpacing: '-0.035em',
                 userSelect: 'none',
                 whiteSpace: 'nowrap',
               }}
@@ -457,7 +482,20 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           </Box>
 
           {/* Center: primary actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.25, md: 0.4 } }}>
+          <Box
+            aria-label="Primary workspace actions"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 0.2, md: 0.35 },
+              flex: 1,
+              justifyContent: 'center',
+              minWidth: 0,
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
             {/* Primary CTA — Action Blue */}
             <Button
               variant="text"
@@ -580,7 +618,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           </Box>
 
           {/* Right: icon actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.45, flexShrink: 0 }}>
             <Typography
               sx={{
                 display: { xs: 'none', md: 'block' },
@@ -595,6 +633,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
               {todayLabel}
             </Typography>
             <IconButton
+              aria-label="Sign out"
               onClick={() => void onSignOut()}
               sx={{
                 p: 0.65,
@@ -609,6 +648,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             </IconButton>
             {activeSpace?.isAdmin && (
               <IconButton
+                aria-label="Open settings"
                 onClick={() => setIsSettingsOpen(true)}
                 sx={{
                   p: 0.65,
@@ -663,7 +703,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           },
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important' }} />
+        <Toolbar sx={{ minHeight: '68px !important' }} />
         <Box
           onMouseDown={handleStartResize}
           role="separator"
@@ -671,7 +711,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           aria-label="Resize filters panel"
           sx={{
             position: 'absolute',
-            top: 64,
+            top: 68,
             right: -5,
             bottom: 0,
             width: 10,
@@ -698,7 +738,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         <Box
           sx={{
             overflow: 'auto',
-            height: 'calc(100vh - 64px)',
+            height: 'calc(100vh - 68px)',
             p: drawerWidth < 260 ? 1.5 : 2,
             minWidth: 0,
           }}
@@ -734,7 +774,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           flexGrow: 1,
           minWidth: 0,
           px: { xs: 2, md: 4 },
-          py: 3,
+          py: { xs: 2, md: 2.5 },
           display: 'flex',
           flexDirection: 'column',
           overflowX: 'hidden',
@@ -742,7 +782,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           backgroundColor: 'var(--main-bg)',
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important' }} />
+        <Toolbar sx={{ minHeight: '68px !important' }} />
 
         {loading ? (
           <Box
@@ -813,7 +853,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           },
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important' }} />
+        <Toolbar sx={{ minHeight: '68px !important' }} />
         <Box
           onMouseDown={handleStartTodayResize}
           role="separator"
@@ -821,7 +861,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           aria-label="Resize Today panel"
           sx={{
             position: 'absolute',
-            top: 64,
+            top: 68,
             left: -5,
             bottom: 0,
             width: 10,
@@ -845,7 +885,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             },
           }}
         />
-        <Box sx={{ height: 'calc(100vh - 64px)', minWidth: 0 }}>
+        <Box sx={{ height: 'calc(100vh - 68px)', minWidth: 0 }}>
           <TodayWorkspace
             tasks={tasks}
             profile={profile}
@@ -871,15 +911,21 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         slotProps={{
           paper: {
             sx: {
-              borderRadius: '14px',
+              borderRadius: '20px',
               border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+              boxShadow: NEO_MINT.shadowLg,
             },
           },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1.5 }}>
+        <DialogTitle
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, px: { xs: 2, sm: 2.5 }, pt: 2.25, pr: 1.5 }}
+        >
           <AiSearchIcon sx={{ color: NEO_MINT.primary, fontSize: 21 }} />
-          <Typography component="span" sx={{ flex: 1, fontSize: '17px', fontWeight: 800 }}>
+          <Typography
+            component="span"
+            sx={{ flex: 1, fontSize: '17px', fontWeight: 800, letterSpacing: '-0.025em' }}
+          >
             Ask your task data
           </Typography>
           <IconButton
@@ -890,7 +936,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ p: { xs: 1.5, sm: 2 } }}>
+        <DialogContent dividers sx={{ p: { xs: 1.5, sm: 2.5 }, borderColor: NEO_MINT.cardBorderSoft }}>
           <TaskAssistantPanel
             tasks={tasks}
             assistantIntents={settings.assistantIntents || []}

@@ -5,7 +5,11 @@ import './globals.css';
 import ThemeProvider from '@/components/ThemeProvider';
 import AuthProvider from '@/components/AuthProvider';
 
-const inter = Inter({ subsets: ['latin'], weight: ['400', '700'] });
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-app',
+});
 
 export const metadata: Metadata = {
   title: 'AI Task Manager',
@@ -18,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="vi" className={inter.variable}>
+      <body>
         <AppRouterCacheProvider>
           <ThemeProvider>
             <AuthProvider>{children}</AuthProvider>

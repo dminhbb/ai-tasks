@@ -31,7 +31,7 @@ import { extractTasksWithAi } from '@/lib/supabase/functions';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
   URGENT: { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
-  'IN PROGRESS': { bg: 'rgba(15,118,110,0.10)', color: NEO_MINT.primary, border: 'rgba(15,118,110,0.24)' },
+  'IN PROGRESS': { bg: 'var(--primary-subtle)', color: NEO_MINT.primary, border: 'var(--primary-soft)' },
   'TO DO': { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
   PENDING: { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
   CANCELLED: { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
@@ -72,11 +72,11 @@ function TagPill({ label, selected, onClick }: { label: string; selected: boolea
         fontSize: '11px',
         fontWeight: 600,
         userSelect: 'none',
-        transition: 'all 0.15s ease',
-        backgroundColor: selected ? 'rgba(15,118,110,0.10)' : NEO_MINT.surfaceMuted,
+        transition: 'background-color var(--transition-fast), border-color var(--transition-fast)',
+        backgroundColor: selected ? 'var(--primary-subtle)' : NEO_MINT.surfaceMuted,
         color: selected ? NEO_MINT.primary : NEO_MINT.textBody,
-        border: `1px solid ${selected ? 'rgba(15,118,110,0.24)' : NEO_MINT.cardBorderSoft}`,
-        '&:hover': { backgroundColor: selected ? 'rgba(15,118,110,0.14)' : 'var(--primary-subtle)' },
+        border: `1px solid ${selected ? 'var(--primary-soft)' : NEO_MINT.cardBorderSoft}`,
+        '&:hover': { backgroundColor: 'var(--primary-subtle)' },
       }}
     >
       {label}
@@ -204,15 +204,23 @@ export default function AddTaskDialog({
       slotProps={{
         paper: {
           sx: {
-            borderRadius: '12px',
-            p: 0.75,
+            borderRadius: '20px',
+            p: { xs: 0, sm: 0.5 },
             border: '1px solid var(--card-border)',
-            boxShadow: NEO_MINT.shadowSm,
+            boxShadow: NEO_MINT.shadowLg,
           },
         },
       }}
     >
-      <DialogTitle sx={{ fontWeight: 700, color: NEO_MINT.textTitle }}>
+      <DialogTitle
+        sx={{
+          px: { xs: 2, sm: 2.5 },
+          pt: { xs: 2, sm: 2.5 },
+          fontWeight: 800,
+          letterSpacing: '-0.03em',
+          color: NEO_MINT.textTitle,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <span>{dialogTitle}</span>
           {parsedTasks && !skipAI && (
@@ -237,7 +245,7 @@ export default function AddTaskDialog({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent sx={{ px: { xs: 2, sm: 2.5 } }}>
         {/* ── Step 1: freetext input ── */}
         {!parsedTasks ? (
           <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -518,7 +526,9 @@ export default function AddTaskDialog({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2.25 }}>
+      <DialogActions
+        sx={{ px: { xs: 2, sm: 2.5 }, py: 2.25, borderTop: `1px solid ${NEO_MINT.cardBorderSoft}` }}
+      >
         <Button
           onClick={onClose}
           sx={{

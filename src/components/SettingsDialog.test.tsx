@@ -5,7 +5,9 @@ import SettingsDialog from '@/components/SettingsDialog';
 import type { Space, UserProfile } from '@/types';
 
 vi.mock('@/components/ThemeProvider', () => ({
-  APP_THEME_OPTIONS: [{ id: 'neo-mint', name: 'Neo Mint', description: 'Default', swatches: ['#fff'] }],
+  APP_THEME_OPTIONS: [
+    { id: 'neo-mint', label: 'Neo Mint', description: 'Default', swatches: ['#fff', '#fff', '#fff'] },
+  ],
   useThemeContext: () => ({ themeName: 'neo-mint', setThemeName: vi.fn() }),
 }));
 

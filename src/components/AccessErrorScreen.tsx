@@ -22,8 +22,10 @@ export default function AccessErrorScreen({ message, onSignOut }: AccessErrorScr
           boxShadow: 'none',
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '18px', fontWeight: 800 }}>AI TASK</Typography>
+        <Toolbar sx={{ justifyContent: 'space-between', minHeight: '68px !important', px: { xs: 2, sm: 3 } }}>
+          <Typography sx={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.04em' }}>
+            AI TASK
+          </Typography>
           <Button startIcon={<Logout />} onClick={() => void onSignOut()} sx={{ textTransform: 'none' }}>
             Sign out
           </Button>
@@ -37,13 +39,25 @@ export default function AccessErrorScreen({ message, onSignOut }: AccessErrorScr
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 2,
+          gap: 2.25,
           px: 2,
           textAlign: 'center',
         }}
       >
-        <WarningAmber sx={{ fontSize: 72, color: NEO_MINT.danger }} />
-        <Typography sx={{ fontSize: '16px', fontWeight: 700, color: NEO_MINT.textTitle }}>
+        <Box
+          sx={{
+            width: 88,
+            height: 88,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: '24px',
+            backgroundColor: NEO_MINT.dangerSoft,
+            border: `1px solid ${NEO_MINT.dangerBorder}`,
+          }}
+        >
+          <WarningAmber sx={{ fontSize: 44, color: NEO_MINT.danger }} />
+        </Box>
+        <Typography sx={{ fontSize: '16px', fontWeight: 700, color: NEO_MINT.textTitle, maxWidth: 420 }}>
           {message}
         </Typography>
       </Box>

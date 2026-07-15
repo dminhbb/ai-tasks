@@ -17,7 +17,7 @@ import { NEO_MINT } from '@/styles/neoMintTokens';
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   URGENT: { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
-  'IN PROGRESS': { bg: 'rgba(15,118,110,0.10)', color: NEO_MINT.primary, border: 'rgba(15,118,110,0.24)' },
+  'IN PROGRESS': { bg: 'var(--primary-subtle)', color: NEO_MINT.primary, border: 'var(--primary-soft)' },
   'TO DO': { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
   PENDING: { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
   CANCELLED: { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
@@ -98,9 +98,9 @@ function PillChip({
   color?: { bg: string; color: string; border: string };
   onClick: () => void;
 }) {
-  const activeBg = color ? color.bg : 'rgba(15,118,110,0.10)';
+  const activeBg = color ? color.bg : 'var(--primary-subtle)';
   const activeColor = color ? color.color : NEO_MINT.primary;
-  const activeBorder = color ? color.border : 'rgba(15,118,110,0.24)';
+  const activeBorder = color ? color.border : 'var(--primary-soft)';
 
   return (
     <Box
@@ -120,13 +120,14 @@ function PillChip({
         overflowWrap: 'anywhere',
         textAlign: 'center',
         userSelect: 'none',
-        transition: 'all 0.15s ease',
+        transition:
+          'background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast)',
         backgroundColor: selected ? activeBg : NEO_MINT.surfaceMuted,
         color: selected ? activeColor : NEO_MINT.textBody,
         border: `1px solid ${selected ? activeBorder : NEO_MINT.cardBorderSoft}`,
         '&:hover': {
           backgroundColor: selected ? activeBg : 'var(--sidebar-hover)',
-          boxShadow: selected ? '0 1px 2px rgba(15, 23, 42, 0.06)' : 'none',
+          boxShadow: selected ? NEO_MINT.shadowSm : 'none',
         },
       }}
     >

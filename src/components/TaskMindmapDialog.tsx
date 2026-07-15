@@ -1289,25 +1289,36 @@ export default function TaskMindmapDialog({
       >
         <Box
           sx={{
-            height: 64,
+            minHeight: 68,
             px: { xs: 2, md: 3 },
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
-            backgroundColor: NEO_MINT.surface,
+            backgroundColor: 'color-mix(in srgb, var(--surface) 94%, transparent)',
             flexShrink: 0,
           }}
         >
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontSize: '18px', fontWeight: 800, lineHeight: 1.2 }}>Task mindmap</Typography>
+            <Typography sx={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+              Task mindmap
+            </Typography>
             <Typography sx={{ fontSize: '12px', color: NEO_MINT.textMuted, fontWeight: 600 }}>
               {viewMode === 'today'
                 ? `Today view - ${todayMindmapItems.length} subtasks`
                 : `${viewMode === 'tag' ? 'Tag' : viewMode === 'assignee' ? 'Assignee' : 'Status'} view - ${layout.rootCount} roots - ${visibleTasks.length}/${tasks.length} tasks`}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.65,
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
             <Tooltip title={viewMode === 'today' ? 'Back to Tag view' : 'Show Today mindmap'}>
               <IconButton
                 aria-label="Show Today mindmap"

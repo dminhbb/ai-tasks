@@ -65,11 +65,13 @@ export default function TaskAssistantPanel({
   return (
     <Box
       sx={{
-        p: 0.5,
+        p: { xs: 0, sm: 0.25 },
         backgroundColor: 'transparent',
       }}
     >
-      <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
+      <Box
+        sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start', flexWrap: { xs: 'wrap', sm: 'nowrap' } }}
+      >
         <TextField
           fullWidth
           multiline
@@ -110,7 +112,7 @@ export default function TaskAssistantPanel({
           disabled={loading && !question && !answer && !error}
           onClick={handleReset}
           sx={{
-            minWidth: 70,
+            minWidth: { xs: 'calc(50% - 3px)', sm: 70 },
             height: 31,
             px: 1.25,
             borderRadius: '10px',
@@ -138,7 +140,7 @@ export default function TaskAssistantPanel({
           disabled={!question.trim() || loading}
           onClick={() => void handleAsk()}
           sx={{
-            minWidth: 62,
+            minWidth: { xs: 'calc(50% - 3px)', sm: 62 },
             height: 31,
             px: 1.25,
             borderRadius: '10px',

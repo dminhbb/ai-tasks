@@ -131,18 +131,30 @@ export default function NotebookDialog({
       onClose={onClose}
       fullWidth
       maxWidth="md"
-      slotProps={{ paper: { sx: { borderRadius: '12px', p: 0.75 } } }}
+      slotProps={{
+        paper: { sx: { borderRadius: '20px', p: { xs: 0, sm: 0.5 }, boxShadow: NEO_MINT.shadowLg } },
+      }}
     >
-      <DialogTitle sx={{ fontWeight: 800, color: NEO_MINT.textTitle }}>Spaces and Notebooks</DialogTitle>
-      <DialogContent>
+      <DialogTitle
+        sx={{
+          px: { xs: 2, sm: 2.5 },
+          pt: { xs: 2, sm: 2.5 },
+          fontWeight: 800,
+          letterSpacing: '-0.03em',
+          color: NEO_MINT.textTitle,
+        }}
+      >
+        Spaces and Notebooks
+      </DialogTitle>
+      <DialogContent sx={{ px: { xs: 2, sm: 2.5 } }}>
         <Typography sx={{ mb: 1, fontSize: '12px', fontWeight: 800, color: NEO_MINT.textMuted }}>
           SPACE
         </Typography>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))',
-            gap: 1,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(118px, 1fr))',
+            gap: 1.25,
             mb: 2.5,
           }}
         >
@@ -156,15 +168,18 @@ export default function NotebookDialog({
                 aria-label={`Select ${space.name}`}
                 sx={{
                   aspectRatio: '1 / 1',
-                  minHeight: 105,
+                  minHeight: 118,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 0.75,
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   border: `1px solid ${isSelected ? NEO_MINT.primary : NEO_MINT.cardBorderSoft}`,
                   backgroundColor: isSelected ? 'var(--primary-subtle)' : NEO_MINT.surface,
                   color: isSelected ? NEO_MINT.primary : NEO_MINT.textTitle,
                   textTransform: 'none',
+                  transition:
+                    'transform var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast)',
+                  '&:hover': { transform: 'translateY(-1px)', backgroundColor: 'var(--primary-subtle)' },
                 }}
               >
                 <Apps sx={{ fontSize: 28 }} />
@@ -244,9 +259,9 @@ export default function NotebookDialog({
                     alignItems: 'center',
                     gap: 1,
                     p: 1,
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     border: `1px solid ${isActive ? NEO_MINT.primary : NEO_MINT.cardBorderSoft}`,
-                    backgroundColor: isActive ? 'var(--primary-subtle)' : NEO_MINT.surface,
+                    backgroundColor: isActive ? 'var(--primary-subtle)' : 'var(--surface-raised)',
                   }}
                 >
                   {isEditing ? (

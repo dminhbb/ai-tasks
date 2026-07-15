@@ -14,7 +14,7 @@ import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/st
 const THEME_STORAGE_KEY = 'ai-task-theme';
 const THEME_CHANGE_EVENT = 'ai-task-theme-change';
 
-export type AppThemeName = 'neo-mint' | 'midnight' | 'cobalt-contrast';
+export type AppThemeName = 'neo-mint' | 'pastel-rose' | 'cupertino' | 'midnight' | 'cobalt-contrast';
 
 export interface AppThemeOption {
   id: AppThemeName;
@@ -27,8 +27,20 @@ export const APP_THEME_OPTIONS: AppThemeOption[] = [
   {
     id: 'neo-mint',
     label: 'Neo Mint',
-    description: 'Soft teal workspace with calm neutral surfaces.',
-    swatches: ['#0F766E', '#DDE7EA', '#FFFFFF'],
+    description: 'Clear teal contrast with cool, quiet workspace surfaces.',
+    swatches: ['#065F5B', '#E8F1EF', '#FFFFFF'],
+  },
+  {
+    id: 'pastel-rose',
+    label: 'Pastel Rose',
+    description: 'Soft pink surfaces with deep-rose actions and readable text.',
+    swatches: ['#9D174D', '#FCF1F5', '#FFFDFE'],
+  },
+  {
+    id: 'cupertino',
+    label: 'Cupertino',
+    description: 'Apple-inspired neutral surfaces with accessible blue actions.',
+    swatches: ['#0066CC', '#F2F2F7', '#FFFFFF'],
   },
   {
     id: 'midnight',
@@ -60,16 +72,40 @@ const THEME_PALETTES: Record<
   }
 > = {
   'neo-mint': {
-    appBg: '#DDE7EA',
+    appBg: '#E8F1EF',
     surface: '#FFFFFF',
-    primary: '#0F766E',
-    primaryHover: '#115E59',
-    textTitle: '#0B1220',
-    textMuted: '#64748B',
-    success: '#16A34A',
-    warning: '#D97706',
-    danger: '#DC2626',
-    info: '#2563EB',
+    primary: '#065F5B',
+    primaryHover: '#064E4B',
+    textTitle: '#102A2A',
+    textMuted: '#557072',
+    success: '#167A4D',
+    warning: '#A85A05',
+    danger: '#B42318',
+    info: '#0A5CAD',
+  },
+  'pastel-rose': {
+    appBg: '#FCF1F5',
+    surface: '#FFFDFE',
+    primary: '#9D174D',
+    primaryHover: '#831843',
+    textTitle: '#401223',
+    textMuted: '#80576A',
+    success: '#237A4C',
+    warning: '#9A5A08',
+    danger: '#B4233D',
+    info: '#8A2B62',
+  },
+  cupertino: {
+    appBg: '#F2F2F7',
+    surface: '#FFFFFF',
+    primary: '#0066CC',
+    primaryHover: '#004F9E',
+    textTitle: '#1D1D1F',
+    textMuted: '#5A5A5F',
+    success: '#157347',
+    warning: '#9A6700',
+    danger: '#B42318',
+    info: '#0066CC',
   },
   midnight: {
     appBg: '#070B14',
@@ -156,18 +192,33 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       typography: {
         fontSize: 14,
         htmlFontSize: 16,
-        fontFamily: "var(--font-gilroy), 'Inter', system-ui, sans-serif",
-        h1: { fontWeight: 800, fontSize: '48px', color: 'var(--text-title)' },
-        h2: { fontWeight: 800, fontSize: '32px', color: 'var(--text-title)' },
-        h3: { fontWeight: 700, fontSize: '24px', color: 'var(--text-title)' },
-        h4: { fontWeight: 700, fontSize: '20px', color: 'var(--text-title)' },
-        h5: { fontWeight: 700, fontSize: '16px', color: 'var(--text-title)' },
-        h6: { fontWeight: 700, fontSize: '14px', color: 'var(--text-title)' },
-        subtitle1: { fontWeight: 600, fontSize: '15px' },
-        subtitle2: { fontWeight: 700, fontSize: '11px', textTransform: 'uppercase' },
-        body1: { fontSize: '15px', lineHeight: 1.6 },
-        body2: { fontSize: '13px', lineHeight: 1.5 },
-        button: { fontWeight: 700, textTransform: 'none' },
+        fontFamily: 'var(--font-gilroy), system-ui, sans-serif',
+        h1: {
+          fontWeight: 800,
+          fontSize: 'clamp(2rem, 3vw, 3rem)',
+          letterSpacing: '-0.04em',
+          color: 'var(--text-title)',
+        },
+        h2: {
+          fontWeight: 800,
+          fontSize: 'clamp(1.65rem, 2.5vw, 2.25rem)',
+          letterSpacing: '-0.032em',
+          color: 'var(--text-title)',
+        },
+        h3: { fontWeight: 750, fontSize: '1.5rem', letterSpacing: '-0.025em', color: 'var(--text-title)' },
+        h4: { fontWeight: 750, fontSize: '1.25rem', letterSpacing: '-0.018em', color: 'var(--text-title)' },
+        h5: { fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.012em', color: 'var(--text-title)' },
+        h6: { fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-title)' },
+        subtitle1: { fontWeight: 650, fontSize: '0.9375rem' },
+        subtitle2: {
+          fontWeight: 750,
+          fontSize: '0.6875rem',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        },
+        body1: { fontSize: '0.9375rem', lineHeight: 1.55 },
+        body2: { fontSize: '0.8125rem', lineHeight: 1.5 },
+        button: { fontWeight: 700, textTransform: 'none', letterSpacing: '0' },
       },
       shape: { borderRadius: 12 },
       palette: {
@@ -227,12 +278,14 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         MuiButton: {
           styleOverrides: {
             root: {
-              borderRadius: 12,
-              padding: '9px 18px',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              borderRadius: 10,
+              padding: '8px 14px',
+              transition:
+                'background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast)',
               textTransform: 'none',
               fontWeight: 700,
               boxShadow: 'none',
+              '&:active': { transform: 'translateY(1px)' },
             },
           },
         },
@@ -249,16 +302,16 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         MuiDialog: {
           styleOverrides: {
             paper: {
-              borderRadius: 16,
-              padding: '8px',
+              borderRadius: 20,
+              padding: '4px',
               border: '1px solid var(--card-border)',
-              boxShadow: 'var(--card-shadow)',
+              boxShadow: 'var(--shadow-lg)',
             },
           },
         },
         MuiChip: {
           styleOverrides: {
-            root: { borderRadius: 999, fontWeight: 600, height: '26px' },
+            root: { borderRadius: 999, fontWeight: 650, height: '24px', fontSize: '0.6875rem' },
             filled: { backgroundColor: 'var(--surface-muted)', color: 'var(--text-body)' },
           },
         },
@@ -269,6 +322,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
               color: 'var(--text-title)',
               boxShadow: 'none',
               borderBottom: '1px solid var(--card-border-soft)',
+              backdropFilter: 'blur(18px)',
             },
           },
         },

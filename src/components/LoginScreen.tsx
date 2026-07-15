@@ -40,8 +40,33 @@ export default function LoginScreen() {
         minHeight: '100vh',
         display: 'grid',
         placeItems: 'center',
-        px: 2,
-        background: 'linear-gradient(145deg, #DDE7EA 0%, #ECFDF5 100%)',
+        px: { xs: 2, sm: 3 },
+        py: 3,
+        backgroundColor: 'var(--app-bg)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before, &::after': {
+          content: '""',
+          position: 'absolute',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+        },
+        '&::before': {
+          width: { xs: 260, sm: 440 },
+          height: { xs: 260, sm: 440 },
+          top: { xs: -150, sm: -220 },
+          right: { xs: -120, sm: -160 },
+          backgroundColor: 'var(--primary-soft)',
+          opacity: 0.72,
+        },
+        '&::after': {
+          width: { xs: 180, sm: 300 },
+          height: { xs: 180, sm: 300 },
+          bottom: { xs: -100, sm: -140 },
+          left: { xs: -90, sm: -110 },
+          backgroundColor: 'var(--surface-inset)',
+          opacity: 0.8,
+        },
       }}
     >
       <Paper
@@ -50,36 +75,43 @@ export default function LoginScreen() {
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: 420,
-          p: { xs: 3, sm: 4 },
-          borderRadius: '16px',
+          maxWidth: 440,
+          p: { xs: 3, sm: 4.5 },
+          borderRadius: '24px',
           border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-          boxShadow: NEO_MINT.shadowSm,
+          boxShadow: NEO_MINT.shadowLg,
+          backgroundColor: 'var(--surface-raised)',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
           <Box
             sx={{
-              width: 42,
-              height: 42,
-              borderRadius: '12px',
+              width: 46,
+              height: 46,
+              borderRadius: '14px',
               display: 'grid',
               placeItems: 'center',
               color: NEO_MINT.surface,
               backgroundColor: NEO_MINT.primary,
             }}
           >
-            <LockOutlined />
+            <LockOutlined fontSize="small" />
           </Box>
           <Box>
-            <Typography sx={{ color: NEO_MINT.textTitle, fontSize: 22, fontWeight: 800 }}>AI TASK</Typography>
+            <Typography
+              sx={{ color: NEO_MINT.textTitle, fontSize: 20, fontWeight: 800, letterSpacing: '-0.04em' }}
+            >
+              AI TASK
+            </Typography>
             <Typography sx={{ color: NEO_MINT.textMuted, fontSize: 12, fontWeight: 600 }}>
               Đăng nhập để tiếp tục
             </Typography>
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3.5 }}>
           {(validationError || error) && <Alert severity="error">{validationError || error}</Alert>}
           <TextField
             autoComplete="username"
@@ -111,7 +143,7 @@ export default function LoginScreen() {
             startIcon={loading ? <CircularProgress color="inherit" size={18} /> : <Login />}
             type="submit"
             variant="contained"
-            sx={{ py: 1.1, borderRadius: '10px', fontWeight: 800, textTransform: 'none' }}
+            sx={{ minHeight: 46, borderRadius: '10px', fontWeight: 800, textTransform: 'none' }}
           >
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </Button>

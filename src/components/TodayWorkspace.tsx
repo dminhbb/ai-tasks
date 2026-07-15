@@ -191,20 +191,30 @@ export default function TodayWorkspace({
   return (
     <>
       <Box sx={{ height: '100%', minWidth: 0, backgroundColor: 'var(--sidebar-bg)' }}>
-        <Box sx={{ px: 1.5, py: 1.15, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
-          <Typography sx={{ fontSize: '13px', fontWeight: 800, color: NEO_MINT.textTitle }}>
+        <Box sx={{ px: 1.75, py: 1.5, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
+          <Typography
+            sx={{ fontSize: '12px', fontWeight: 800, letterSpacing: '-0.015em', color: NEO_MINT.textTitle }}
+          >
             {profile.nickname || profile.email.split('@')[0]} | {profile.role}
           </Typography>
           <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted, mt: 0.2 }} noWrap>
             {profile.email}
           </Typography>
-          <Typography sx={{ fontSize: '12px', fontWeight: 800, color: NEO_MINT.textTitle, mt: 1 }}>
+          <Typography
+            sx={{
+              fontSize: '10px',
+              fontWeight: 800,
+              letterSpacing: '0.09em',
+              color: NEO_MINT.primary,
+              mt: 1.25,
+            }}
+          >
             ##TODAY
           </Typography>
         </Box>
         <Box sx={{ overflowY: 'auto', height: 'calc(100% - 82px)' }}>
           {todayItems.length === 0 ? (
-            <Typography sx={{ p: 2, fontSize: '12px', color: NEO_MINT.textMuted }}>
+            <Typography sx={{ p: 2, fontSize: '12px', lineHeight: 1.6, color: NEO_MINT.textMuted }}>
               No subtasks selected for Today.
             </Typography>
           ) : (
@@ -262,10 +272,24 @@ export default function TodayWorkspace({
         disableAutoFocus={isBatchAddOpen || movingItem !== null}
         disableRestoreFocus={isBatchAddOpen || movingItem !== null}
         slotProps={{
-          paper: { sx: { borderRadius: '14px', border: `1px solid ${NEO_MINT.cardBorderSoft}` } },
+          paper: {
+            sx: {
+              borderRadius: '20px',
+              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+              boxShadow: NEO_MINT.shadowLg,
+            },
+          },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: { xs: 2, sm: 2.5 },
+            py: 2,
+          }}
+        >
           <Typography component="span" sx={{ fontSize: '20px', fontWeight: 800, color: NEO_MINT.textTitle }}>
             ##TODAY
           </Typography>
@@ -273,7 +297,10 @@ export default function TodayWorkspace({
             <Close />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ p: 0, pb: 7, position: 'relative' }}>
+        <DialogContent
+          dividers
+          sx={{ p: 0, pb: 7.5, position: 'relative', borderColor: NEO_MINT.cardBorderSoft }}
+        >
           {dialogItems.length === 0 ? (
             <Typography sx={{ p: 3, color: NEO_MINT.textMuted, textAlign: 'center' }}>
               No subtasks selected for Today.

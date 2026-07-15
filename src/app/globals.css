@@ -1,71 +1,80 @@
-/* Neo Mint Enterprise UI tokens */
+/* Application design tokens. Components use semantic tokens so every theme
+   remains legible without duplicating hard-coded colours. */
 :root {
   /* App structure */
-  --app-bg: #dde7ea;
-  --main-bg: #bfc9d1;
+  --app-bg: #e8f1ef;
+  --main-bg: #dce9e6;
   --surface: #ffffff;
-  --surface-soft: #f8fafc;
-  --surface-muted: #eef4f5;
+  --surface-raised: #ffffff;
+  --surface-soft: #f4f8f7;
+  --surface-muted: #e4efec;
+  --surface-inset: #cfdfdb;
 
   /* Sidebar / Panel */
-  --sidebar-bg: #f4f8f9;
-  --sidebar-border: #cbd5da;
-  --sidebar-text: #1e293b;
-  --sidebar-text-muted: #64748b;
-  --sidebar-hover: #e6f3f1;
-  --sidebar-active-bg: #d6f3ef;
-  --sidebar-active-text: #0f766e;
+  --sidebar-bg: #f5faf8;
+  --sidebar-border: #b6cbc5;
+  --sidebar-text: #173a39;
+  --sidebar-text-muted: #557072;
+  --sidebar-hover: #dcefe9;
+  --sidebar-active-bg: #c5e7dd;
+  --sidebar-active-text: #065f5b;
 
   /* Assistant / Slide panel */
-  --panel-bg: #f1f6f7;
-  --panel-border: #c7d2da;
+  --panel-bg: #f1f8f5;
+  --panel-border: #b8cdc7;
   --panel-card-bg: #ffffff;
 
   /* Card */
   --card-bg: #ffffff;
-  --card-border: #bfcbd3;
-  --card-border-soft: #cbd5da;
-  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.07), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --card-border: #9db6af;
+  --card-border-soft: #c3d4cf;
+  --border-strong: #77958d;
+  --shadow-sm: 0 1px 2px rgba(8, 61, 57, 0.08), 0 2px 8px rgba(8, 61, 57, 0.045);
+  --shadow-md: 0 8px 20px rgba(8, 61, 57, 0.1), 0 2px 5px rgba(8, 61, 57, 0.05);
+  --shadow-lg: 0 20px 44px rgba(8, 61, 57, 0.16), 0 6px 16px rgba(8, 61, 57, 0.09);
+  --card-shadow: var(--shadow-sm);
 
   /* Brand */
-  --primary: #0f766e;
-  --primary-hover: #115e59;
-  --primary-soft: #d6f3ef;
-  --primary-subtle: #ecfdf5;
-  --accent: #14b8a6;
-  --mindmap-connection: rgba(15, 23, 42, 0.28);
+  --primary: #065f5b;
+  --primary-hover: #064e4b;
+  --primary-soft: #c5e7dd;
+  --primary-subtle: #e5f5f0;
+  --accent: #0f8b83;
+  --mindmap-connection: rgba(16, 74, 70, 0.48);
 
   /* State */
-  --success: #16a34a;
-  --success-bg: #dcfce7;
-  --warning: #d97706;
-  --warning-bg: #fef3c7;
-  --danger: #dc2626;
-  --danger-bg: #fee2e2;
-  --danger-border: #fca5a5;
-  --info: #2563eb;
-  --info-bg: #dbeafe;
-  --success-border: #86efac;
-  --due-date-change: #7c3aed;
-  --due-date-change-bg: #f3e8ff;
+  --success: #167a4d;
+  --success-bg: #daf3e5;
+  --warning: #a85a05;
+  --warning-bg: #fff0cf;
+  --danger: #b42318;
+  --danger-bg: #fee4e2;
+  --danger-border: #f2a29b;
+  --info: #0a5cad;
+  --info-bg: #dcecff;
+  --success-border: #78cba0;
+  --due-date-change: #6d3fb5;
+  --due-date-change-bg: #eee7ff;
 
   /* Text */
-  --text-title: #0b1220;
-  --text-body: #334155;
-  --text-muted: #64748b;
-  --text-subtle: #7c8a9a;
-  --text-inverse: #f8fafc;
+  --text-title: #102a2a;
+  --text-body: #284746;
+  --text-muted: #557072;
+  --text-subtle: #6f8784;
+  --text-inverse: #ffffff;
 
   /* Form */
   --input-bg: #ffffff;
-  --input-border: #bfcbd3;
-  --input-focus: #0f766e;
+  --input-border: #7f9f98;
+  --input-focus: #065f5b;
 
   /* Radius */
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+  --radius-2xl: 24px;
 
   /* Legacy aliases used by existing components during the staged migration */
   --color-midnight-indigo: var(--text-title);
@@ -87,7 +96,7 @@
 
   /* Typography */
   --font-gilroy:
-    'Montserrat', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    var(--font-app), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-size-body: 14px;
   --leading-body: 1.71;
   --text-body-lg: 16px;
@@ -136,9 +145,13 @@
   --radius-buttons: var(--radius-md);
 
   /* Legacy shadow aliases */
-  --shadow-sm: var(--card-shadow);
-  --shadow-sm-2: var(--card-shadow);
-  --shadow-sm-3: var(--card-shadow);
+  --shadow-sm-2: var(--shadow-md);
+  --shadow-sm-3: var(--shadow-lg);
+
+  /* Interaction */
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 26%, transparent);
+  --transition-fast: 140ms cubic-bezier(0.2, 0, 0, 1);
+  --transition-standard: 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root[data-theme='midnight'] {
@@ -146,8 +159,10 @@
   --app-bg: #070b14;
   --main-bg: #0b1220;
   --surface: #111827;
+  --surface-raised: #172033;
   --surface-soft: #172033;
   --surface-muted: #1e293b;
+  --surface-inset: #0b1220;
   --sidebar-bg: #0f172a;
   --sidebar-border: #334155;
   --sidebar-text: #e2e8f0;
@@ -161,7 +176,11 @@
   --card-bg: #111827;
   --card-border: #475569;
   --card-border-soft: #334155;
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.28);
+  --border-strong: #53647d;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.34), 0 3px 10px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 9px 24px rgba(0, 0, 0, 0.32), 0 3px 8px rgba(0, 0, 0, 0.24);
+  --shadow-lg: 0 22px 52px rgba(0, 0, 0, 0.48), 0 8px 20px rgba(0, 0, 0, 0.3);
+  --card-shadow: var(--shadow-sm);
   --primary: #5eead4;
   --primary-hover: #99f6e4;
   --primary-soft: #134e4a;
@@ -190,13 +209,126 @@
   --input-focus: #5eead4;
 }
 
+:root[data-theme='pastel-rose'] {
+  color-scheme: light;
+  --app-bg: #fcf1f5;
+  --main-bg: #f7e5eb;
+  --surface: #fffdfd;
+  --surface-raised: #fffdfd;
+  --surface-soft: #fff7fa;
+  --surface-muted: #f9e3ec;
+  --surface-inset: #f1d2df;
+  --sidebar-bg: #fff8fb;
+  --sidebar-border: #e5b9ca;
+  --sidebar-text: #4f1a30;
+  --sidebar-text-muted: #80576a;
+  --sidebar-hover: #fbe4ee;
+  --sidebar-active-bg: #f8cde0;
+  --sidebar-active-text: #9d174d;
+  --panel-bg: #fff6fa;
+  --panel-border: #e6becf;
+  --panel-card-bg: #fffdfd;
+  --card-bg: #fffdfd;
+  --card-border: #dca7bd;
+  --card-border-soft: #ebc9d6;
+  --border-strong: #bf7f9b;
+  --shadow-sm: 0 1px 2px rgba(104, 31, 66, 0.08), 0 2px 8px rgba(104, 31, 66, 0.04);
+  --shadow-md: 0 8px 20px rgba(104, 31, 66, 0.1), 0 2px 5px rgba(104, 31, 66, 0.05);
+  --shadow-lg: 0 20px 44px rgba(104, 31, 66, 0.16), 0 6px 16px rgba(104, 31, 66, 0.09);
+  --card-shadow: var(--shadow-sm);
+  --primary: #9d174d;
+  --primary-hover: #831843;
+  --primary-soft: #f8cde0;
+  --primary-subtle: #fff0f6;
+  --accent: #c72664;
+  --mindmap-connection: rgba(98, 28, 62, 0.48);
+  --success: #237a4c;
+  --success-bg: #dff4e6;
+  --success-border: #7fc49a;
+  --warning: #9a5a08;
+  --warning-bg: #fff0cc;
+  --danger: #b4233d;
+  --danger-bg: #ffe4e8;
+  --danger-border: #ef9aad;
+  --info: #8a2b62;
+  --info-bg: #f6e1ee;
+  --due-date-change: #7e2258;
+  --due-date-change-bg: #f7e1ee;
+  --text-title: #401223;
+  --text-body: #64364c;
+  --text-muted: #80576a;
+  --text-subtle: #9a7182;
+  --text-inverse: #ffffff;
+  --input-bg: #fffdfd;
+  --input-border: #c98da7;
+  --input-focus: #9d174d;
+}
+
+/* Cupertino is an Apple-inspired web theme, not an official Apple UI implementation. */
+:root[data-theme='cupertino'] {
+  color-scheme: light;
+  --app-bg: #f2f2f7;
+  --main-bg: #e9e9ee;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-soft: #f7f7fa;
+  --surface-muted: #e5e5ea;
+  --surface-inset: #d1d1d6;
+  --sidebar-bg: #fafafa;
+  --sidebar-border: #c7c7cc;
+  --sidebar-text: #2c2c2e;
+  --sidebar-text-muted: #5a5a5f;
+  --sidebar-hover: #e8f1fd;
+  --sidebar-active-bg: #d9ebff;
+  --sidebar-active-text: #005bb5;
+  --panel-bg: #f7f7fa;
+  --panel-border: #c7c7cc;
+  --panel-card-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-border: #b8b8bf;
+  --card-border-soft: #d1d1d6;
+  --border-strong: #8e8e93;
+  --shadow-sm: 0 1px 2px rgba(28, 28, 30, 0.08), 0 2px 8px rgba(28, 28, 30, 0.04);
+  --shadow-md: 0 8px 20px rgba(28, 28, 30, 0.1), 0 2px 5px rgba(28, 28, 30, 0.05);
+  --shadow-lg: 0 20px 44px rgba(28, 28, 30, 0.16), 0 6px 16px rgba(28, 28, 30, 0.08);
+  --card-shadow: var(--shadow-sm);
+  --primary: #0066cc;
+  --primary-hover: #004f9e;
+  --primary-soft: #cce5ff;
+  --primary-subtle: #eaf4ff;
+  --accent: #007aff;
+  --mindmap-connection: rgba(41, 98, 155, 0.48);
+  --success: #157347;
+  --success-bg: #dff4e6;
+  --success-border: #7fc49a;
+  --warning: #9a6700;
+  --warning-bg: #fff1c2;
+  --danger: #b42318;
+  --danger-bg: #ffe5e1;
+  --danger-border: #ee9a91;
+  --info: #0066cc;
+  --info-bg: #d9ebff;
+  --due-date-change: #5e3da7;
+  --due-date-change-bg: #eee8ff;
+  --text-title: #1d1d1f;
+  --text-body: #3a3a3c;
+  --text-muted: #5a5a5f;
+  --text-subtle: #737378;
+  --text-inverse: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #8e8e93;
+  --input-focus: #0066cc;
+}
+
 :root[data-theme='cobalt-contrast'] {
   color-scheme: light;
   --app-bg: #d7e3f4;
   --main-bg: #c4d3e8;
   --surface: #ffffff;
+  --surface-raised: #ffffff;
   --surface-soft: #f3f7fc;
   --surface-muted: #e2eaf5;
+  --surface-inset: #cbd9eb;
   --sidebar-bg: #edf3fa;
   --sidebar-border: #8294ae;
   --sidebar-text: #102445;
@@ -210,7 +342,11 @@
   --card-bg: #ffffff;
   --card-border: #8294ae;
   --card-border-soft: #a7b6ca;
-  --card-shadow: 0 2px 4px rgba(7, 21, 47, 0.14), 0 10px 24px rgba(7, 21, 47, 0.1);
+  --border-strong: #687f9d;
+  --shadow-sm: 0 1px 3px rgba(7, 21, 47, 0.1), 0 3px 8px rgba(7, 21, 47, 0.06);
+  --shadow-md: 0 9px 20px rgba(7, 21, 47, 0.14), 0 3px 7px rgba(7, 21, 47, 0.08);
+  --shadow-lg: 0 22px 48px rgba(7, 21, 47, 0.19), 0 8px 18px rgba(7, 21, 47, 0.11);
+  --card-shadow: var(--shadow-sm);
   --primary: #1746a2;
   --primary-hover: #0b2f73;
   --primary-soft: #c9dbff;
@@ -250,6 +386,25 @@ html {
   font-family: var(--font-gilroy);
 }
 
+::selection {
+  color: var(--text-inverse);
+  background: var(--primary);
+}
+
+button,
+a,
+input,
+textarea,
+select,
+[tabindex]:not([tabindex='-1']) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -273,6 +428,9 @@ body {
   font-size: var(--font-size-body);
   line-height: var(--leading-body);
   font-family: var(--font-gilroy);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .ql-toolbar.ql-snow {

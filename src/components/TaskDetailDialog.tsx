@@ -289,17 +289,25 @@ export default function TaskDetailDialog({
       slotProps={{
         paper: {
           sx: {
-            borderRadius: '12px',
-            p: 0.75,
+            borderRadius: '20px',
+            p: { xs: 0, sm: 0.5 },
             border: '1px solid var(--card-border)',
-            boxShadow: NEO_MINT.shadowSm,
+            boxShadow: NEO_MINT.shadowLg,
           },
         },
       }}
     >
-      <DialogTitle>
+      <DialogTitle sx={{ px: { xs: 2, sm: 2.5 }, pt: { xs: 2, sm: 2.5 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5, gap: 2 }}>
-          <Typography sx={{ fontSize: '20px', fontWeight: 700, color: NEO_MINT.textTitle, lineHeight: 1.25 }}>
+          <Typography
+            sx={{
+              fontSize: '20px',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              color: NEO_MINT.textTitle,
+              lineHeight: 1.25,
+            }}
+          >
             Task Details
           </Typography>
           <Button
@@ -324,8 +332,8 @@ export default function TaskDetailDialog({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <DialogContent sx={{ px: { xs: 2, sm: 2.5 } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.75 }}>
           {/* Title */}
           <Box sx={{ mt: 1 }}>
             <FieldLabel>Title</FieldLabel>
@@ -674,7 +682,9 @@ export default function TaskDetailDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2.25 }}>
+      <DialogActions
+        sx={{ px: { xs: 2, sm: 2.5 }, py: 2.25, borderTop: `1px solid ${NEO_MINT.cardBorderSoft}` }}
+      >
         <Button
           onClick={onClose}
           sx={{
