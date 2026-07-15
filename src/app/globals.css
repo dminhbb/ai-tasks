@@ -2,26 +2,26 @@
    remains legible without duplicating hard-coded colours. */
 :root {
   /* App structure */
-  --app-bg: #e8f1ef;
-  --main-bg: #dce9e6;
+  --app-bg: #dceae7;
+  --main-bg: #c7ddd7;
   --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-soft: #f4f8f7;
-  --surface-muted: #e4efec;
-  --surface-inset: #cfdfdb;
+  --surface-soft: #edf6f3;
+  --surface-muted: #d7e9e3;
+  --surface-inset: #b7d1c8;
 
   /* Sidebar / Panel */
-  --sidebar-bg: #f5faf8;
-  --sidebar-border: #b6cbc5;
+  --sidebar-bg: #edf7f3;
+  --sidebar-border: #a7c5bc;
   --sidebar-text: #173a39;
   --sidebar-text-muted: #557072;
-  --sidebar-hover: #dcefe9;
-  --sidebar-active-bg: #c5e7dd;
+  --sidebar-hover: #cfe8df;
+  --sidebar-active-bg: #a9d9cd;
   --sidebar-active-text: #065f5b;
 
   /* Assistant / Slide panel */
-  --panel-bg: #f1f8f5;
-  --panel-border: #b8cdc7;
+  --panel-bg: #e8f4ef;
+  --panel-border: #abc8bf;
   --panel-card-bg: #ffffff;
 
   /* Card */
@@ -37,8 +37,8 @@
   /* Brand */
   --primary: #065f5b;
   --primary-hover: #064e4b;
-  --primary-soft: #c5e7dd;
-  --primary-subtle: #e5f5f0;
+  --primary-soft: #a9d9cd;
+  --primary-subtle: #d8eee7;
   --accent: #0f8b83;
   --mindmap-connection: rgba(16, 74, 70, 0.48);
 
@@ -264,60 +264,60 @@
   --input-focus: #9d174d;
 }
 
-/* Cupertino is an Apple-inspired web theme, not an official Apple UI implementation. */
-:root[data-theme='cupertino'] {
+/* Elegant Grey remains a light theme. Graphite defines hierarchy; red stays a disciplined accent. */
+:root[data-theme='elegant-grey'] {
   color-scheme: light;
-  --app-bg: #f2f2f7;
-  --main-bg: #e9e9ee;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-soft: #f7f7fa;
-  --surface-muted: #e5e5ea;
-  --surface-inset: #d1d1d6;
-  --sidebar-bg: #fafafa;
-  --sidebar-border: #c7c7cc;
-  --sidebar-text: #2c2c2e;
-  --sidebar-text-muted: #5a5a5f;
-  --sidebar-hover: #e8f1fd;
-  --sidebar-active-bg: #d9ebff;
-  --sidebar-active-text: #005bb5;
-  --panel-bg: #f7f7fa;
-  --panel-border: #c7c7cc;
-  --panel-card-bg: #ffffff;
-  --card-bg: #ffffff;
-  --card-border: #b8b8bf;
-  --card-border-soft: #d1d1d6;
-  --border-strong: #8e8e93;
-  --shadow-sm: 0 1px 2px rgba(28, 28, 30, 0.08), 0 2px 8px rgba(28, 28, 30, 0.04);
-  --shadow-md: 0 8px 20px rgba(28, 28, 30, 0.1), 0 2px 5px rgba(28, 28, 30, 0.05);
-  --shadow-lg: 0 20px 44px rgba(28, 28, 30, 0.16), 0 6px 16px rgba(28, 28, 30, 0.08);
+  --app-bg: #dddddf;
+  --main-bg: #c9c9cc;
+  --surface: #fcfcfc;
+  --surface-raised: #fcfcfc;
+  --surface-soft: #f1f1f2;
+  --surface-muted: #dfdfe1;
+  --surface-inset: #c4c4c7;
+  --sidebar-bg: #ececee;
+  --sidebar-border: #b7b7bb;
+  --sidebar-text: #2b2b2e;
+  --sidebar-text-muted: #5e5e62;
+  --sidebar-hover: #e3e3e5;
+  --sidebar-active-bg: #f4ccc8;
+  --sidebar-active-text: #8f1b13;
+  --panel-bg: #ededee;
+  --panel-border: #b9b9bd;
+  --panel-card-bg: #fcfcfc;
+  --card-bg: #fcfcfc;
+  --card-border: #a3a3a8;
+  --card-border-soft: #c6c6ca;
+  --border-strong: #78787d;
+  --shadow-sm: 0 1px 2px rgba(28, 28, 30, 0.1), 0 2px 8px rgba(28, 28, 30, 0.05);
+  --shadow-md: 0 8px 20px rgba(28, 28, 30, 0.12), 0 2px 5px rgba(28, 28, 30, 0.06);
+  --shadow-lg: 0 20px 44px rgba(28, 28, 30, 0.19), 0 6px 16px rgba(28, 28, 30, 0.1);
   --card-shadow: var(--shadow-sm);
-  --primary: #0066cc;
-  --primary-hover: #004f9e;
-  --primary-soft: #cce5ff;
-  --primary-subtle: #eaf4ff;
-  --accent: #007aff;
-  --mindmap-connection: rgba(41, 98, 155, 0.48);
-  --success: #157347;
-  --success-bg: #dff4e6;
-  --success-border: #7fc49a;
-  --warning: #9a6700;
-  --warning-bg: #fff1c2;
+  --primary: #b42318;
+  --primary-hover: #8f1b13;
+  --primary-soft: #f4ccc8;
+  --primary-subtle: #fbe7e5;
+  --accent: #ce3326;
+  --mindmap-connection: rgba(48, 48, 52, 0.52);
+  --success: #1b6e45;
+  --success-bg: #dff0e5;
+  --success-border: #79bd95;
+  --warning: #8a5a00;
+  --warning-bg: #fff0c9;
   --danger: #b42318;
-  --danger-bg: #ffe5e1;
-  --danger-border: #ee9a91;
-  --info: #0066cc;
-  --info-bg: #d9ebff;
-  --due-date-change: #5e3da7;
-  --due-date-change-bg: #eee8ff;
-  --text-title: #1d1d1f;
-  --text-body: #3a3a3c;
-  --text-muted: #5a5a5f;
-  --text-subtle: #737378;
+  --danger-bg: #fbe3e1;
+  --danger-border: #e99e97;
+  --info: #8f1b13;
+  --info-bg: #f7ddda;
+  --due-date-change: #5f3b74;
+  --due-date-change-bg: #eee4f4;
+  --text-title: #1c1c1e;
+  --text-body: #353537;
+  --text-muted: #5e5e62;
+  --text-subtle: #77777b;
   --text-inverse: #ffffff;
-  --input-bg: #ffffff;
-  --input-border: #8e8e93;
-  --input-focus: #0066cc;
+  --input-bg: #fcfcfc;
+  --input-border: #77777c;
+  --input-focus: #b42318;
 }
 
 :root[data-theme='cobalt-contrast'] {

@@ -308,7 +308,7 @@ Only Space admins/superadmins see management sections. Themes are stored only in
 
 - Neo Mint
 - Pastel Rose
-- Cupertino (Apple-inspired web theme)
+- Elegant Grey (light graphite theme with red accents)
 - Midnight
 - Cobalt Contrast
 

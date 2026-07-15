@@ -14,7 +14,7 @@ import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/st
 const THEME_STORAGE_KEY = 'ai-task-theme';
 const THEME_CHANGE_EVENT = 'ai-task-theme-change';
 
-export type AppThemeName = 'neo-mint' | 'pastel-rose' | 'cupertino' | 'midnight' | 'cobalt-contrast';
+export type AppThemeName = 'neo-mint' | 'pastel-rose' | 'elegant-grey' | 'midnight' | 'cobalt-contrast';
 
 export interface AppThemeOption {
   id: AppThemeName;
@@ -28,7 +28,7 @@ export const APP_THEME_OPTIONS: AppThemeOption[] = [
     id: 'neo-mint',
     label: 'Neo Mint',
     description: 'Clear teal contrast with cool, quiet workspace surfaces.',
-    swatches: ['#065F5B', '#E8F1EF', '#FFFFFF'],
+    swatches: ['#065F5B', '#DCEAE7', '#FFFFFF'],
   },
   {
     id: 'pastel-rose',
@@ -37,10 +37,10 @@ export const APP_THEME_OPTIONS: AppThemeOption[] = [
     swatches: ['#9D174D', '#FCF1F5', '#FFFDFE'],
   },
   {
-    id: 'cupertino',
-    label: 'Cupertino',
-    description: 'Apple-inspired neutral surfaces with accessible blue actions.',
-    swatches: ['#0066CC', '#F2F2F7', '#FFFFFF'],
+    id: 'elegant-grey',
+    label: 'Elegant Grey',
+    description: 'Light graphite surfaces with disciplined red accents.',
+    swatches: ['#B42318', '#D5D5D7', '#FCFCFC'],
   },
   {
     id: 'midnight',
@@ -72,7 +72,7 @@ const THEME_PALETTES: Record<
   }
 > = {
   'neo-mint': {
-    appBg: '#E8F1EF',
+    appBg: '#DCEAE7',
     surface: '#FFFFFF',
     primary: '#065F5B',
     primaryHover: '#064E4B',
@@ -95,17 +95,17 @@ const THEME_PALETTES: Record<
     danger: '#B4233D',
     info: '#8A2B62',
   },
-  cupertino: {
-    appBg: '#F2F2F7',
-    surface: '#FFFFFF',
-    primary: '#0066CC',
-    primaryHover: '#004F9E',
-    textTitle: '#1D1D1F',
-    textMuted: '#5A5A5F',
-    success: '#157347',
-    warning: '#9A6700',
+  'elegant-grey': {
+    appBg: '#DDDDDF',
+    surface: '#FCFCFC',
+    primary: '#B42318',
+    primaryHover: '#8F1B13',
+    textTitle: '#1C1C1E',
+    textMuted: '#5E5E62',
+    success: '#1B6E45',
+    warning: '#8A5A00',
     danger: '#B42318',
-    info: '#0066CC',
+    info: '#8F1B13',
   },
   midnight: {
     appBg: '#070B14',
