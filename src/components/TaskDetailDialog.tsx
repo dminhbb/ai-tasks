@@ -19,7 +19,7 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
-import { Add, Delete, DragIndicator } from '@mui/icons-material';
+import { Add, Delete, DragIndicator, DriveFileMoveOutlined } from '@mui/icons-material';
 import { Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import {
@@ -34,6 +34,7 @@ import { sanitizeRichText } from '@/utils/richText';
 import TaskRichTextEditor from '@/components/TaskRichTextEditor';
 import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
 import { setSubtaskWorkHours, toggleSubtaskCompletion } from '@/utils/subtaskWork';
+import TodayMoveSubtaskDialog from '@/components/TodayMoveSubtaskDialog';
 
 const STATUS_ORDER: Record<TaskStatus, number> = {
   URGENT: 0,
@@ -72,6 +73,8 @@ interface TaskDetailDialogProps {
   onDelete: (id: string) => void;
   availableTags: string[];
   availableAssignees: string[];
+  availableTasks: Task[];
+  onMoveSubtask: (subtaskId: string, targetTaskId: string) => void | Promise<void>;
   topLayer?: boolean;
 }
 
@@ -136,6 +139,8 @@ export default function TaskDetailDialog({
   onDelete,
   availableTags,
   availableAssignees,
+  availableTasks,
+  onMoveSubtask,
   topLayer = false,
 }: TaskDetailDialogProps) {
   const [localTask, setLocalTask] = useState<Task | null>(() =>
@@ -150,6 +155,7 @@ export default function TaskDetailDialog({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
   const [dragOverSubtaskId, setDragOverSubtaskId] = useState<string | null>(null);
+  const [movingSubtaskId, setMovingSubtaskId] = useState<string | null>(null);
 
   if (!localTask) return null;
 
@@ -273,6 +279,9 @@ export default function TaskDetailDialog({
     <Dialog
       open={open}
       onClose={onClose}
+      disableEnforceFocus={movingSubtaskId !== null}
+      disableAutoFocus={movingSubtaskId !== null}
+      disableRestoreFocus={movingSubtaskId !== null}
       fullWidth
       maxWidth="md"
       sx={{ zIndex: topLayer ? (theme) => theme.zIndex.modal + 20 : undefined }}
@@ -630,6 +639,18 @@ export default function TaskDetailDialog({
                       )}
                       <IconButton
                         size="small"
+                        aria-label="Move subtask"
+                        onClick={() => setMovingSubtaskId(subtask.id)}
+                        sx={{
+                          color: NEO_MINT.textMuted,
+                          borderRadius: '8px',
+                          '&:hover': { color: NEO_MINT.primary, backgroundColor: 'var(--primary-subtle)' },
+                        }}
+                      >
+                        <DriveFileMoveOutlined sx={{ fontSize: 18 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
                         onClick={() => handleDeleteSubtask(subtask.id)}
                         sx={{
                           color: NEO_MINT.textMuted,
@@ -697,6 +718,26 @@ export default function TaskDetailDialog({
           Save Changes
         </Button>
       </DialogActions>
+      <TodayMoveSubtaskDialog
+        open={movingSubtaskId !== null}
+        sourceTaskId={localTask.id}
+        subtaskTitle={localTask.subtasks.find((subtask) => subtask.id === movingSubtaskId)?.title ?? ''}
+        tasks={availableTasks}
+        onClose={() => setMovingSubtaskId(null)}
+        onMove={async (targetTaskId) => {
+          if (!movingSubtaskId) return;
+          await onMoveSubtask(movingSubtaskId, targetTaskId);
+          setLocalTask((current) =>
+            current
+              ? syncTaskProgress({
+                  ...current,
+                  subtasks: current.subtasks.filter((subtask) => subtask.id !== movingSubtaskId),
+                })
+              : current
+          );
+          setMovingSubtaskId(null);
+        }}
+      />
     </Dialog>
   );
 }

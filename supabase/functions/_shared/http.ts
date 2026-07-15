@@ -99,7 +99,7 @@ export async function readJsonBody<T>(request: Request, maxRequestBytes: number)
   }
 }
 
-export async function authenticatedClient(request: Request): Promise<{
+export async function authenticatedUserClient(request: Request): Promise<{
   supabase: SupabaseClient;
   user: User;
 }> {
@@ -117,11 +117,19 @@ export async function authenticatedClient(request: Request): Promise<{
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) throw new Error('UNAUTHENTICATED');
 
+  return { supabase, user: data.user };
+}
+
+export async function authenticatedClient(request: Request): Promise<{
+  supabase: SupabaseClient;
+  user: User;
+}> {
+  const { supabase, user } = await authenticatedUserClient(request);
   const { data: quotaAllowed, error: quotaError } = await supabase.rpc('consume_ai_quota');
   if (quotaError) throw new Error('QUOTA_CHECK_FAILED');
   if (!quotaAllowed) throw new Error('RATE_LIMITED');
 
-  return { supabase, user: data.user };
+  return { supabase, user };
 }
 
 export function safeFunctionError(request: Request, error: unknown): Response {

@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function loadProfile(userId: string): Promise<UserProfile> {
   const { data, error } = await getSupabaseBrowserClient()
     .from('profiles')
-    .select('id, email, role, is_active')
+    .select('id, email, nickname, role, is_active')
     .eq('id', userId)
     .single();
 
@@ -29,6 +29,7 @@ async function loadProfile(userId: string): Promise<UserProfile> {
   return {
     id: data.id as string,
     email: data.email as string,
+    nickname: data.nickname as string,
     role: data.role as UserProfile['role'],
     isActive: data.is_active as boolean,
   };

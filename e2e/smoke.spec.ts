@@ -9,3 +9,10 @@ test('serves the login shell with security headers', async ({ page }) => {
   await expect(page.getByText('AI TASK', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Email')).toBeVisible();
 });
+
+test('serves the application shell from a space slug route', async ({ page }) => {
+  const response = await page.goto('/s/main');
+  expect(response?.status()).toBe(200);
+  await expect(page.getByText('AI TASK', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Email')).toBeVisible();
+});

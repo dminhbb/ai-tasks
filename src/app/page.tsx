@@ -13,6 +13,8 @@ import {
   DialogTitle,
   Drawer,
   CircularProgress,
+  MenuItem,
+  Select,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -34,7 +36,7 @@ import TaskAssistantPanel from '@/components/TaskAssistantPanel';
 import TaskMindmapDialog from '@/components/TaskMindmapDialog';
 import NotebookDialog from '@/components/NotebookDialog';
 import TodayWorkspace from '@/components/TodayWorkspace';
-import type { Notebook, Task, Settings, UserProfile } from '@/types';
+import type { Notebook, Space, Task, Settings, UserProfile } from '@/types';
 import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
 import { NEO_MINT } from '@/styles/neoMintTokens';
@@ -45,6 +47,7 @@ import {
   createNotebook,
   deleteNotebook,
   listNotebooks,
+  listSpaces,
   moveSubtask,
   readSettings,
   readTasks,
@@ -107,6 +110,8 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   const [settings, setSettings] = useState<Settings>({ tags: [], assistantIntents: [] });
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [activeNotebook, setActiveNotebook] = useState<Notebook | null>(null);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [activeSpace, setActiveSpace] = useState<Space | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -140,9 +145,21 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       try {
         const url = new URL(window.location.href);
         const requestedNotebookId = url.searchParams.get('notebookId');
-        let availableNotebooks = await listNotebooks(profile);
-        if (availableNotebooks.length === 0 && profile.role === 'superadmin') {
-          const mainNotebook = await createNotebook('MAIN', profile);
+        const requestedSpaceSlug = window.location.pathname.match(/^\/s\/([^/]+)/)?.[1] ?? '';
+        const availableSpaces = await listSpaces(profile);
+        const currentSpace =
+          availableSpaces.find((space) => space.slug === requestedSpaceSlug) ?? availableSpaces[0] ?? null;
+        if (!currentSpace) {
+          if (isActive) {
+            setSpaces([]);
+            setNotebooks([]);
+          }
+          return;
+        }
+
+        let availableNotebooks = await listNotebooks(profile, currentSpace.id, currentSpace.isAdmin);
+        if (availableNotebooks.length === 0 && currentSpace.isAdmin) {
+          const mainNotebook = await createNotebook('MAIN', profile, currentSpace.id);
           availableNotebooks = [mainNotebook];
         }
         const currentNotebook =
@@ -150,22 +167,28 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           availableNotebooks[0] ??
           null;
         if (!currentNotebook) {
-          if (isActive) setNotebooks([]);
+          if (isActive) {
+            setSpaces(availableSpaces);
+            setActiveSpace(currentSpace);
+            setNotebooks([]);
+            setSettings(await readSettings(currentSpace.id));
+          }
           return;
         }
         await touchNotebook(currentNotebook.id, currentNotebook.permissions.manageNotebook);
-        if (!requestedNotebookId) {
-          url.searchParams.set('notebookId', currentNotebook.id);
-          window.history.replaceState(null, '', url.toString());
-        }
+        url.pathname = `/s/${currentSpace.slug}`;
+        url.searchParams.set('notebookId', currentNotebook.id);
+        window.history.replaceState(null, '', url.toString());
 
         const [tasksData, settingsData] = await Promise.all([
           readTasks(currentNotebook.id),
-          readSettings(currentNotebook.id),
+          readSettings(currentSpace.id),
         ]);
 
         if (!isActive) return;
         setNotebooks(availableNotebooks);
+        setSpaces(availableSpaces);
+        setActiveSpace(currentSpace);
         setActiveNotebook(currentNotebook);
         setTasks(tasksData);
         setSettings(settingsData);
@@ -184,12 +207,13 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   }, [profile]);
 
   const reloadNotebookData = async (notebook: Notebook) => {
+    if (!activeSpace) return;
     setLoading(true);
     try {
       const [tasksData, settingsData, notebooksData] = await Promise.all([
         readTasks(notebook.id),
-        readSettings(notebook.id),
-        listNotebooks(profile),
+        readSettings(activeSpace.id),
+        listNotebooks(profile, activeSpace.id, activeSpace.isAdmin),
       ]);
       setTasks(tasksData);
       setSettings(settingsData);
@@ -322,7 +346,19 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   };
 
   const openNotebookWindow = (notebookId: string) => {
-    window.open(`/?notebookId=${notebookId}`, '_blank');
+    if (!activeSpace) return;
+    window.open(`/s/${activeSpace.slug}?notebookId=${notebookId}`, '_blank');
+  };
+
+  const handleSpacesChanged = async () => {
+    const nextSpaces = await listSpaces(profile);
+    setSpaces(nextSpaces);
+    const nextActiveSpace = nextSpaces.find((space) => space.id === activeSpace?.id) ?? null;
+    if (nextActiveSpace) {
+      setActiveSpace(nextActiveSpace);
+      return;
+    }
+    if (nextSpaces[0]) window.location.assign(`/s/${nextSpaces[0].slug}`);
   };
 
   return (
@@ -407,6 +443,29 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
 
           {/* Center: primary actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.25, md: 0.4 } }}>
+            {spaces.length > 1 && activeSpace && (
+              <Select
+                size="small"
+                value={activeSpace.slug}
+                aria-label="Active space"
+                onChange={(event) => window.location.assign(`/s/${event.target.value}`)}
+                sx={{
+                  minWidth: 92,
+                  maxWidth: 150,
+                  height: 28,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  borderRadius: '9px',
+                  '& .MuiSelect-select': { py: 0.35, pl: 1, pr: '26px !important' },
+                }}
+              >
+                {spaces.map((space) => (
+                  <MenuItem key={space.id} value={space.slug} sx={{ fontSize: '12px' }}>
+                    {space.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
             {/* Primary CTA — Action Blue */}
             <Button
               variant="text"
@@ -556,7 +615,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             >
               <LogoutIcon sx={{ fontSize: 19 }} />
             </IconButton>
-            {activeNotebook?.permissions.manageSettings && (
+            {activeSpace?.isAdmin && (
               <IconButton
                 onClick={() => setIsSettingsOpen(true)}
                 sx={{
@@ -873,14 +932,18 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         />
       )}
 
-      {isSettingsOpen && (
+      {isSettingsOpen && activeSpace && (
         <SettingsDialog
           open={isSettingsOpen}
           settings={settings}
+          profile={profile}
+          activeSpace={activeSpace}
+          spaces={spaces}
+          notebooks={notebooks}
           onClose={() => setIsSettingsOpen(false)}
+          onSpacesChanged={handleSpacesChanged}
           onSave={async (newSettings) => {
-            if (!activeNotebook) return;
-            await writeSettings(activeNotebook.id, newSettings);
+            await writeSettings(activeSpace.id, newSettings);
             setSettings(newSettings);
             setIsSettingsOpen(false);
           }}
@@ -893,16 +956,18 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           notebooks={notebooks}
           activeNotebook={activeNotebook}
           onClose={() => setIsNotebookOpen(false)}
-          canCreate={profile.role === 'superadmin'}
+          canCreate={activeSpace?.isAdmin ?? false}
           onOpen={openNotebookWindow}
           onCreate={async (name) => {
-            const notebook = await createNotebook(name, profile);
-            setNotebooks(await listNotebooks(profile));
+            if (!activeSpace) return;
+            const notebook = await createNotebook(name, profile, activeSpace.id);
+            setNotebooks(await listNotebooks(profile, activeSpace.id, activeSpace.isAdmin));
             openNotebookWindow(notebook.id);
           }}
           onRename={async (id, name) => {
             await renameNotebook(id, name);
-            const nextNotebooks = await listNotebooks(profile);
+            if (!activeSpace) return;
+            const nextNotebooks = await listNotebooks(profile, activeSpace.id, activeSpace.isAdmin);
             setNotebooks(nextNotebooks);
             if (activeNotebook?.id === id) {
               setActiveNotebook(nextNotebooks.find((notebook) => notebook.id === id) ?? null);
@@ -910,7 +975,8 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           }}
           onDelete={async (id) => {
             await deleteNotebook(id);
-            const nextNotebooks = await listNotebooks(profile);
+            if (!activeSpace) return;
+            const nextNotebooks = await listNotebooks(profile, activeSpace.id, activeSpace.isAdmin);
             setNotebooks(nextNotebooks);
             if (activeNotebook?.id === id && nextNotebooks[0]) {
               await reloadNotebookData(nextNotebooks[0]);
@@ -946,6 +1012,8 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           onClose={closeTaskDetails}
           availableTags={settings.tags}
           availableAssignees={uniqueAssignees}
+          availableTasks={tasks}
+          onMoveSubtask={handleMoveSubtask}
           onDelete={(id) => {
             handleSaveTasks(tasks.filter((t) => t.id !== id));
             closeTaskDetails();

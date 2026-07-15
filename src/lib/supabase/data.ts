@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type {
   Notebook,
   NotebookPermissions,
+  Space,
+  SpaceMember,
   Settings,
   Subtask,
   Task,
@@ -15,11 +17,26 @@ const DEFAULT_SETTINGS: Settings = { tags: DEFAULT_TAGS, assistantIntents: [] };
 
 const notebookRowSchema = z.object({
   id: z.string().uuid(),
+  space_id: z.string().uuid(),
   owner_id: z.string().uuid(),
   name: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
   last_accessed_at: z.string(),
+});
+
+const spaceRowSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+const spaceMemberRowSchema = z.object({
+  user_id: z.string().uuid(),
+  role: z.enum(['admin', 'user']),
+  profiles: z.object({ email: z.string(), nickname: z.string() }),
 });
 
 const membershipRowSchema = z.object({
@@ -86,9 +103,10 @@ function safePermission(value: unknown, fallback: boolean): boolean {
 
 function permissionsForProfile(
   profile: UserProfile,
+  isSpaceAdmin: boolean,
   membership: z.infer<typeof membershipRowSchema> | undefined
 ): NotebookPermissions {
-  if (profile.role === 'superadmin') {
+  if (profile.role === 'superadmin' || isSpaceAdmin) {
     return { manageTasks: true, manageNotebook: true, manageSettings: true };
   }
   if (!membership) {
@@ -104,15 +122,54 @@ function permissionsForProfile(
   };
 }
 
-export async function listNotebooks(profile: UserProfile): Promise<Notebook[]> {
+export async function listSpaces(profile: UserProfile): Promise<Space[]> {
+  const supabase = getSupabaseBrowserClient();
+  const [{ data: spaceData, error: spaceError }, { data: membershipData, error: membershipError }] =
+    await Promise.all([
+      supabase.from('spaces').select('id, name, slug, created_at, updated_at').order('name'),
+      supabase.from('space_members').select('space_id, role').eq('user_id', profile.id),
+    ]);
+  if (spaceError || membershipError) throw new Error('Không thể tải danh sách space.');
+
+  const adminSpaceIds = new Set(
+    z
+      .array(z.object({ space_id: z.string().uuid(), role: z.enum(['admin', 'user']) }))
+      .parse(membershipData ?? [])
+      .filter((membership) => membership.role === 'admin')
+      .map((membership) => membership.space_id)
+  );
+
+  return z
+    .array(spaceRowSchema)
+    .parse(spaceData ?? [])
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      isAdmin: profile.role === 'superadmin' || adminSpaceIds.has(row.id),
+    }));
+}
+
+export async function listNotebooks(
+  profile: UserProfile,
+  spaceId: string,
+  isSpaceAdmin: boolean
+): Promise<Notebook[]> {
   const supabase = getSupabaseBrowserClient();
   const [{ data: notebookData, error: notebookError }, { data: membershipData, error: membershipError }] =
     await Promise.all([
       supabase
         .from('notebooks')
-        .select('id, owner_id, name, created_at, updated_at, last_accessed_at')
+        .select('id, space_id, owner_id, name, created_at, updated_at, last_accessed_at')
+        .eq('space_id', spaceId)
         .order('last_accessed_at', { ascending: false }),
-      supabase.from('notebook_members').select('notebook_id, role, permissions').eq('user_id', profile.id),
+      supabase
+        .from('notebook_members')
+        .select('notebook_id, role, permissions')
+        .eq('space_id', spaceId)
+        .eq('user_id', profile.id),
     ]);
 
   if (notebookError || membershipError) throw new Error('Không thể tải danh sách notebook.');
@@ -129,22 +186,23 @@ export async function listNotebooks(profile: UserProfile): Promise<Notebook[]> {
     .parse(notebookData ?? [])
     .map((row) => ({
       id: row.id,
+      spaceId: row.space_id,
       ownerId: row.owner_id,
       name: row.name,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       lastAccessedAt: row.last_accessed_at,
-      permissions: permissionsForProfile(profile, memberships.get(row.id)),
+      permissions: permissionsForProfile(profile, isSpaceAdmin, memberships.get(row.id)),
     }));
 }
 
-export async function createNotebook(name: string, profile: UserProfile): Promise<Notebook> {
+export async function createNotebook(name: string, profile: UserProfile, spaceId: string): Promise<Notebook> {
   const normalizedName = name.trim().replace(/\s+/g, ' ').slice(0, 80) || 'UNTITLED';
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase
     .from('notebooks')
-    .insert({ name: normalizedName, owner_id: profile.id })
-    .select('id, owner_id, name, created_at, updated_at, last_accessed_at')
+    .insert({ name: normalizedName, owner_id: profile.id, space_id: spaceId })
+    .select('id, space_id, owner_id, name, created_at, updated_at, last_accessed_at')
     .single();
   if (error) throw new Error('Bạn không có quyền tạo notebook.');
 
@@ -159,6 +217,7 @@ export async function createNotebook(name: string, profile: UserProfile): Promis
 
   return {
     id: row.id,
+    spaceId: row.space_id,
     ownerId: row.owner_id,
     name: row.name,
     createdAt: row.created_at,
@@ -325,11 +384,11 @@ export async function moveSubtask(
   return readTasks(notebookId);
 }
 
-export async function readSettings(notebookId: string): Promise<Settings> {
+export async function readSettings(spaceId: string): Promise<Settings> {
   const { data, error } = await getSupabaseBrowserClient()
-    .from('notebook_settings')
+    .from('space_settings')
     .select('tags, assistant_intents')
-    .eq('notebook_id', notebookId)
+    .eq('space_id', spaceId)
     .maybeSingle();
   if (error) throw new Error('Không thể tải cài đặt notebook.');
   if (!data) return DEFAULT_SETTINGS;
@@ -340,9 +399,79 @@ export async function readSettings(notebookId: string): Promise<Settings> {
   };
 }
 
-export async function writeSettings(notebookId: string, settings: Settings): Promise<void> {
-  const { error } = await getSupabaseBrowserClient().from('notebook_settings').upsert({
-    notebook_id: notebookId,
+export async function listSpaceMembers(spaceId: string): Promise<SpaceMember[]> {
+  const { data, error } = await getSupabaseBrowserClient()
+    .from('space_members')
+    .select('user_id, role, profiles!inner(email, nickname)')
+    .eq('space_id', spaceId)
+    .order('role');
+  if (error) throw new Error('Không thể tải thành viên space.');
+
+  return z
+    .array(spaceMemberRowSchema)
+    .parse(data ?? [])
+    .map((row) => ({
+      userId: row.user_id,
+      email: row.profiles.email,
+      nickname: row.profiles.nickname,
+      role: row.role,
+    }));
+}
+
+interface SaveSpaceInput {
+  id: string | null;
+  name: string;
+  slug: string;
+  adminIds: string[];
+  userIds: string[];
+}
+
+export async function saveSpace(input: SaveSpaceInput): Promise<string> {
+  const { data, error } = await getSupabaseBrowserClient().rpc('save_space', {
+    requested_space_id: input.id,
+    requested_name: input.name,
+    requested_slug: input.slug,
+    requested_admin_ids: input.adminIds,
+    requested_user_ids: input.userIds,
+  });
+  if (error || typeof data !== 'string') {
+    throw new Error('Không thể lưu space. Kiểm tra lại slug và thành viên.');
+  }
+  return data;
+}
+
+export async function removeSpace(spaceId: string, confirmationSlug: string): Promise<void> {
+  const { error } = await getSupabaseBrowserClient().rpc('delete_space', {
+    requested_space_id: spaceId,
+    confirmation_slug: confirmationSlug,
+  });
+  if (error) throw new Error('Không thể xóa space. Chuỗi xác nhận không hợp lệ.');
+}
+
+export async function readNotebookUserIds(notebookId: string): Promise<string[]> {
+  const { data, error } = await getSupabaseBrowserClient()
+    .from('notebook_members')
+    .select('user_id')
+    .eq('notebook_id', notebookId)
+    .eq('role', 'user');
+  if (error) throw new Error('Không thể tải phân quyền notebook.');
+  return z
+    .array(z.object({ user_id: z.string().uuid() }))
+    .parse(data ?? [])
+    .map((row) => row.user_id);
+}
+
+export async function setNotebookUsers(notebookId: string, userIds: string[]): Promise<void> {
+  const { error } = await getSupabaseBrowserClient().rpc('set_notebook_users', {
+    requested_notebook_id: notebookId,
+    requested_user_ids: userIds,
+  });
+  if (error) throw new Error('Không thể cập nhật phân quyền notebook.');
+}
+
+export async function writeSettings(spaceId: string, settings: Settings): Promise<void> {
+  const { error } = await getSupabaseBrowserClient().from('space_settings').upsert({
+    space_id: spaceId,
     tags: settings.tags,
     assistant_intents: settings.assistantIntents,
   });

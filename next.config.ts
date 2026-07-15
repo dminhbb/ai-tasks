@@ -39,6 +39,9 @@ const serverSecurityConfig: NextConfig = isCloudflarePages
           },
         ];
       },
+      async rewrites() {
+        return [{ source: '/s/:slug', destination: '/' }];
+      },
     };
 
 const nextConfig: NextConfig = {

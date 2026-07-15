@@ -1,29 +1,62 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
   Box,
-  Typography,
+  Button,
   ButtonBase,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
-  Checkbox,
+  Select,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { AssistantConfiguredIntent, AssistantIntent, Settings, TaskStatus } from '@/types';
+import type {
+  AppRole,
+  AssistantConfiguredIntent,
+  AssistantIntent,
+  ManagedUser,
+  Notebook,
+  Settings,
+  Space,
+  SpaceMember,
+  TaskStatus,
+  UserProfile,
+} from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { APP_THEME_OPTIONS, useThemeContext } from '@/components/ThemeProvider';
+import {
+  listSpaceMembers,
+  readNotebookUserIds,
+  removeSpace,
+  saveSpace,
+  setNotebookUsers,
+} from '@/lib/supabase/data';
+import {
+  deactivateManagedUser,
+  listManagedUsers,
+  permanentlyDeleteManagedUser,
+  saveManagedUser,
+} from '@/lib/supabase/functions';
+
+type SettingsSection = 'appearance' | 'tags' | 'assistant' | 'notebookAccess' | 'users' | 'spaces';
 
 interface SettingsDialogProps {
   open: boolean;
   settings: Settings;
+  profile: UserProfile;
+  activeSpace: Space;
+  spaces: Space[];
+  notebooks: Notebook[];
   onClose: () => void;
-  onSave: (settings: Settings) => void;
+  onSave: (settings: Settings) => void | Promise<void>;
+  onSpacesChanged: () => void | Promise<void>;
 }
 
 const ASSISTANT_INTENTS: AssistantIntent[] = [
@@ -38,652 +71,833 @@ const ASSISTANT_INTENTS: AssistantIntent[] = [
 ];
 const TASK_STATUSES: TaskStatus[] = ['URGENT', 'IN PROGRESS', 'TO DO', 'PENDING', 'CANCELLED', 'DONE'];
 const PERIODS: NonNullable<AssistantConfiguredIntent['period']>[] = ['week', 'month', 'all'];
+const APP_ROLES: AppRole[] = ['superadmin', 'admin', 'user'];
 
-const createBlankIntent = (): AssistantConfiguredIntent => ({
-  id: `assistant-intent-${Date.now()}`,
-  label: '',
-  question: '',
-  intent: 'SEARCH_TASKS',
-  enabled: true,
-});
+function createBlankIntent(): AssistantConfiguredIntent {
+  return {
+    id: `assistant-intent-${crypto.randomUUID()}`,
+    label: '',
+    question: '',
+    intent: 'SEARCH_TASKS',
+    enabled: true,
+  };
+}
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
-    <Typography
-      sx={{
-        fontSize: '11px',
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: 0,
-        color: NEO_MINT.textBody,
-        mb: 1.5,
-        fontFamily: 'var(--font-gilroy)',
-      }}
-    >
-      {children}
-    </Typography>
+    <Box sx={{ mb: 2 }}>
+      <Typography sx={{ fontSize: '18px', fontWeight: 800, color: NEO_MINT.textTitle }}>{title}</Typography>
+      <Typography sx={{ mt: 0.4, fontSize: '12px', color: NEO_MINT.textMuted }}>{description}</Typography>
+    </Box>
   );
 }
-export default function SettingsDialog({ open, settings, onClose, onSave }: SettingsDialogProps) {
+
+function AppearancePanel() {
   const { themeName, setThemeName } = useThemeContext();
-  const [localSettings, setLocalSettings] = useState<Settings>(settings);
+  return (
+    <Box>
+      <SectionTitle title="Appearance" description="Choose a theme for this browser." />
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.25 }}>
+        {APP_THEME_OPTIONS.map((option) => {
+          const selected = option.id === themeName;
+          return (
+            <ButtonBase
+              key={option.id}
+              onClick={() => setThemeName(option.id)}
+              aria-pressed={selected}
+              sx={{
+                p: 1.5,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                gap: 1,
+                textAlign: 'left',
+                borderRadius: '12px',
+                border: `2px solid ${selected ? NEO_MINT.primary : NEO_MINT.cardBorderSoft}`,
+                backgroundColor: selected ? 'var(--primary-subtle)' : 'var(--surface-soft)',
+              }}
+            >
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {option.swatches.map((color) => (
+                  <Box
+                    key={color}
+                    component="span"
+                    sx={{ width: 26, height: 26, borderRadius: '7px', backgroundColor: color }}
+                  />
+                ))}
+              </Box>
+              <Typography sx={{ fontSize: '13px', fontWeight: 800 }}>{option.label}</Typography>
+              <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>
+                {option.description}
+              </Typography>
+            </ButtonBase>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+}
+
+function TagPanel({ settings, onChange }: { settings: Settings; onChange: (settings: Settings) => void }) {
   const [newTag, setNewTag] = useState('');
-  const [intentDraft, setIntentDraft] = useState<AssistantConfiguredIntent>(() => createBlankIntent());
-  const [editingIntentId, setEditingIntentId] = useState<string | null>(null);
-  const [showAssistantIntents, setShowAssistantIntents] = useState(false);
-
-  const handleAddTag = () => {
-    if (newTag && !localSettings.tags.includes(newTag)) {
-      setLocalSettings({ ...localSettings, tags: [...localSettings.tags, newTag] });
-      setNewTag('');
-    }
+  const addTag = () => {
+    const tag = newTag.trim().replace(/\s+/g, ' ').slice(0, 100);
+    if (!tag || settings.tags.some((current) => current.toLocaleLowerCase() === tag.toLocaleLowerCase()))
+      return;
+    onChange({ ...settings, tags: [...settings.tags, tag] });
+    setNewTag('');
   };
+  return (
+    <Box>
+      <SectionTitle title="Tag management" description="Tags are shared by every notebook in this space." />
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField
+          fullWidth
+          size="small"
+          label="New tag"
+          value={newTag}
+          onChange={(event) => setNewTag(event.target.value.slice(0, 100))}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              addTag();
+            }
+          }}
+        />
+        <Button variant="contained" onClick={addTag} disabled={!newTag.trim()}>
+          Add
+        </Button>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        {settings.tags.map((tag) => (
+          <Button
+            key={tag}
+            variant="outlined"
+            onClick={() => onChange({ ...settings, tags: settings.tags.filter((item) => item !== tag) })}
+            sx={{ textTransform: 'none' }}
+          >
+            {tag} ×
+          </Button>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
-  const handleDeleteTag = (tagToDelete: string) => {
-    setLocalSettings({ ...localSettings, tags: localSettings.tags.filter((tag) => tag !== tagToDelete) });
-  };
-
-  const handleSaveIntent = () => {
-    const question = intentDraft.question.trim().slice(0, 255);
+function AssistantPanel({
+  settings,
+  onChange,
+}: {
+  settings: Settings;
+  onChange: (settings: Settings) => void;
+}) {
+  const [draft, setDraft] = useState<AssistantConfiguredIntent>(() => createBlankIntent());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const saveIntent = () => {
+    const question = draft.question.trim().slice(0, 255);
     if (!question) return;
-
-    const nextIntent: AssistantConfiguredIntent = {
-      ...intentDraft,
-      id: editingIntentId || intentDraft.id || `assistant-intent-${Date.now()}`,
-      label: intentDraft.label.trim() || question.slice(0, 80),
-      question,
-    };
-    const current = localSettings.assistantIntents || [];
-    const nextIntents = editingIntentId
-      ? current.map((intent) => (intent.id === editingIntentId ? nextIntent : intent))
-      : [...current, nextIntent];
-
-    setLocalSettings({ ...localSettings, assistantIntents: nextIntents });
-    setEditingIntentId(null);
-    setIntentDraft(createBlankIntent());
+    const next = { ...draft, label: draft.label.trim().slice(0, 80) || question.slice(0, 80), question };
+    const intents = editingId
+      ? settings.assistantIntents.map((intent) => (intent.id === editingId ? next : intent))
+      : [...settings.assistantIntents, next];
+    onChange({ ...settings, assistantIntents: intents });
+    setEditingId(null);
+    setDraft(createBlankIntent());
   };
 
-  const handleEditIntent = (intent: AssistantConfiguredIntent) => {
-    setEditingIntentId(intent.id);
-    setIntentDraft({ ...intent });
-  };
+  return (
+    <Box>
+      <SectionTitle
+        title="Assistant Advanced"
+        description="Configure quick-question presets for AI Search."
+      />
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1 }}>
+        <TextField
+          size="small"
+          label="Label"
+          value={draft.label}
+          onChange={(event) => setDraft({ ...draft, label: event.target.value.slice(0, 80) })}
+        />
+        <FormControl size="small">
+          <InputLabel>Intent</InputLabel>
+          <Select
+            label="Intent"
+            value={draft.intent}
+            onChange={(event) => setDraft({ ...draft, intent: event.target.value as AssistantIntent })}
+          >
+            {ASSISTANT_INTENTS.map((intent) => (
+              <MenuItem key={intent} value={intent}>
+                {intent}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <TextField
+          size="small"
+          label="Suggestion question"
+          value={draft.question}
+          onChange={(event) => setDraft({ ...draft, question: event.target.value.slice(0, 255) })}
+          sx={{ gridColumn: { md: '1 / -1' } }}
+        />
+        <TextField
+          size="small"
+          label="Tag"
+          value={draft.tag ?? ''}
+          onChange={(event) => setDraft({ ...draft, tag: event.target.value.slice(0, 100) || undefined })}
+        />
+        <TextField
+          size="small"
+          type="number"
+          label="Days"
+          value={draft.days ?? ''}
+          onChange={(event) =>
+            setDraft({ ...draft, days: event.target.value ? Number(event.target.value) : undefined })
+          }
+        />
+        <FormControl size="small">
+          <InputLabel>Status</InputLabel>
+          <Select
+            label="Status"
+            value={draft.status ?? ''}
+            onChange={(event) =>
+              setDraft({
+                ...draft,
+                status: event.target.value ? (event.target.value as TaskStatus) : undefined,
+              })
+            }
+          >
+            <MenuItem value="">None</MenuItem>
+            {TASK_STATUSES.map((status) => (
+              <MenuItem key={status} value={status}>
+                {status}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <InputLabel>Period</InputLabel>
+          <Select
+            label="Period"
+            value={draft.period ?? ''}
+            onChange={(event) =>
+              setDraft({
+                ...draft,
+                period: event.target.value
+                  ? (event.target.value as AssistantConfiguredIntent['period'])
+                  : undefined,
+              })
+            }
+          >
+            <MenuItem value="">None</MenuItem>
+            {PERIODS.map((period) => (
+              <MenuItem key={period} value={period}>
+                {period}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <TextField
+          size="small"
+          label="Search query override"
+          value={draft.query ?? ''}
+          onChange={(event) => setDraft({ ...draft, query: event.target.value.slice(0, 255) || undefined })}
+          sx={{ gridColumn: { md: '1 / -1' } }}
+        />
+      </Box>
+      <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box component="label" sx={{ display: 'flex', alignItems: 'center', fontSize: '12px' }}>
+          <Checkbox
+            size="small"
+            checked={draft.enabled}
+            onChange={() => setDraft({ ...draft, enabled: !draft.enabled })}
+          />
+          Enabled
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {editingId && (
+            <Button
+              onClick={() => {
+                setEditingId(null);
+                setDraft(createBlankIntent());
+              }}
+            >
+              Cancel edit
+            </Button>
+          )}
+          <Button variant="contained" onClick={saveIntent} disabled={!draft.question.trim()}>
+            {editingId ? 'Update Intent' : 'Add Intent'}
+          </Button>
+        </Box>
+      </Box>
+      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        {settings.assistantIntents.map((intent) => (
+          <Box
+            key={intent.id}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              p: 1,
+              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+            }}
+          >
+            <Checkbox
+              size="small"
+              checked={intent.enabled}
+              onChange={() =>
+                onChange({
+                  ...settings,
+                  assistantIntents: settings.assistantIntents.map((item) =>
+                    item.id === intent.id ? { ...item, enabled: !item.enabled } : item
+                  ),
+                })
+              }
+            />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: '12px', fontWeight: 800 }}>{intent.label}</Typography>
+              <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>{intent.question}</Typography>
+            </Box>
+            <Button
+              onClick={() => {
+                setEditingId(intent.id);
+                setDraft({ ...intent });
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              color="error"
+              onClick={() =>
+                onChange({
+                  ...settings,
+                  assistantIntents: settings.assistantIntents.filter((item) => item.id !== intent.id),
+                })
+              }
+            >
+              Delete
+            </Button>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
-  const handleDeleteIntent = (id: string) => {
-    setLocalSettings({
-      ...localSettings,
-      assistantIntents: (localSettings.assistantIntents || []).filter((intent) => intent.id !== id),
+function NotebookAccessPanel({ space, notebooks }: { space: Space; notebooks: Notebook[] }) {
+  const [members, setMembers] = useState<SpaceMember[]>([]);
+  const [accessByNotebook, setAccessByNotebook] = useState<Record<string, string[]>>({});
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([
+      listSpaceMembers(space.id),
+      Promise.all(
+        notebooks.map(async (notebook) => [notebook.id, await readNotebookUserIds(notebook.id)] as const)
+      ),
+    ]).then(([nextMembers, accessEntries]) => {
+      if (!active) return;
+      setMembers(nextMembers.filter((member) => member.role === 'user'));
+      setAccessByNotebook(Object.fromEntries(accessEntries));
     });
-    if (editingIntentId === id) {
-      setEditingIntentId(null);
-      setIntentDraft(createBlankIntent());
+    return () => {
+      active = false;
+    };
+  }, [notebooks, space.id]);
+
+  const saveAccess = async (notebookId: string) => {
+    setMessage('');
+    await setNotebookUsers(notebookId, accessByNotebook[notebookId] ?? []);
+    setMessage('Notebook access saved.');
+  };
+
+  return (
+    <Box>
+      <SectionTitle
+        title="Notebook access"
+        description="Space admins see every notebook. Select which notebooks each regular user can access."
+      />
+      {message && <Typography sx={{ mb: 1, color: NEO_MINT.success }}>{message}</Typography>}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {notebooks.map((notebook) => (
+          <Box
+            key={notebook.id}
+            sx={{ p: 1.25, border: `1px solid ${NEO_MINT.cardBorderSoft}`, borderRadius: 2 }}
+          >
+            <Typography sx={{ mb: 1, fontWeight: 800 }}>{notebook.name}</Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {members.map((member) => {
+                const checked = (accessByNotebook[notebook.id] ?? []).includes(member.userId);
+                return (
+                  <Box component="label" key={member.userId} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Checkbox
+                      size="small"
+                      checked={checked}
+                      onChange={() =>
+                        setAccessByNotebook((current) => ({
+                          ...current,
+                          [notebook.id]: checked
+                            ? (current[notebook.id] ?? []).filter((id) => id !== member.userId)
+                            : [...(current[notebook.id] ?? []), member.userId],
+                        }))
+                      }
+                    />
+                    <Typography sx={{ fontSize: '12px' }}>{member.nickname || member.email}</Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+            <Button sx={{ mt: 1 }} variant="outlined" onClick={() => void saveAccess(notebook.id)}>
+              Save access
+            </Button>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+interface UserDraft {
+  id?: string;
+  email: string;
+  password: string;
+  nickname: string;
+  role: AppRole;
+  isActive: boolean;
+}
+
+const EMPTY_USER: UserDraft = {
+  email: '',
+  password: '',
+  nickname: '',
+  role: 'user',
+  isActive: true,
+};
+
+function UserManagementPanel({ currentUserId }: { currentUserId: string }) {
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [draft, setDraft] = useState<UserDraft>(EMPTY_USER);
+  const [error, setError] = useState('');
+
+  const reload = async () => setUsers(await listManagedUsers());
+  useEffect(() => {
+    void listManagedUsers()
+      .then(setUsers)
+      .catch((failure: unknown) => {
+        setError(failure instanceof Error ? failure.message : 'Unable to load users.');
+      });
+  }, []);
+
+  const submit = async () => {
+    setError('');
+    try {
+      await saveManagedUser(draft);
+      setDraft(EMPTY_USER);
+      await reload();
+    } catch (failure: unknown) {
+      setError(failure instanceof Error ? failure.message : 'Unable to save user.');
     }
   };
 
-  const handleToggleIntent = (id: string) => {
-    setLocalSettings({
-      ...localSettings,
-      assistantIntents: (localSettings.assistantIntents || []).map((intent) =>
-        intent.id === id ? { ...intent, enabled: !intent.enabled } : intent
-      ),
+  return (
+    <Box>
+      <SectionTitle
+        title="User management"
+        description="Superadmin-only management synchronized with Supabase Auth."
+      />
+      {error && (
+        <Typography role="alert" sx={{ mb: 1, color: NEO_MINT.danger }}>
+          {error}
+        </Typography>
+      )}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr 1fr' }, gap: 1 }}>
+        <TextField
+          size="small"
+          label="Email"
+          value={draft.email}
+          onChange={(event) => setDraft({ ...draft, email: event.target.value.slice(0, 254) })}
+        />
+        <TextField
+          size="small"
+          label={draft.id ? 'New password (optional)' : 'Password'}
+          type="password"
+          value={draft.password}
+          onChange={(event) => setDraft({ ...draft, password: event.target.value.slice(0, 128) })}
+        />
+        <TextField
+          size="small"
+          label="Nickname"
+          value={draft.nickname}
+          onChange={(event) => setDraft({ ...draft, nickname: event.target.value.slice(0, 100) })}
+        />
+        <FormControl size="small">
+          <InputLabel>Role</InputLabel>
+          <Select
+            label="Role"
+            value={draft.role}
+            onChange={(event) => setDraft({ ...draft, role: event.target.value as AppRole })}
+          >
+            {APP_ROLES.map((role) => (
+              <MenuItem key={role} value={role}>
+                {role}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Box component="label" sx={{ display: 'flex', alignItems: 'center' }}>
+          <Checkbox
+            checked={draft.isActive}
+            onChange={() => setDraft({ ...draft, isActive: !draft.isActive })}
+          />
+          Active
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            onClick={() => void submit()}
+            disabled={!draft.email || (!draft.id && draft.password.length < 8)}
+          >
+            {draft.id ? 'Update user' : 'Add user'}
+          </Button>
+          {draft.id && <Button onClick={() => setDraft(EMPTY_USER)}>Cancel</Button>}
+        </Box>
+      </Box>
+      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        {users.map((user) => (
+          <Box
+            key={user.id}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              p: 1,
+              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 800 }}>
+                {user.nickname || user.email}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>
+                {user.email} · {user.role} · {user.isActive ? 'active' : 'inactive'}
+              </Typography>
+            </Box>
+            <Button
+              onClick={() =>
+                setDraft({
+                  id: user.id,
+                  email: user.email,
+                  password: '',
+                  nickname: user.nickname,
+                  role: user.role,
+                  isActive: user.isActive,
+                })
+              }
+            >
+              Edit
+            </Button>
+            <Button
+              disabled={user.id === currentUserId || !user.isActive}
+              color="warning"
+              onClick={() =>
+                void deactivateManagedUser(user.id)
+                  .then(reload)
+                  .catch((failure: unknown) =>
+                    setError(failure instanceof Error ? failure.message : 'Unable to deactivate user.')
+                  )
+              }
+            >
+              Deactivate
+            </Button>
+            <Button
+              disabled={user.id === currentUserId}
+              color="error"
+              onClick={() => {
+                if (window.confirm(`Permanently delete ${user.email}? This cannot be undone.`)) {
+                  void permanentlyDeleteManagedUser(user.id)
+                    .then(reload)
+                    .catch((failure: unknown) =>
+                      setError(failure instanceof Error ? failure.message : 'Unable to delete user.')
+                    );
+                }
+              }}
+            >
+              Permanent delete
+            </Button>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+function SpaceManagerPanel({
+  spaces,
+  onChanged,
+}: {
+  spaces: Space[];
+  onChanged: () => void | Promise<void>;
+}) {
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(spaces[0]?.id ?? null);
+  const selected = spaces.find((space) => space.id === selectedId) ?? null;
+  const [name, setName] = useState(selected?.name ?? '');
+  const [slug, setSlug] = useState(selected?.slug ?? '');
+  const [adminIds, setAdminIds] = useState<string[]>([]);
+  const [userIds, setUserIds] = useState<string[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    void listManagedUsers().then(setUsers);
+  }, []);
+  useEffect(() => {
+    if (!selectedId) return;
+    void listSpaceMembers(selectedId).then((members) => {
+      setAdminIds(members.filter((member) => member.role === 'admin').map((member) => member.userId));
+      setUserIds(members.filter((member) => member.role === 'user').map((member) => member.userId));
     });
+  }, [selectedId]);
+
+  const selectSpace = (space: Space | null) => {
+    setSelectedId(space?.id ?? null);
+    setName(space?.name ?? '');
+    setSlug(space?.slug ?? '');
+    setAdminIds([]);
+    setUserIds([]);
   };
+
+  const submit = async () => {
+    setError('');
+    try {
+      const id = await saveSpace({ id: selected?.id ?? null, name, slug, adminIds, userIds });
+      await onChanged();
+      setSelectedId(id);
+    } catch (failure: unknown) {
+      setError(failure instanceof Error ? failure.message : 'Unable to save space.');
+    }
+  };
+
+  return (
+    <Box>
+      <SectionTitle
+        title="Space manager"
+        description="Create spaces, manage slugs, members and assigned admins."
+      />
+      {error && (
+        <Typography role="alert" sx={{ mb: 1, color: NEO_MINT.danger }}>
+          {error}
+        </Typography>
+      )}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '220px 1fr' }, gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Button variant={!selected ? 'contained' : 'outlined'} onClick={() => selectSpace(null)}>
+            + New space
+          </Button>
+          {spaces.map((space) => (
+            <Button
+              key={space.id}
+              variant={selectedId === space.id ? 'contained' : 'text'}
+              onClick={() => selectSpace(space)}
+              sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+            >
+              {space.name}
+            </Button>
+          ))}
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <TextField
+            size="small"
+            label="Space name"
+            value={name}
+            onChange={(event) => setName(event.target.value.slice(0, 100))}
+          />
+          <TextField
+            size="small"
+            label="Slug"
+            value={slug}
+            onChange={(event) =>
+              setSlug(
+                event.target.value
+                  .toLocaleLowerCase()
+                  .replace(/[^a-z0-9-]/g, '')
+                  .slice(0, 80)
+              )
+            }
+          />
+          <FormControl size="small">
+            <InputLabel>Space admins</InputLabel>
+            <Select
+              multiple
+              label="Space admins"
+              value={adminIds}
+              onChange={(event) => setAdminIds(event.target.value as string[])}
+              renderValue={(ids) =>
+                ids.map((id) => users.find((user) => user.id === id)?.email ?? id).join(', ')
+              }
+            >
+              {users
+                .filter((user) => user.isActive)
+                .map((user) => (
+                  <MenuItem key={user.id} value={user.id}>
+                    <Checkbox checked={adminIds.includes(user.id)} /> {user.nickname || user.email}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small">
+            <InputLabel>Space users</InputLabel>
+            <Select
+              multiple
+              label="Space users"
+              value={userIds}
+              onChange={(event) => setUserIds(event.target.value as string[])}
+              renderValue={(ids) =>
+                ids.map((id) => users.find((user) => user.id === id)?.email ?? id).join(', ')
+              }
+            >
+              {users
+                .filter((user) => user.isActive && !adminIds.includes(user.id))
+                .map((user) => (
+                  <MenuItem key={user.id} value={user.id}>
+                    <Checkbox checked={userIds.includes(user.id)} /> {user.nickname || user.email}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <Button
+              variant="contained"
+              onClick={() => void submit()}
+              disabled={!name.trim() || slug.length < 2 || adminIds.length === 0}
+            >
+              {selected ? 'Update space' : 'Create space'}
+            </Button>
+            {selected && (
+              <Button
+                onClick={() =>
+                  void navigator.clipboard.writeText(`${window.location.origin}/s/${selected.slug}`)
+                }
+              >
+                Share link
+              </Button>
+            )}
+            {selected && (
+              <Button
+                color="error"
+                onClick={() => {
+                  const confirmation = window.prompt(
+                    `Type ${selected.slug} to permanently delete this space.`
+                  );
+                  if (confirmation === selected.slug) {
+                    void removeSpace(selected.id, confirmation).then(async () => {
+                      setSelectedId(null);
+                      await onChanged();
+                    });
+                  }
+                }}
+              >
+                Delete space
+              </Button>
+            )}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+export default function SettingsDialog({
+  open,
+  settings,
+  profile,
+  activeSpace,
+  spaces,
+  notebooks,
+  onClose,
+  onSave,
+  onSpacesChanged,
+}: SettingsDialogProps) {
+  const [localSettings, setLocalSettings] = useState(settings);
+  const [activeSection, setActiveSection] = useState<SettingsSection>('appearance');
+
+  const menuItems = useMemo(() => {
+    const items: { id: SettingsSection; label: string }[] = [
+      { id: 'appearance', label: 'Appearance' },
+      { id: 'tags', label: 'Tag management' },
+      { id: 'assistant', label: 'Assistant Advanced' },
+    ];
+    if (activeSpace.isAdmin) items.push({ id: 'notebookAccess', label: 'Notebook access' });
+    if (profile.role === 'superadmin') {
+      items.push({ id: 'users', label: 'User management' }, { id: 'spaces', label: 'Space manager' });
+    }
+    return items;
+  }, [activeSpace.isAdmin, profile.role]);
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="md"
+      maxWidth="xl"
       slotProps={{
         paper: {
           sx: {
-            borderRadius: '12px',
-            p: 0.5,
-            border: '1px solid var(--card-border)',
-            boxShadow: NEO_MINT.shadowSm,
-            '& .MuiDialogTitle-root': { py: 1.5, px: 2, fontSize: '18px' },
-            '& .MuiDialogContent-root': { px: 2 },
-            '& .MuiDialogActions-root': { p: 2 },
-            '& .MuiButton-root': {
-              minHeight: 30,
-              px: 1.5,
-              py: 0.35,
-              fontSize: '12px',
-              lineHeight: 1.2,
-            },
-            '& .MuiButton-startIcon': { mr: 0.5 },
-            '& .MuiInputBase-root': { minHeight: 36, fontSize: '13px' },
-            '& .MuiInputBase-input': { py: '7px' },
-            '& .MuiInputLabel-root': { fontSize: '13px' },
-            '& .MuiCheckbox-root': { p: 0.35 },
+            height: '86vh',
+            maxHeight: 920,
+            borderRadius: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           },
         },
       }}
     >
-      <DialogTitle sx={{ fontWeight: 700, color: NEO_MINT.textTitle }}>System Settings</DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box>
-            <SectionLabel>Appearance</SectionLabel>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-                gap: 1,
-              }}
-            >
-              {APP_THEME_OPTIONS.map((option) => {
-                const selected = option.id === themeName;
-                return (
-                  <ButtonBase
-                    key={option.id}
-                    onClick={() => setThemeName(option.id)}
-                    aria-pressed={selected}
-                    sx={{
-                      minWidth: 0,
-                      p: 1.25,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'stretch',
-                      gap: 0.75,
-                      textAlign: 'left',
-                      borderRadius: '12px',
-                      border: `2px solid ${selected ? 'var(--primary)' : 'var(--card-border-soft)'}`,
-                      backgroundColor: selected ? 'var(--primary-subtle)' : 'var(--surface-soft)',
-                      transition: 'border-color 0.15s ease, background-color 0.15s ease',
-                      '&:hover': {
-                        borderColor: 'var(--primary)',
-                        backgroundColor: 'var(--primary-subtle)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      {option.swatches.map((color) => (
-                        <Box
-                          key={color}
-                          component="span"
-                          sx={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: '7px',
-                            backgroundColor: color,
-                            border: '1px solid rgba(15, 23, 42, 0.18)',
-                          }}
-                        />
-                      ))}
-                    </Box>
-                    <Typography sx={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-title)' }}>
-                      {option.label}
-                    </Typography>
-                    <Typography sx={{ fontSize: '10px', lineHeight: 1.4, color: 'var(--text-muted)' }}>
-                      {option.description}
-                    </Typography>
-                  </ButtonBase>
-                );
-              })}
-            </Box>
-            <Typography sx={{ mt: 0.75, fontSize: '10px', color: 'var(--text-muted)' }}>
-              Theme selection is saved only in this browser.
-            </Typography>
-          </Box>
-
-          {/* Tags management */}
-          <Box>
-            <SectionLabel>Tag Management</SectionLabel>
-            <Box sx={{ display: 'flex', gap: 1, mb: 1.25 }}>
-              <TextField
-                placeholder="New tag name..."
-                size="small"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                sx={{
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: '13px' },
-                }}
-              />
+      <DialogTitle
+        sx={{ flexShrink: 0, fontWeight: 800, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}
+      >
+        System Settings · {activeSpace.name}
+      </DialogTitle>
+      <DialogContent sx={{ p: '0 !important', minHeight: 0, overflow: 'hidden', flex: 1 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '160px 1fr', md: '240px 1fr' },
+            height: '100%',
+            minHeight: 0,
+          }}
+        >
+          <Box sx={{ p: 1.25, overflowY: 'auto', borderRight: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
+            {menuItems.map((item) => (
               <Button
-                onClick={handleAddTag}
-                variant="contained"
-                disableElevation
-                sx={{
-                  borderRadius: '10px',
-                  backgroundColor: NEO_MINT.primary,
-                  color: NEO_MINT.surface,
-                  fontWeight: 700,
-                  px: 2,
-                  textTransform: 'none',
-                  '&:hover': { backgroundColor: NEO_MINT.primaryHover },
-                }}
+                key={item.id}
+                fullWidth
+                onClick={() => setActiveSection(item.id)}
+                variant={activeSection === item.id ? 'contained' : 'text'}
+                sx={{ mb: 0.5, justifyContent: 'flex-start', textTransform: 'none', fontWeight: 700 }}
               >
-                Add
+                {item.label}
               </Button>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 0.6,
-                p: 1.25,
-                minHeight: 52,
-                borderRadius: '12px',
-                backgroundColor: 'var(--surface-soft)',
-                border: '1px solid var(--card-border-soft)',
-              }}
-            >
-              {localSettings.tags.length === 0 && (
-                <Typography
-                  sx={{
-                    fontSize: '13px',
-                    color: NEO_MINT.textMuted,
-                    fontStyle: 'italic',
-                    alignSelf: 'center',
-                    width: '100%',
-                    textAlign: 'center',
-                  }}
-                >
-                  No tags defined yet
-                </Typography>
-              )}
-              {localSettings.tags.map((tag) => (
-                <Box
-                  key={tag}
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--surface-muted)',
-                    border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: NEO_MINT.textBody,
-                  }}
-                >
-                  {tag}
-                  <Box
-                    component="span"
-                    onClick={() => handleDeleteTag(tag)}
-                    sx={{
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      lineHeight: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      '&:hover': { color: NEO_MINT.danger },
-                    }}
-                  >
-                    ×
-                  </Box>
-                </Box>
-              ))}
-            </Box>
+            ))}
           </Box>
-
-          {/* Assistant intents */}
-          <Box>
-            <Box
-              sx={{
-                p: 1.25,
-                borderRadius: '12px',
-                backgroundColor: 'var(--surface-soft)',
-                border: '1px solid var(--card-border-soft)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-                <Box sx={{ minWidth: 0 }}>
-                  <SectionLabel>Assistant Advanced</SectionLabel>
-                  <Typography sx={{ mt: -1, fontSize: '12px', fontWeight: 600, color: NEO_MINT.textMuted }}>
-                    Optional quick-question presets for the AI assistant.
-                  </Typography>
-                </Box>
-                <Button
-                  onClick={() => setShowAssistantIntents((current) => !current)}
-                  variant="outlined"
-                  sx={{
-                    flexShrink: 0,
-                    borderRadius: '10px',
-                    borderColor: NEO_MINT.cardBorderSoft,
-                    color: NEO_MINT.textTitle,
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    '&:hover': {
-                      backgroundColor: 'var(--primary-subtle)',
-                      borderColor: NEO_MINT.primary,
-                      color: NEO_MINT.primary,
-                    },
-                  }}
-                >
-                  {showAssistantIntents ? 'Hide' : 'Configure'}
-                </Button>
-              </Box>
-
-              {showAssistantIntents && (
-                <Box sx={{ mt: 1.25 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 0.75,
-                      p: 1.25,
-                      mb: 1.25,
-                      borderRadius: '12px',
-                      backgroundColor: 'var(--panel-bg)',
-                      border: '1px solid var(--panel-border)',
-                    }}
-                  >
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1 }}>
-                      <TextField
-                        label="Label"
-                        size="small"
-                        value={intentDraft.label}
-                        onChange={(e) =>
-                          setIntentDraft({ ...intentDraft, label: e.target.value.slice(0, 80) })
-                        }
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '10px',
-                            fontSize: '13px',
-                            backgroundColor: NEO_MINT.surface,
-                          },
-                        }}
-                      />
-                      <FormControl size="small">
-                        <InputLabel>Intent</InputLabel>
-                        <Select
-                          label="Intent"
-                          value={intentDraft.intent}
-                          onChange={(e) =>
-                            setIntentDraft({ ...intentDraft, intent: e.target.value as AssistantIntent })
-                          }
-                          sx={{ borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface }}
-                        >
-                          {ASSISTANT_INTENTS.map((intent) => (
-                            <MenuItem key={intent} value={intent}>
-                              {intent}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-
-                    <TextField
-                      label="Suggestion question"
-                      size="small"
-                      value={intentDraft.question}
-                      onChange={(e) =>
-                        setIntentDraft({ ...intentDraft, question: e.target.value.slice(0, 255) })
-                      }
-                      slotProps={{ htmlInput: { maxLength: 255 } }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '10px',
-                          fontSize: '13px',
-                          backgroundColor: NEO_MINT.surface,
-                        },
-                      }}
-                    />
-
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: '1fr 104px 144px 104px' },
-                        gap: 1,
-                      }}
-                    >
-                      <TextField
-                        label="Tag"
-                        size="small"
-                        value={intentDraft.tag || ''}
-                        onChange={(e) => setIntentDraft({ ...intentDraft, tag: e.target.value })}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '10px',
-                            fontSize: '13px',
-                            backgroundColor: NEO_MINT.surface,
-                          },
-                        }}
-                      />
-                      <TextField
-                        label="Days"
-                        size="small"
-                        type="number"
-                        value={intentDraft.days ?? ''}
-                        onChange={(e) =>
-                          setIntentDraft({
-                            ...intentDraft,
-                            days: e.target.value === '' ? undefined : Number(e.target.value),
-                          })
-                        }
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '10px',
-                            fontSize: '13px',
-                            backgroundColor: NEO_MINT.surface,
-                          },
-                        }}
-                      />
-                      <FormControl size="small">
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                          label="Status"
-                          value={intentDraft.status || ''}
-                          onChange={(e) =>
-                            setIntentDraft({
-                              ...intentDraft,
-                              status: e.target.value ? (e.target.value as TaskStatus) : undefined,
-                            })
-                          }
-                          sx={{ borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface }}
-                        >
-                          <MenuItem value="">None</MenuItem>
-                          {TASK_STATUSES.map((status) => (
-                            <MenuItem key={status} value={status}>
-                              {status}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormControl size="small">
-                        <InputLabel>Period</InputLabel>
-                        <Select
-                          label="Period"
-                          value={intentDraft.period || ''}
-                          onChange={(e) =>
-                            setIntentDraft({
-                              ...intentDraft,
-                              period: e.target.value
-                                ? (e.target.value as AssistantConfiguredIntent['period'])
-                                : undefined,
-                            })
-                          }
-                          sx={{ borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface }}
-                        >
-                          <MenuItem value="">None</MenuItem>
-                          {PERIODS.map((period) => (
-                            <MenuItem key={period} value={period}>
-                              {period}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-
-                    <TextField
-                      label="Search query override"
-                      size="small"
-                      value={intentDraft.query || ''}
-                      onChange={(e) =>
-                        setIntentDraft({ ...intentDraft, query: e.target.value.slice(0, 255) })
-                      }
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '10px',
-                          fontSize: '13px',
-                          backgroundColor: NEO_MINT.surface,
-                        },
-                      }}
-                    />
-
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 1,
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <Box
-                        onClick={() => setIntentDraft({ ...intentDraft, enabled: !intentDraft.enabled })}
-                        sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 0.35,
-                          cursor: 'pointer',
-                          color: NEO_MINT.textBody,
-                          fontSize: '12px',
-                          fontWeight: 600,
-                        }}
-                      >
-                        <Checkbox size="small" checked={intentDraft.enabled} />
-                        Enabled
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        {editingIntentId && (
-                          <Button
-                            onClick={() => {
-                              setEditingIntentId(null);
-                              setIntentDraft(createBlankIntent());
-                            }}
-                            variant="text"
-                            sx={{ color: NEO_MINT.textBody, fontWeight: 600, textTransform: 'none' }}
-                          >
-                            Cancel edit
-                          </Button>
-                        )}
-                        <Button
-                          onClick={handleSaveIntent}
-                          variant="contained"
-                          disableElevation
-                          sx={{
-                            borderRadius: '10px',
-                            backgroundColor: NEO_MINT.primary,
-                            color: NEO_MINT.surface,
-                            fontWeight: 700,
-                            px: 1.5,
-                            textTransform: 'none',
-                          }}
-                        >
-                          {editingIntentId ? 'Update Intent' : 'Add Intent'}
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.65 }}>
-                    {(localSettings.assistantIntents || []).map((intent) => (
-                      <Box
-                        key={intent.id}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.75,
-                          p: 0.8,
-                          borderRadius: '8px',
-                          backgroundColor: NEO_MINT.surface,
-                          border: '1px solid var(--card-border-soft)',
-                        }}
-                      >
-                        <Checkbox
-                          size="small"
-                          checked={intent.enabled}
-                          onChange={() => handleToggleIntent(intent.id)}
-                        />
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography
-                            sx={{
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              color: NEO_MINT.textTitle,
-                              overflowWrap: 'anywhere',
-                            }}
-                          >
-                            {intent.label || intent.question}
-                          </Typography>
-                          <Typography
-                            sx={{ fontSize: '11px', color: NEO_MINT.textMuted, overflowWrap: 'anywhere' }}
-                          >
-                            {intent.intent} - {intent.question}
-                          </Typography>
-                        </Box>
-                        <Button
-                          size="small"
-                          onClick={() => handleEditIntent(intent)}
-                          sx={{
-                            borderRadius: '8px',
-                            color: NEO_MINT.primary,
-                            fontWeight: 700,
-                            textTransform: 'none',
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="small"
-                          onClick={() => handleDeleteIntent(intent.id)}
-                          sx={{
-                            borderRadius: '8px',
-                            color: NEO_MINT.danger,
-                            fontWeight: 700,
-                            textTransform: 'none',
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </Box>
+          <Box sx={{ p: { xs: 1.5, md: 2.5 }, minWidth: 0, overflowY: 'auto' }}>
+            {activeSection === 'appearance' && <AppearancePanel />}
+            {activeSection === 'tags' && <TagPanel settings={localSettings} onChange={setLocalSettings} />}
+            {activeSection === 'assistant' && (
+              <AssistantPanel settings={localSettings} onChange={setLocalSettings} />
+            )}
+            {activeSection === 'notebookAccess' && (
+              <NotebookAccessPanel space={activeSpace} notebooks={notebooks} />
+            )}
+            {activeSection === 'users' && <UserManagementPanel currentUserId={profile.id} />}
+            {activeSection === 'spaces' && <SpaceManagerPanel spaces={spaces} onChanged={onSpacesChanged} />}
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 3 }}>
-        <Button
-          onClick={onClose}
-          sx={{
-            borderRadius: '10px',
-            color: NEO_MINT.textBody,
-            fontWeight: 600,
-            textTransform: 'none',
-            px: 2,
-            '&:hover': { backgroundColor: 'var(--surface-muted)' },
-          }}
-        >
-          Cancel
+      <DialogActions sx={{ flexShrink: 0, p: 2, borderTop: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
+        <Button onClick={onClose} sx={{ textTransform: 'none' }}>
+          Close
         </Button>
-        <Button
-          onClick={() => onSave(localSettings)}
-          variant="contained"
-          disableElevation
-          sx={{
-            borderRadius: '10px',
-            backgroundColor: NEO_MINT.primary,
-            color: NEO_MINT.surface,
-            fontWeight: 700,
-            px: 2.5,
-            textTransform: 'none',
-            '&:hover': {
-              backgroundColor: NEO_MINT.primaryHover,
-              boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px',
-            },
-          }}
-        >
+        <Button variant="contained" onClick={() => void onSave(localSettings)} sx={{ textTransform: 'none' }}>
           Save Settings
         </Button>
       </DialogActions>

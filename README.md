@@ -30,7 +30,7 @@ The seed script creates or updates `minhd.mbb@gmail.com`, confirms its email, an
 
 Run `supabase:migrate-data` once. It reads `data/task-manager.db`, migrates all notebooks/tasks/subtasks/tags/history to UUID records, and deliberately excludes the legacy Gemini key.
 
-## Deploy Gemini Edge Functions
+## Deploy Edge Functions
 
 Configure exact frontend origins in `ALLOWED_ORIGINS`, separated by commas:
 
@@ -40,9 +40,11 @@ npx.cmd supabase secrets set GEMINI_MODEL=gemini-3.5-flash
 npx.cmd supabase secrets set ALLOWED_ORIGINS=http://localhost:3000,https://your-domain.example
 npx.cmd supabase functions deploy extract-task
 npx.cmd supabase functions deploy assistant-query
+npx.cmd supabase functions deploy admin-users
 ```
 
 The Gemini key exists only in Supabase Function secrets. Both functions require an authenticated Supabase JWT, apply a per-user quota, validate input, and never execute model-generated SQL.
+`admin-users` is restricted to active `superadmin` accounts and uses Supabase's server-only service-role secret, which is available automatically inside hosted Edge Functions. Never add that secret to the frontend or to a `NEXT_PUBLIC_*` variable.
 
 ## Run locally
 
@@ -55,11 +57,15 @@ Open `http://localhost:3000` and sign in with a seeded Supabase account. Localho
 
 ## Authorization model
 
-- `superadmin`: full application and notebook access.
-- `admin`: access is granted per notebook through `notebook_members`; detailed `manage_notebook` and `manage_settings` flags default to false until configured.
-- `user`: can view and modify tasks and subtasks in assigned notebooks, but cannot manage notebooks, settings, or users.
+- `superadmin`: manages Auth users and all spaces, including permanent space deletion.
+- Space `admin`: sees every notebook in an assigned space and can manage that space's notebooks, tags, assistant configuration, and notebook access.
+- Space `user`: belongs to a space but sees only notebooks explicitly assigned by a Space admin. The user can modify tasks and subtasks, but cannot manage notebooks or configuration.
+
+Settings separates Appearance, Tag management, Assistant Advanced, and Notebook access. Superadmins additionally see User management and Space manager. Deleting a user from the normal user action means deactivation; permanent deletion is deliberately separate. Every space must retain at least one assigned admin.
 
 Database RLS is the source of truth. Hiding a button in the frontend is only a usability measure.
+
+Spaces are opened at `/s/{slug}`. Users who belong to multiple spaces can switch from the compact Space selector in the top toolbar. Space share links use the same slug route. Deleting a space cascades its notebooks, tasks, subtasks, tags, and logs at the database layer, so test deletion on staging and keep a database backup.
 
 ## Build and deploy
 
@@ -94,6 +100,9 @@ The portable package now requires internet access and stores data in Supabase ra
 
 ```powershell
 npm.cmd run lint
-npx.cmd tsc --noEmit
+npm.cmd run typecheck
+npm.cmd run test
 npm.cmd run build
 ```
+
+The migration and Edge Function deployment commands above intentionally change remote Supabase state. Run them only after reviewing `supabase/migrations/20260715000200_spaces_and_access.sql` and its rollback file in a staging project first.

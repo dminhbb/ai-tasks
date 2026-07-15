@@ -4,8 +4,36 @@ export type AppRole = 'superadmin' | 'admin' | 'user';
 export interface UserProfile {
   id: string;
   email: string;
+  nickname: string;
   role: AppRole;
   isActive: boolean;
+}
+
+export type SpaceMemberRole = 'admin' | 'user';
+
+export interface Space {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+  isAdmin: boolean;
+}
+
+export interface SpaceMember {
+  userId: string;
+  email: string;
+  nickname: string;
+  role: SpaceMemberRole;
+}
+
+export interface ManagedUser {
+  id: string;
+  email: string;
+  nickname: string;
+  role: AppRole;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface NotebookPermissions {
@@ -55,6 +83,7 @@ export interface Task {
 
 export interface Notebook {
   id: string;
+  spaceId: string;
   name: string;
   createdAt: string;
   updatedAt: string;

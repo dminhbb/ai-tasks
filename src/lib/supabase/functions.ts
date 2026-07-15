@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { FunctionsHttpError } from '@supabase/supabase-js';
-import type { Task } from '@/types';
+import type { AppRole, ManagedUser, Task } from '@/types';
 import { getSupabaseBrowserClient } from './client';
 
 async function edgeFunctionErrorMessage(error: unknown, fallback: string): Promise<string> {
@@ -46,6 +46,57 @@ const assistantResponseSchema = z.object({
   ),
   metrics: z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
 });
+
+const managedUserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string(),
+  nickname: z.string(),
+  role: z.enum(['superadmin', 'admin', 'user']),
+  is_active: z.boolean(),
+  created_at: z.string(),
+});
+
+async function invokeAdminUsers(body: Record<string, unknown>): Promise<unknown> {
+  const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-users', { body });
+  if (error) throw new Error(await edgeFunctionErrorMessage(error, 'Không thể quản lý user lúc này.'));
+  return data;
+}
+
+export async function listManagedUsers(): Promise<ManagedUser[]> {
+  const parsed = z
+    .object({ users: z.array(managedUserSchema) })
+    .safeParse(await invokeAdminUsers({ action: 'list' }));
+  if (!parsed.success) throw new Error('Dữ liệu user trả về không hợp lệ.');
+  return parsed.data.users.map((user) => ({
+    id: user.id,
+    email: user.email,
+    nickname: user.nickname,
+    role: user.role,
+    isActive: user.is_active,
+    createdAt: user.created_at,
+  }));
+}
+
+interface SaveManagedUserInput {
+  id?: string;
+  email: string;
+  password: string;
+  nickname: string;
+  role: AppRole;
+  isActive: boolean;
+}
+
+export async function saveManagedUser(input: SaveManagedUserInput): Promise<void> {
+  await invokeAdminUsers({ action: input.id ? 'update' : 'create', ...input });
+}
+
+export async function deactivateManagedUser(id: string): Promise<void> {
+  await invokeAdminUsers({ action: 'deactivate', id });
+}
+
+export async function permanentlyDeleteManagedUser(id: string): Promise<void> {
+  await invokeAdminUsers({ action: 'permanentDelete', id });
+}
 
 export async function extractTasksWithAi(text: string): Promise<z.infer<typeof extractedTaskSchema>[]> {
   const { data, error } = await getSupabaseBrowserClient().functions.invoke('extract-task', {
