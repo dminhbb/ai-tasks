@@ -40,6 +40,7 @@ describe('NotebookDialog', () => {
     const projectNotebook = notebook('notebook-project', projectSpace.id, 'Project Notebook');
     const onLoadNotebooks = vi.fn().mockResolvedValue([projectNotebook]);
     const onOpen = vi.fn();
+    const onOpenInNewTab = vi.fn();
 
     render(
       <NotebookDialog
@@ -54,6 +55,7 @@ describe('NotebookDialog', () => {
         onRename={vi.fn()}
         onDelete={vi.fn()}
         onOpen={onOpen}
+        onOpenInNewTab={onOpenInNewTab}
       />
     );
 
@@ -63,5 +65,42 @@ describe('NotebookDialog', () => {
 
     await user.click(screen.getByRole('button', { name: 'Open notebook Project Notebook' }));
     expect(onOpen).toHaveBeenCalledWith(projectSpace, projectNotebook.id);
+
+    await user.click(screen.getByRole('button', { name: 'Open notebook Project Notebook in new tab' }));
+    expect(onOpenInNewTab).toHaveBeenCalledWith(projectSpace, projectNotebook.id);
+  });
+
+  it('deletes only after confirmation and an exact notebook name match', async () => {
+    const user = userEvent.setup();
+    const managedNotebook = {
+      ...notebook('notebook-managed', activeSpace.id, 'Managed Notebook'),
+      permissions: { manageTasks: true, manageNotebook: true, manageSettings: true },
+    };
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('Managed Notebook');
+
+    render(
+      <NotebookDialog
+        open
+        spaces={[activeSpace]}
+        activeSpace={activeSpace}
+        notebooks={[managedNotebook]}
+        activeNotebook={managedNotebook}
+        onClose={vi.fn()}
+        onLoadNotebooks={vi.fn().mockResolvedValue([])}
+        onCreate={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={onDelete}
+        onOpen={vi.fn()}
+        onOpenInNewTab={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Delete notebook Managed Notebook' }));
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(promptSpy).toHaveBeenCalledOnce();
+    expect(onDelete).toHaveBeenCalledWith(activeSpace, managedNotebook.id);
   });
 });

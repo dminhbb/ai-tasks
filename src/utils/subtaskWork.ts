@@ -3,10 +3,14 @@ import type { Subtask, SubtaskStatus } from '@/types';
 export const MIN_WORK_HOURS = 0;
 export const MAX_WORK_HOURS = 24;
 export const WORK_HOUR_STEP = 2;
-export const WORK_HOUR_OPTIONS = Array.from(
-  { length: (MAX_WORK_HOURS - MIN_WORK_HOURS) / WORK_HOUR_STEP + 1 },
-  (_, index) => MIN_WORK_HOURS + index * WORK_HOUR_STEP
-);
+export const SHORT_WORK_HOUR_OPTIONS = [MIN_WORK_HOURS, 0.5, 1, 2, 3] as const;
+export const WORK_HOUR_OPTIONS = [
+  ...SHORT_WORK_HOUR_OPTIONS,
+  ...Array.from(
+    { length: (MAX_WORK_HOURS - 4) / WORK_HOUR_STEP + 1 },
+    (_, index) => 4 + index * WORK_HOUR_STEP
+  ),
+];
 
 const NEXT_SUBTASK_STATUS: Record<SubtaskStatus, SubtaskStatus> = {
   'TO DO': 'IN PROGRESS',
@@ -35,7 +39,7 @@ export function toggleSubtaskCompletion(subtask: Subtask, completedAt: string): 
 
 export function setSubtaskWorkHours(subtask: Subtask, workHours: number): Subtask {
   if (!WORK_HOUR_OPTIONS.includes(workHours)) {
-    throw new RangeError('Work hours must be an even number from 0 to 24.');
+    throw new RangeError('Work hours must be one of the supported values from 0 to 24.');
   }
   return { ...subtask, workHours };
 }

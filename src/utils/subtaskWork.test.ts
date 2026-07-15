@@ -8,8 +8,8 @@ import {
 } from '@/utils/subtaskWork';
 
 describe('subtask work log', () => {
-  it('offers even hour values from 0 through 24', () => {
-    expect(WORK_HOUR_OPTIONS).toEqual([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]);
+  it('offers short work values before the standard two-hour increments', () => {
+    expect(WORK_HOUR_OPTIONS).toEqual([0, 0.5, 1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]);
   });
 
   it('records completion time and clears hours when reopened', () => {
@@ -43,6 +43,6 @@ describe('subtask work log', () => {
   });
 
   it('rejects unsupported hour values', () => {
-    expect(() => setSubtaskWorkHours(makeSubtask(), 3)).toThrow(RangeError);
+    expect(() => setSubtaskWorkHours(makeSubtask(), 1.5)).toThrow(RangeError);
   });
 });

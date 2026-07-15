@@ -333,6 +333,10 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     window.location.assign(spaceUrl(space, notebookId));
   };
 
+  const openNotebookInNewTab = (space: Space, notebookId: string) => {
+    window.open(spaceUrl(space, notebookId), '_blank', 'noopener,noreferrer');
+  };
+
   const handleSpacesChanged = async () => {
     const nextSpaces = await listSpaces();
     setSpaces(nextSpaces);
@@ -949,6 +953,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           onClose={() => setIsNotebookOpen(false)}
           onLoadNotebooks={(space) => listNotebooks(profile, space.id, space.isAdmin)}
           onOpen={openNotebook}
+          onOpenInNewTab={openNotebookInNewTab}
           onCreate={async (space, name) => {
             const notebook = await createNotebook(name, space.id);
             openNotebook(space, notebook.id);

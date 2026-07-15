@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import {
   Box,
   Button,
+  ButtonBase,
   Dialog,
   DialogActions,
   DialogContent,
@@ -29,6 +30,7 @@ type NotebookDialogProps = {
   onRename: (space: Space, id: string, name: string) => Promise<void>;
   onDelete: (space: Space, id: string) => Promise<void>;
   onOpen: (space: Space, id: string) => void;
+  onOpenInNewTab: (space: Space, id: string) => void;
 };
 
 export default function NotebookDialog({
@@ -43,6 +45,7 @@ export default function NotebookDialog({
   onRename,
   onDelete,
   onOpen,
+  onOpenInNewTab,
 }: NotebookDialogProps) {
   const [selectedSpace, setSelectedSpace] = useState<Space>(activeSpace);
   const [visibleNotebooks, setVisibleNotebooks] = useState<Notebook[]>(notebooks);
@@ -101,10 +104,21 @@ export default function NotebookDialog({
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (notebook: Notebook) => {
+    const firstConfirmation = window.confirm(`Delete notebook "${notebook.name}" and all of its data?`);
+    if (!firstConfirmation) return;
+
+    const typedName = window.prompt(
+      `This action cannot be undone. Type the exact notebook name "${notebook.name}" to continue.`
+    );
+    if (typedName !== notebook.name) {
+      if (typedName !== null) setError('Notebook name confirmation did not match.');
+      return;
+    }
+
     setError('');
     try {
-      await onDelete(selectedSpace, id);
+      await onDelete(selectedSpace, notebook.id);
       setVisibleNotebooks(await onLoadNotebooks(selectedSpace));
     } catch (deleteError: unknown) {
       setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete notebook.');
@@ -250,7 +264,20 @@ export default function NotebookDialog({
                       sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
                   ) : (
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <ButtonBase
+                      aria-label={`Open notebook ${notebook.name}`}
+                      onClick={() => onOpen(selectedSpace, notebook.id)}
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        display: 'block',
+                        borderRadius: '8px',
+                        px: 0.5,
+                        py: 0.25,
+                        textAlign: 'left',
+                        '&:hover': { backgroundColor: 'var(--surface-muted)' },
+                      }}
+                    >
                       <Typography
                         sx={{
                           fontSize: '13px',
@@ -265,7 +292,7 @@ export default function NotebookDialog({
                       <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>
                         Last active {notebook.lastAccessedAt.substring(0, 10)}
                       </Typography>
-                    </Box>
+                    </ButtonBase>
                   )}
 
                   {isEditing ? (
@@ -285,8 +312,8 @@ export default function NotebookDialog({
                     <>
                       <IconButton
                         size="small"
-                        aria-label={`Open notebook ${notebook.name}`}
-                        onClick={() => onOpen(selectedSpace, notebook.id)}
+                        aria-label={`Open notebook ${notebook.name} in new tab`}
+                        onClick={() => onOpenInNewTab(selectedSpace, notebook.id)}
                         sx={{ color: NEO_MINT.primary }}
                       >
                         <Launch sx={{ fontSize: 18 }} />
@@ -306,11 +333,8 @@ export default function NotebookDialog({
                       {notebook.permissions.manageNotebook && (
                         <IconButton
                           size="small"
-                          onClick={() => {
-                            if (window.confirm(`Delete notebook "${notebook.name}" and all of its data?`)) {
-                              void handleDelete(notebook.id);
-                            }
-                          }}
+                          aria-label={`Delete notebook ${notebook.name}`}
+                          onClick={() => void handleDelete(notebook)}
                           sx={{ color: NEO_MINT.danger }}
                         >
                           <Delete sx={{ fontSize: 18 }} />
