@@ -31,6 +31,7 @@ export function addBatchSubtasksToTodayTask(
   const newSubtasks: Subtask[] = titles.map((title, index) => ({
     id: createId(),
     title,
+    status: 'TO DO',
     completed: false,
     isToday: true,
     completedAt: null,

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { makeSubtask } from '@/test/taskFactory';
-import { setSubtaskWorkHours, toggleSubtaskCompletion, WORK_HOUR_OPTIONS } from '@/utils/subtaskWork';
+import {
+  cycleSubtaskStatus,
+  setSubtaskWorkHours,
+  toggleSubtaskCompletion,
+  WORK_HOUR_OPTIONS,
+} from '@/utils/subtaskWork';
 
 describe('subtask work log', () => {
   it('offers even hour values from 0 through 24', () => {
@@ -12,6 +17,25 @@ describe('subtask work log', () => {
     const logged = setSubtaskWorkHours(completed, 6);
     expect(logged.completedAt).toBe('2026-07-15T08:00:00.000Z');
     expect(toggleSubtaskCompletion(logged, 'unused')).toMatchObject({
+      completed: false,
+      completedAt: null,
+      workHours: 0,
+    });
+  });
+
+  it('cycles through To Do, In Progress, Done and back to To Do', () => {
+    const started = cycleSubtaskStatus(makeSubtask(), '2026-07-15T08:00:00.000Z');
+    const completed = cycleSubtaskStatus(started, '2026-07-15T09:00:00.000Z');
+    const reset = cycleSubtaskStatus(completed, 'unused');
+
+    expect(started).toMatchObject({ status: 'IN PROGRESS', completed: false, completedAt: null });
+    expect(completed).toMatchObject({
+      status: 'DONE',
+      completed: true,
+      completedAt: '2026-07-15T09:00:00.000Z',
+    });
+    expect(reset).toMatchObject({
+      status: 'TO DO',
       completed: false,
       completedAt: null,
       workHours: 0,

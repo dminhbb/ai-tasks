@@ -4,7 +4,7 @@ import { applyManualProgress, clampProgress, getTaskProgress, syncTaskProgress }
 
 describe('task progress', () => {
   it('derives progress from subtasks', () => {
-    const task = makeTask({ subtasks: [makeSubtask({ completed: true }), makeSubtask()] });
+    const task = makeTask({ subtasks: [makeSubtask({ status: 'DONE', completed: true }), makeSubtask()] });
     expect(getTaskProgress(task)).toBe(50);
     expect(syncTaskProgress(task).progress).toBe(50);
   });

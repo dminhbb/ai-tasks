@@ -17,6 +17,7 @@ describe('Today task rules', () => {
       isVisibleTodaySubtask(
         makeSubtask({
           isToday: true,
+          status: 'DONE',
           completed: true,
           completedAt: '2026-07-13T12:00:00.000Z',
         }),
@@ -27,6 +28,7 @@ describe('Today task rules', () => {
       isVisibleTodaySubtask(
         makeSubtask({
           isToday: true,
+          status: 'DONE',
           completed: true,
           completedAt: '2026-07-10T12:00:00.000Z',
         }),
@@ -41,7 +43,7 @@ describe('Today task rules', () => {
       subtasks: [
         makeSubtask({ id: 'later', sortOrder: 2 }),
         makeSubtask({ id: 'first', sortOrder: 0 }),
-        makeSubtask({ id: 'done', sortOrder: 1, completed: true }),
+        makeSubtask({ id: 'done', sortOrder: 1, status: 'DONE', completed: true }),
       ],
     });
     expect(getSuggestedTodaySubtaskItems([task], NOW).map((item) => item.subtask.id)).toEqual(['first']);

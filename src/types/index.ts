@@ -1,4 +1,5 @@
 export type TaskStatus = 'URGENT' | 'IN PROGRESS' | 'TO DO' | 'PENDING' | 'CANCELLED' | 'DONE';
+export type SubtaskStatus = 'TO DO' | 'IN PROGRESS' | 'DONE';
 export type AppRole = 'superadmin' | 'admin' | 'user';
 
 export interface UserProfile {
@@ -34,6 +35,7 @@ export interface ManagedUser {
   role: AppRole;
   isActive: boolean;
   createdAt: string;
+  canManage: boolean;
 }
 
 export interface NotebookPermissions {
@@ -55,6 +57,7 @@ export type AssistantIntent =
 export interface Subtask {
   id: string;
   title: string;
+  status: SubtaskStatus;
   completed: boolean;
   isToday: boolean;
   completedAt: string | null;

@@ -1,4 +1,4 @@
-import type { Subtask } from '@/types';
+import type { Subtask, SubtaskStatus } from '@/types';
 
 export const MIN_WORK_HOURS = 0;
 export const MAX_WORK_HOURS = 24;
@@ -8,11 +8,29 @@ export const WORK_HOUR_OPTIONS = Array.from(
   (_, index) => MIN_WORK_HOURS + index * WORK_HOUR_STEP
 );
 
+const NEXT_SUBTASK_STATUS: Record<SubtaskStatus, SubtaskStatus> = {
+  'TO DO': 'IN PROGRESS',
+  'IN PROGRESS': 'DONE',
+  DONE: 'TO DO',
+};
+
+export function setSubtaskStatus(subtask: Subtask, status: SubtaskStatus, completedAt: string): Subtask {
+  const completed = status === 'DONE';
+  return {
+    ...subtask,
+    status,
+    completed,
+    completedAt: completed ? (subtask.completedAt ?? completedAt) : null,
+    workHours: completed ? subtask.workHours : MIN_WORK_HOURS,
+  };
+}
+
+export function cycleSubtaskStatus(subtask: Subtask, completedAt: string): Subtask {
+  return setSubtaskStatus(subtask, NEXT_SUBTASK_STATUS[subtask.status], completedAt);
+}
+
 export function toggleSubtaskCompletion(subtask: Subtask, completedAt: string): Subtask {
-  if (subtask.completed) {
-    return { ...subtask, completed: false, completedAt: null, workHours: MIN_WORK_HOURS };
-  }
-  return { ...subtask, completed: true, completedAt, workHours: subtask.workHours };
+  return setSubtaskStatus(subtask, subtask.completed ? 'TO DO' : 'DONE', completedAt);
 }
 
 export function setSubtaskWorkHours(subtask: Subtask, workHours: number): Subtask {

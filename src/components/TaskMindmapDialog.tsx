@@ -760,6 +760,7 @@ export default function TaskMindmapDialog({
                 candidate.id === subtask.id
                   ? {
                       ...candidate,
+                      status: 'DONE',
                       completed: true,
                       completedAt,
                     }

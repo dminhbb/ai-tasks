@@ -13,8 +13,6 @@ import {
   DialogTitle,
   Drawer,
   CircularProgress,
-  MenuItem,
-  Select,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -36,9 +34,12 @@ import TaskAssistantPanel from '@/components/TaskAssistantPanel';
 import TaskMindmapDialog from '@/components/TaskMindmapDialog';
 import NotebookDialog from '@/components/NotebookDialog';
 import TodayWorkspace from '@/components/TodayWorkspace';
+import SpaceSelectionScreen from '@/components/SpaceSelectionScreen';
+import AccessErrorScreen from '@/components/AccessErrorScreen';
 import type { Notebook, Space, Task, Settings, UserProfile } from '@/types';
 import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
+import { requestedSpaceFromPath, spaceUrl } from '@/utils/spaceRouting';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LoginScreen from '@/components/LoginScreen';
@@ -145,21 +146,22 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       try {
         const url = new URL(window.location.href);
         const requestedNotebookId = url.searchParams.get('notebookId');
-        const requestedSpaceSlug = window.location.pathname.match(/^\/s\/([^/]+)/)?.[1] ?? '';
-        const availableSpaces = await listSpaces(profile);
-        const currentSpace =
-          availableSpaces.find((space) => space.slug === requestedSpaceSlug) ?? availableSpaces[0] ?? null;
+        const availableSpaces = await listSpaces();
+        const currentSpace = requestedSpaceFromPath(availableSpaces, window.location.pathname);
         if (!currentSpace) {
           if (isActive) {
-            setSpaces([]);
+            setSpaces(availableSpaces);
+            setActiveSpace(null);
+            setActiveNotebook(null);
             setNotebooks([]);
+            setTasks([]);
           }
           return;
         }
 
         let availableNotebooks = await listNotebooks(profile, currentSpace.id, currentSpace.isAdmin);
         if (availableNotebooks.length === 0 && currentSpace.isAdmin) {
-          const mainNotebook = await createNotebook('MAIN', profile, currentSpace.id);
+          const mainNotebook = await createNotebook('Default Notebook', currentSpace.id);
           availableNotebooks = [mainNotebook];
         }
         const currentNotebook =
@@ -205,24 +207,6 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       isActive = false;
     };
   }, [profile]);
-
-  const reloadNotebookData = async (notebook: Notebook) => {
-    if (!activeSpace) return;
-    setLoading(true);
-    try {
-      const [tasksData, settingsData, notebooksData] = await Promise.all([
-        readTasks(notebook.id),
-        readSettings(activeSpace.id),
-        listNotebooks(profile, activeSpace.id, activeSpace.isAdmin),
-      ]);
-      setTasks(tasksData);
-      setSettings(settingsData);
-      setNotebooks(notebooksData);
-      setActiveNotebook(notebook);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -345,21 +329,48 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     }
   };
 
-  const openNotebookWindow = (notebookId: string) => {
-    if (!activeSpace) return;
-    window.open(`/s/${activeSpace.slug}?notebookId=${notebookId}`, '_blank');
+  const openNotebook = (space: Space, notebookId: string) => {
+    window.location.assign(spaceUrl(space, notebookId));
   };
 
   const handleSpacesChanged = async () => {
-    const nextSpaces = await listSpaces(profile);
+    const nextSpaces = await listSpaces();
     setSpaces(nextSpaces);
     const nextActiveSpace = nextSpaces.find((space) => space.id === activeSpace?.id) ?? null;
     if (nextActiveSpace) {
       setActiveSpace(nextActiveSpace);
       return;
     }
-    if (nextSpaces[0]) window.location.assign(`/s/${nextSpaces[0].slug}`);
+    window.location.assign('/');
   };
+
+  if (!activeSpace) {
+    if (loading) {
+      return (
+        <Box
+          sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', backgroundColor: 'var(--app-bg)' }}
+        >
+          <CircularProgress sx={{ color: NEO_MINT.primary }} />
+        </Box>
+      );
+    }
+    if (spaces.length === 0) {
+      return <AccessErrorScreen message="Lỗi: Chưa được phân quyền vào Space" onSignOut={onSignOut} />;
+    }
+    return (
+      <SpaceSelectionScreen
+        spaces={spaces}
+        onSelect={(space) => window.location.assign(spaceUrl(space))}
+        onSignOut={onSignOut}
+      />
+    );
+  }
+
+  if (!activeNotebook && !loading) {
+    return (
+      <AccessErrorScreen message="Lỗi: Chưa được phân quyền vào Notebook của Space" onSignOut={onSignOut} />
+    );
+  }
 
   return (
     <Box
@@ -443,29 +454,6 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
 
           {/* Center: primary actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.25, md: 0.4 } }}>
-            {spaces.length > 1 && activeSpace && (
-              <Select
-                size="small"
-                value={activeSpace.slug}
-                aria-label="Active space"
-                onChange={(event) => window.location.assign(`/s/${event.target.value}`)}
-                sx={{
-                  minWidth: 92,
-                  maxWidth: 150,
-                  height: 28,
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  borderRadius: '9px',
-                  '& .MuiSelect-select': { py: 0.35, pl: 1, pr: '26px !important' },
-                }}
-              >
-                {spaces.map((space) => (
-                  <MenuItem key={space.id} value={space.slug} sx={{ fontSize: '12px' }}>
-                    {space.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            )}
             {/* Primary CTA — Action Blue */}
             <Button
               variant="text"
@@ -856,6 +844,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         <Box sx={{ height: 'calc(100vh - 64px)', minWidth: 0 }}>
           <TodayWorkspace
             tasks={tasks}
+            profile={profile}
             canManageTasks={activeNotebook?.permissions.manageTasks ?? false}
             isDialogOpen={isTodayDialogOpen}
             onCloseDialog={() => setIsTodayDialogOpen(false)}
@@ -953,36 +942,37 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       {isNotebookOpen && (
         <NotebookDialog
           open={isNotebookOpen}
+          spaces={spaces}
+          activeSpace={activeSpace}
           notebooks={notebooks}
           activeNotebook={activeNotebook}
           onClose={() => setIsNotebookOpen(false)}
-          canCreate={activeSpace?.isAdmin ?? false}
-          onOpen={openNotebookWindow}
-          onCreate={async (name) => {
-            if (!activeSpace) return;
-            const notebook = await createNotebook(name, profile, activeSpace.id);
-            setNotebooks(await listNotebooks(profile, activeSpace.id, activeSpace.isAdmin));
-            openNotebookWindow(notebook.id);
+          onLoadNotebooks={(space) => listNotebooks(profile, space.id, space.isAdmin)}
+          onOpen={openNotebook}
+          onCreate={async (space, name) => {
+            const notebook = await createNotebook(name, space.id);
+            openNotebook(space, notebook.id);
           }}
-          onRename={async (id, name) => {
+          onRename={async (space, id, name) => {
             await renameNotebook(id, name);
-            if (!activeSpace) return;
-            const nextNotebooks = await listNotebooks(profile, activeSpace.id, activeSpace.isAdmin);
+            if (space.id !== activeSpace.id) return;
+            const nextNotebooks = await listNotebooks(profile, space.id, space.isAdmin);
             setNotebooks(nextNotebooks);
             if (activeNotebook?.id === id) {
               setActiveNotebook(nextNotebooks.find((notebook) => notebook.id === id) ?? null);
             }
           }}
-          onDelete={async (id) => {
+          onDelete={async (space, id) => {
             await deleteNotebook(id);
-            if (!activeSpace) return;
-            const nextNotebooks = await listNotebooks(profile, activeSpace.id, activeSpace.isAdmin);
+            if (space.id !== activeSpace.id) return;
+            const nextNotebooks = await listNotebooks(profile, space.id, space.isAdmin);
             setNotebooks(nextNotebooks);
-            if (activeNotebook?.id === id && nextNotebooks[0]) {
-              await reloadNotebookData(nextNotebooks[0]);
-              const url = new URL(window.location.href);
-              url.searchParams.set('notebookId', nextNotebooks[0].id);
-              window.history.replaceState(null, '', url.toString());
+            if (activeNotebook?.id === id) {
+              if (nextNotebooks[0]) {
+                openNotebook(space, nextNotebooks[0].id);
+              } else {
+                window.location.assign(`/s/${space.slug}`);
+              }
             }
           }}
         />

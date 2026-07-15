@@ -55,4 +55,23 @@ describe('SettingsDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Save Settings' }));
     expect(onSave).toHaveBeenCalledWith({ tags: ['ALM'], assistantIntents: [] });
   });
+
+  it('shows Space-scoped management sections to a Space admin', () => {
+    render(
+      <SettingsDialog
+        open
+        settings={{ tags: [], assistantIntents: [] }}
+        profile={{ ...profile, role: 'admin' }}
+        activeSpace={{ ...space, isAdmin: true }}
+        spaces={[space, { ...space, id: '00000000-0000-4000-8000-000000000003', name: 'Other' }]}
+        notebooks={[]}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onSpacesChanged={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'User management' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Space manager' })).toBeInTheDocument();
+  });
 });

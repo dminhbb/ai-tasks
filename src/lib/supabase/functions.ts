@@ -54,6 +54,7 @@ const managedUserSchema = z.object({
   role: z.enum(['superadmin', 'admin', 'user']),
   is_active: z.boolean(),
   created_at: z.string(),
+  can_manage: z.boolean(),
 });
 
 async function invokeAdminUsers(body: Record<string, unknown>): Promise<unknown> {
@@ -62,10 +63,10 @@ async function invokeAdminUsers(body: Record<string, unknown>): Promise<unknown>
   return data;
 }
 
-export async function listManagedUsers(): Promise<ManagedUser[]> {
+export async function listManagedUsers(spaceId?: string): Promise<ManagedUser[]> {
   const parsed = z
     .object({ users: z.array(managedUserSchema) })
-    .safeParse(await invokeAdminUsers({ action: 'list' }));
+    .safeParse(await invokeAdminUsers({ action: 'list', spaceId }));
   if (!parsed.success) throw new Error('Dữ liệu user trả về không hợp lệ.');
   return parsed.data.users.map((user) => ({
     id: user.id,
@@ -74,6 +75,7 @@ export async function listManagedUsers(): Promise<ManagedUser[]> {
     role: user.role,
     isActive: user.is_active,
     createdAt: user.created_at,
+    canManage: user.can_manage,
   }));
 }
 
@@ -86,16 +88,16 @@ interface SaveManagedUserInput {
   isActive: boolean;
 }
 
-export async function saveManagedUser(input: SaveManagedUserInput): Promise<void> {
-  await invokeAdminUsers({ action: input.id ? 'update' : 'create', ...input });
+export async function saveManagedUser(input: SaveManagedUserInput, spaceId?: string): Promise<void> {
+  await invokeAdminUsers({ action: input.id ? 'update' : 'create', ...input, spaceId });
 }
 
-export async function deactivateManagedUser(id: string): Promise<void> {
-  await invokeAdminUsers({ action: 'deactivate', id });
+export async function deactivateManagedUser(id: string, spaceId?: string): Promise<void> {
+  await invokeAdminUsers({ action: 'deactivate', id, spaceId });
 }
 
-export async function permanentlyDeleteManagedUser(id: string): Promise<void> {
-  await invokeAdminUsers({ action: 'permanentDelete', id });
+export async function permanentlyDeleteManagedUser(id: string, spaceId?: string): Promise<void> {
+  await invokeAdminUsers({ action: 'permanentDelete', id, spaceId });
 }
 
 export async function extractTasksWithAi(text: string): Promise<z.infer<typeof extractedTaskSchema>[]> {

@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.110.3';
+import { createClient, type SupabaseClient, type User } from 'npm:@supabase/supabase-js@2.110.3';
 import {
   authenticatedUserClient,
   handleOptions,
@@ -20,6 +20,7 @@ interface AdminUserBody {
   nickname?: unknown;
   role?: unknown;
   isActive?: unknown;
+  spaceId?: unknown;
 }
 
 interface ProfileRow {
@@ -54,15 +55,54 @@ function validRole(value: unknown): value is ProfileRow['role'] {
   return typeof value === 'string' && ROLES.has(value);
 }
 
-async function requireSuperadmin(request: Request) {
+interface ManagerContext {
+  actor: User;
+  admin: SupabaseClient;
+  isSuperadmin: boolean;
+  spaceId: string | null;
+}
+
+async function requireManager(request: Request, requestedSpaceId: unknown): Promise<ManagerContext> {
   const { supabase, user } = await authenticatedUserClient(request);
   const { data, error } = await supabase
     .from('profiles')
     .select('role, is_active')
     .eq('id', user.id)
     .single();
-  if (error || data.role !== 'superadmin' || !data.is_active) throw new Error('FORBIDDEN');
-  return { actor: user, admin: adminClient() };
+  if (error || !data.is_active || !['superadmin', 'admin'].includes(data.role)) {
+    throw new Error('FORBIDDEN');
+  }
+  if (data.role === 'superadmin') {
+    return { actor: user, admin: adminClient(), isSuperadmin: true, spaceId: null };
+  }
+  if (typeof requestedSpaceId !== 'string' || !UUID_PATTERN.test(requestedSpaceId)) {
+    throw new Error('FORBIDDEN');
+  }
+  const { data: membership, error: membershipError } = await supabase
+    .from('space_members')
+    .select('space_id')
+    .eq('space_id', requestedSpaceId)
+    .eq('user_id', user.id)
+    .eq('role', 'admin')
+    .maybeSingle();
+  if (membershipError || !membership) throw new Error('FORBIDDEN');
+  return { actor: user, admin: adminClient(), isSuperadmin: false, spaceId: requestedSpaceId };
+}
+
+async function requireRegularUserInSpace(
+  admin: SupabaseClient,
+  profile: ProfileRow,
+  spaceId: string | null
+): Promise<void> {
+  if (!spaceId || profile.role !== 'user') throw new Error('FORBIDDEN');
+  const { data, error } = await admin
+    .from('space_members')
+    .select('user_id')
+    .eq('space_id', spaceId)
+    .eq('user_id', profile.id)
+    .eq('role', 'user')
+    .maybeSingle();
+  if (error || !data) throw new Error('FORBIDDEN');
 }
 
 async function readProfile(admin: SupabaseClient, id: string): Promise<ProfileRow> {
@@ -104,7 +144,8 @@ async function audit(
 function errorResponse(request: Request, error: unknown): Response {
   const code = error instanceof Error ? error.message : '';
   if (code === 'UNAUTHENTICATED') return jsonResponse(request, { error: 'Authentication required.' }, 401);
-  if (code === 'FORBIDDEN') return jsonResponse(request, { error: 'Superadmin permission required.' }, 403);
+  if (code === 'FORBIDDEN')
+    return jsonResponse(request, { error: 'User management permission required.' }, 403);
   if (code === 'INVALID_USER') return jsonResponse(request, { error: 'Invalid user information.' }, 400);
   if (code === 'USER_NOT_FOUND') return jsonResponse(request, { error: 'User was not found.' }, 404);
   if (code === 'LAST_SUPERADMIN')
@@ -124,16 +165,49 @@ Deno.serve(async (request: Request) => {
   if (envelopeError) return envelopeError;
 
   try {
-    const { actor, admin } = await requireSuperadmin(request);
     const body = await readJsonBody<AdminUserBody>(request, MAX_REQUEST_BYTES);
+    const { actor, admin, isSuperadmin, spaceId } = await requireManager(request, body.spaceId);
 
     if (body.action === 'list') {
-      const { data, error } = await admin
-        .from('profiles')
-        .select('id, email, nickname, role, is_active, created_at')
-        .order('created_at');
-      if (error) throw new Error('PROFILE_LIST_FAILED');
-      return jsonResponse(request, { users: data ?? [] });
+      if (isSuperadmin) {
+        const { data, error } = await admin
+          .from('profiles')
+          .select('id, email, nickname, role, is_active, created_at')
+          .order('created_at');
+        if (error) throw new Error('PROFILE_LIST_FAILED');
+        return jsonResponse(request, {
+          users: (data ?? []).map((profile) => ({ ...profile, can_manage: true })),
+        });
+      }
+
+      const [
+        { data: regularUsers, error: userError },
+        { data: adminMembers, error: adminError },
+        { data: userMemberships, error: membershipError },
+      ] = await Promise.all([
+        admin
+          .from('profiles')
+          .select('id, email, nickname, role, is_active, created_at')
+          .eq('role', 'user')
+          .order('created_at'),
+        admin
+          .from('space_members')
+          .select('profiles!inner(id, email, nickname, role, is_active, created_at)')
+          .eq('space_id', spaceId)
+          .eq('role', 'admin'),
+        admin.from('space_members').select('user_id').eq('space_id', spaceId).eq('role', 'user'),
+      ]);
+      if (userError || adminError || membershipError) throw new Error('PROFILE_LIST_FAILED');
+      const manageableUserIds = new Set((userMemberships ?? []).map((member) => member.user_id));
+      const scopedUsers = (regularUsers ?? []).map((profile) => ({
+        ...profile,
+        can_manage: manageableUserIds.has(profile.id),
+      }));
+      const peerAdmins = (adminMembers ?? []).map((member) => ({
+        ...member.profiles,
+        can_manage: false,
+      }));
+      return jsonResponse(request, { users: [...scopedUsers, ...peerAdmins] });
     }
 
     if (body.action === 'create') {
@@ -143,6 +217,7 @@ Deno.serve(async (request: Request) => {
         throw new Error('INVALID_USER');
       }
       if (!validRole(body.role) || typeof body.isActive !== 'boolean') throw new Error('INVALID_USER');
+      if (!isSuperadmin && body.role !== 'user') throw new Error('FORBIDDEN');
 
       const { data, error } = await admin.auth.admin.createUser({
         email,
@@ -167,18 +242,32 @@ Deno.serve(async (request: Request) => {
       if (!body.isActive) {
         await admin.auth.admin.updateUserById(data.user.id, { ban_duration: '876000h' });
       }
-      await audit(admin, actor.id, data.user.id, 'create', { email, role: body.role });
+      if (spaceId && body.role === 'user') {
+        const { error: membershipError } = await admin.from('space_members').upsert({
+          space_id: spaceId,
+          user_id: data.user.id,
+          role: 'user',
+        });
+        if (membershipError) {
+          await admin.auth.admin.deleteUser(data.user.id);
+          throw new Error('SPACE_ASSIGNMENT_FAILED');
+        }
+      }
+      await audit(admin, actor.id, data.user.id, 'create', { email, role: body.role, spaceId });
       return jsonResponse(request, { ok: true });
     }
 
     if (typeof body.id !== 'string' || !UUID_PATTERN.test(body.id)) throw new Error('INVALID_USER');
     const existing = await readProfile(admin, body.id);
+    if (!isSuperadmin) await requireRegularUserInSpace(admin, existing, spaceId);
 
     if (body.action === 'update') {
       const email = normalizedEmail(body.email);
       const nickname = normalizedNickname(body.nickname);
       if (!validRole(body.role) || typeof body.isActive !== 'boolean') throw new Error('INVALID_USER');
-      if (actor.id === body.id && (body.role !== 'superadmin' || !body.isActive)) throw new Error('FORBIDDEN');
+      if (!isSuperadmin && body.role !== 'user') throw new Error('FORBIDDEN');
+      if (actor.id === body.id && (body.role !== 'superadmin' || !body.isActive))
+        throw new Error('FORBIDDEN');
       await ensureNotLastSuperadmin(admin, existing, body.isActive ? body.role : 'inactive');
 
       const password = typeof body.password === 'string' ? body.password : '';
@@ -193,12 +282,15 @@ Deno.serve(async (request: Request) => {
       const attributes = password ? { ...baseAttributes, password } : baseAttributes;
       const { error } = await admin.auth.admin.updateUserById(body.id, attributes);
       if (error) throw new Error('AUTH_UPDATE_FAILED');
-      const { error: profileError } = await admin.from('profiles').update({
-        email,
-        nickname,
-        role: body.role,
-        is_active: body.isActive,
-      }).eq('id', body.id);
+      const { error: profileError } = await admin
+        .from('profiles')
+        .update({
+          email,
+          nickname,
+          role: body.role,
+          is_active: body.isActive,
+        })
+        .eq('id', body.id);
       if (profileError) throw new Error('PROFILE_UPDATE_FAILED');
       await audit(admin, actor.id, body.id, 'update', { email, role: body.role, isActive: body.isActive });
       return jsonResponse(request, { ok: true });
@@ -212,13 +304,17 @@ Deno.serve(async (request: Request) => {
         app_metadata: { app_role: existing.role, is_active: false },
       });
       if (error) throw new Error('AUTH_UPDATE_FAILED');
-      const { error: profileError } = await admin.from('profiles').update({ is_active: false }).eq('id', body.id);
+      const { error: profileError } = await admin
+        .from('profiles')
+        .update({ is_active: false })
+        .eq('id', body.id);
       if (profileError) throw new Error('PROFILE_UPDATE_FAILED');
       await audit(admin, actor.id, body.id, 'deactivate', { email: existing.email });
       return jsonResponse(request, { ok: true });
     }
 
     if (body.action === 'permanentDelete') {
+      if (!isSuperadmin) throw new Error('FORBIDDEN');
       if (actor.id === body.id) throw new Error('FORBIDDEN');
       await ensureNotLastSuperadmin(admin, existing, 'deleted');
       const { count, error: notebookError } = await admin

@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   ButtonBase,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -17,7 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Close, Delete, DragIndicator, DriveFileMoveOutlined, PlaylistAdd } from '@mui/icons-material';
-import type { Subtask, Task } from '@/types';
+import type { Subtask, Task, UserProfile } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { compareSubtaskOrder } from '@/utils/taskOrdering';
 import {
@@ -30,12 +29,14 @@ import { addBatchSubtasksToTodayTask } from '@/utils/todayBatch';
 import TodayBatchAddDialog from '@/components/TodayBatchAddDialog';
 import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
 import TodayMoveSubtaskDialog from '@/components/TodayMoveSubtaskDialog';
-import { setSubtaskWorkHours, toggleSubtaskCompletion } from '@/utils/subtaskWork';
+import SubtaskStatusControl from '@/components/SubtaskStatusControl';
+import { cycleSubtaskStatus, setSubtaskWorkHours } from '@/utils/subtaskWork';
 
 const VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000;
 
 interface TodayWorkspaceProps {
   tasks: Task[];
+  profile: UserProfile;
   canManageTasks: boolean;
   isDialogOpen: boolean;
   onCloseDialog: () => void;
@@ -65,6 +66,7 @@ function TruncatedText({ children, sx = {} }: { children: string; sx?: Record<st
 
 export default function TodayWorkspace({
   tasks,
+  profile,
   canManageTasks,
   isDialogOpen,
   onCloseDialog,
@@ -121,9 +123,9 @@ export default function TodayWorkspace({
     void onSaveTasks(nextTasks);
   };
 
-  const toggleCompleted = (item: TodaySubtaskItem) => {
+  const cycleStatus = (item: TodaySubtaskItem) => {
     updateSubtask(item.task.id, item.subtask.id, (subtask) =>
-      toggleSubtaskCompletion(subtask, new Date().toISOString())
+      cycleSubtaskStatus(subtask, new Date().toISOString())
     );
   };
 
@@ -189,12 +191,18 @@ export default function TodayWorkspace({
   return (
     <>
       <Box sx={{ height: '100%', minWidth: 0, backgroundColor: 'var(--sidebar-bg)' }}>
-        <Box sx={{ px: 1.5, py: 1.25, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
+        <Box sx={{ px: 1.5, py: 1.15, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
           <Typography sx={{ fontSize: '13px', fontWeight: 800, color: NEO_MINT.textTitle }}>
+            {profile.nickname || profile.email.split('@')[0]} | {profile.role}
+          </Typography>
+          <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted, mt: 0.2 }} noWrap>
+            {profile.email}
+          </Typography>
+          <Typography sx={{ fontSize: '12px', fontWeight: 800, color: NEO_MINT.textTitle, mt: 1 }}>
             ##TODAY
           </Typography>
         </Box>
-        <Box sx={{ overflowY: 'auto', height: 'calc(100% - 46px)' }}>
+        <Box sx={{ overflowY: 'auto', height: 'calc(100% - 82px)' }}>
           {todayItems.length === 0 ? (
             <Typography sx={{ p: 2, fontSize: '12px', color: NEO_MINT.textMuted }}>
               No subtasks selected for Today.
@@ -212,12 +220,10 @@ export default function TodayWorkspace({
                   borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
                 }}
               >
-                <Checkbox
-                  size="small"
+                <SubtaskStatusControl
                   disabled={!canManageTasks}
-                  checked={item.subtask.completed}
-                  onChange={() => toggleCompleted(item)}
-                  sx={{ '&.Mui-checked': { color: NEO_MINT.primary } }}
+                  status={item.subtask.status}
+                  onCycle={() => cycleStatus(item)}
                 />
                 <ButtonBase
                   onClick={() => openParentTask(item.task)}
@@ -307,12 +313,10 @@ export default function TodayWorkspace({
                     <DragIndicator fontSize="small" />
                   </Box>
                 </Tooltip>
-                <Checkbox
-                  size="small"
+                <SubtaskStatusControl
                   disabled={!canManageTasks}
-                  checked={item.subtask.completed}
-                  onChange={() => toggleCompleted(item)}
-                  sx={{ '&.Mui-checked': { color: NEO_MINT.primary } }}
+                  status={item.subtask.status}
+                  onCycle={() => cycleStatus(item)}
                 />
                 <ButtonBase
                   onClick={() => openParentTask(item.task)}

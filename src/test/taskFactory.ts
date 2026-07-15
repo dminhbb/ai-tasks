@@ -4,6 +4,7 @@ export function makeSubtask(overrides: Partial<Subtask> = {}): Subtask {
   return {
     id: crypto.randomUUID(),
     title: 'Subtask',
+    status: 'TO DO',
     completed: false,
     isToday: false,
     completedAt: null,

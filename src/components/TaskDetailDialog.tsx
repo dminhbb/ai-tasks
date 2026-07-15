@@ -9,7 +9,6 @@ import {
   DialogActions,
   Autocomplete,
   Button,
-  Checkbox,
   FormControlLabel,
   IconButton,
   Switch,
@@ -33,7 +32,8 @@ import { reorderSubtasksWithinTask } from '@/utils/todayTasks';
 import { sanitizeRichText } from '@/utils/richText';
 import TaskRichTextEditor from '@/components/TaskRichTextEditor';
 import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
-import { setSubtaskWorkHours, toggleSubtaskCompletion } from '@/utils/subtaskWork';
+import SubtaskStatusControl from '@/components/SubtaskStatusControl';
+import { cycleSubtaskStatus, setSubtaskWorkHours } from '@/utils/subtaskWork';
 import TodayMoveSubtaskDialog from '@/components/TodayMoveSubtaskDialog';
 
 const STATUS_ORDER: Record<TaskStatus, number> = {
@@ -189,6 +189,7 @@ export default function TaskDetailDialog({
           {
             id: crypto.randomUUID(),
             title,
+            status: 'TO DO',
             completed: false,
             isToday: false,
             completedAt: null,
@@ -205,7 +206,7 @@ export default function TaskDetailDialog({
       syncTaskProgress({
         ...localTask,
         subtasks: (localTask.subtasks || []).map((subtask) =>
-          subtask.id === id ? toggleSubtaskCompletion(subtask, new Date().toISOString()) : subtask
+          subtask.id === id ? cycleSubtaskStatus(subtask, new Date().toISOString()) : subtask
         ),
       })
     );
@@ -587,14 +588,9 @@ export default function TaskDetailDialog({
                       >
                         <DragIndicator sx={{ fontSize: 18 }} />
                       </Box>
-                      <Checkbox
-                        size="small"
-                        checked={subtask.completed}
-                        onChange={() => handleToggleSubtask(subtask.id)}
-                        sx={{
-                          color: NEO_MINT.cardBorderSoft,
-                          '&.Mui-checked': { color: NEO_MINT.primary },
-                        }}
+                      <SubtaskStatusControl
+                        status={subtask.status}
+                        onCycle={() => handleToggleSubtask(subtask.id)}
                       />
                       <Typography
                         sx={{

@@ -36,6 +36,7 @@ import {
   readNotebookUserIds,
   removeSpace,
   saveSpace,
+  setSpaceUsers,
   setNotebookUsers,
 } from '@/lib/supabase/data';
 import {
@@ -474,24 +475,34 @@ const EMPTY_USER: UserDraft = {
   isActive: true,
 };
 
-function UserManagementPanel({ currentUserId }: { currentUserId: string }) {
+function UserManagementPanel({
+  currentUserId,
+  profileRole,
+  spaceId,
+}: {
+  currentUserId: string;
+  profileRole: AppRole;
+  spaceId: string;
+}) {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [draft, setDraft] = useState<UserDraft>(EMPTY_USER);
   const [error, setError] = useState('');
+  const isSuperadmin = profileRole === 'superadmin';
+  const scopedSpaceId = isSuperadmin ? undefined : spaceId;
 
-  const reload = async () => setUsers(await listManagedUsers());
+  const reload = async () => setUsers(await listManagedUsers(scopedSpaceId));
   useEffect(() => {
-    void listManagedUsers()
+    void listManagedUsers(scopedSpaceId)
       .then(setUsers)
       .catch((failure: unknown) => {
         setError(failure instanceof Error ? failure.message : 'Unable to load users.');
       });
-  }, []);
+  }, [scopedSpaceId]);
 
   const submit = async () => {
     setError('');
     try {
-      await saveManagedUser(draft);
+      await saveManagedUser(isSuperadmin ? draft : { ...draft, role: 'user' }, scopedSpaceId);
       setDraft(EMPTY_USER);
       await reload();
     } catch (failure: unknown) {
@@ -503,7 +514,11 @@ function UserManagementPanel({ currentUserId }: { currentUserId: string }) {
     <Box>
       <SectionTitle
         title="User management"
-        description="Superadmin-only management synchronized with Supabase Auth."
+        description={
+          isSuperadmin
+            ? 'Manage every account synchronized with Supabase Auth.'
+            : 'Manage regular users for this Space. Peer admins are shown as read-only.'
+        }
       />
       {error && (
         <Typography role="alert" sx={{ mb: 1, color: NEO_MINT.danger }}>
@@ -530,20 +545,24 @@ function UserManagementPanel({ currentUserId }: { currentUserId: string }) {
           value={draft.nickname}
           onChange={(event) => setDraft({ ...draft, nickname: event.target.value.slice(0, 100) })}
         />
-        <FormControl size="small">
-          <InputLabel>Role</InputLabel>
-          <Select
-            label="Role"
-            value={draft.role}
-            onChange={(event) => setDraft({ ...draft, role: event.target.value as AppRole })}
-          >
-            {APP_ROLES.map((role) => (
-              <MenuItem key={role} value={role}>
-                {role}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {isSuperadmin ? (
+          <FormControl size="small">
+            <InputLabel>Role</InputLabel>
+            <Select
+              label="Role"
+              value={draft.role}
+              onChange={(event) => setDraft({ ...draft, role: event.target.value as AppRole })}
+            >
+              {APP_ROLES.map((role) => (
+                <MenuItem key={role} value={role}>
+                  {role}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <TextField size="small" label="Role" value="user" disabled />
+        )}
         <Box component="label" sx={{ display: 'flex', alignItems: 'center' }}>
           <Checkbox
             checked={draft.isActive}
@@ -563,69 +582,75 @@ function UserManagementPanel({ currentUserId }: { currentUserId: string }) {
         </Box>
       </Box>
       <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        {users.map((user) => (
-          <Box
-            key={user.id}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              p: 1,
-              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-            }}
-          >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ fontSize: '13px', fontWeight: 800 }}>
-                {user.nickname || user.email}
-              </Typography>
-              <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>
-                {user.email} · {user.role} · {user.isActive ? 'active' : 'inactive'}
-              </Typography>
-            </Box>
-            <Button
-              onClick={() =>
-                setDraft({
-                  id: user.id,
-                  email: user.email,
-                  password: '',
-                  nickname: user.nickname,
-                  role: user.role,
-                  isActive: user.isActive,
-                })
-              }
-            >
-              Edit
-            </Button>
-            <Button
-              disabled={user.id === currentUserId || !user.isActive}
-              color="warning"
-              onClick={() =>
-                void deactivateManagedUser(user.id)
-                  .then(reload)
-                  .catch((failure: unknown) =>
-                    setError(failure instanceof Error ? failure.message : 'Unable to deactivate user.')
-                  )
-              }
-            >
-              Deactivate
-            </Button>
-            <Button
-              disabled={user.id === currentUserId}
-              color="error"
-              onClick={() => {
-                if (window.confirm(`Permanently delete ${user.email}? This cannot be undone.`)) {
-                  void permanentlyDeleteManagedUser(user.id)
-                    .then(reload)
-                    .catch((failure: unknown) =>
-                      setError(failure instanceof Error ? failure.message : 'Unable to delete user.')
-                    );
-                }
+        {users.map((user) => {
+          const canManageUser = user.canManage;
+          return (
+            <Box
+              key={user.id}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                p: 1,
+                border: `1px solid ${NEO_MINT.cardBorderSoft}`,
               }}
             >
-              Permanent delete
-            </Button>
-          </Box>
-        ))}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: '13px', fontWeight: 800 }}>
+                  {user.nickname || user.email}
+                </Typography>
+                <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>
+                  {user.email} · {user.role} · {user.isActive ? 'active' : 'inactive'}
+                </Typography>
+              </Box>
+              <Button
+                disabled={!canManageUser}
+                onClick={() =>
+                  setDraft({
+                    id: user.id,
+                    email: user.email,
+                    password: '',
+                    nickname: user.nickname,
+                    role: user.role,
+                    isActive: user.isActive,
+                  })
+                }
+              >
+                Edit
+              </Button>
+              <Button
+                disabled={!canManageUser || user.id === currentUserId || !user.isActive}
+                color="warning"
+                onClick={() =>
+                  void deactivateManagedUser(user.id, scopedSpaceId)
+                    .then(reload)
+                    .catch((failure: unknown) =>
+                      setError(failure instanceof Error ? failure.message : 'Unable to deactivate user.')
+                    )
+                }
+              >
+                Deactivate
+              </Button>
+              {isSuperadmin && (
+                <Button
+                  disabled={user.id === currentUserId}
+                  color="error"
+                  onClick={() => {
+                    if (window.confirm(`Permanently delete ${user.email}? This cannot be undone.`)) {
+                      void permanentlyDeleteManagedUser(user.id)
+                        .then(reload)
+                        .catch((failure: unknown) =>
+                          setError(failure instanceof Error ? failure.message : 'Unable to delete user.')
+                        );
+                    }
+                  }}
+                >
+                  Permanent delete
+                </Button>
+              )}
+            </Box>
+          );
+        })}
       </Box>
     </Box>
   );
@@ -633,9 +658,11 @@ function UserManagementPanel({ currentUserId }: { currentUserId: string }) {
 
 function SpaceManagerPanel({
   spaces,
+  isSuperadmin,
   onChanged,
 }: {
   spaces: Space[];
+  isSuperadmin: boolean;
   onChanged: () => void | Promise<void>;
 }) {
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -646,17 +673,21 @@ function SpaceManagerPanel({
   const [adminIds, setAdminIds] = useState<string[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [sharedLink, setSharedLink] = useState('');
+  const [copyMessage, setCopyMessage] = useState('');
 
   useEffect(() => {
-    void listManagedUsers().then(setUsers);
-  }, []);
-  useEffect(() => {
     if (!selectedId) return;
-    void listSpaceMembers(selectedId).then((members) => {
-      setAdminIds(members.filter((member) => member.role === 'admin').map((member) => member.userId));
-      setUserIds(members.filter((member) => member.role === 'user').map((member) => member.userId));
-    });
-  }, [selectedId]);
+    void Promise.all([listSpaceMembers(selectedId), listManagedUsers(isSuperadmin ? undefined : selectedId)])
+      .then(([members, managedUsers]) => {
+        setUsers(managedUsers);
+        setAdminIds(members.filter((member) => member.role === 'admin').map((member) => member.userId));
+        setUserIds(members.filter((member) => member.role === 'user').map((member) => member.userId));
+      })
+      .catch((failure: unknown) => {
+        setError(failure instanceof Error ? failure.message : 'Unable to load Space members.');
+      });
+  }, [isSuperadmin, selectedId]);
 
   const selectSpace = (space: Space | null) => {
     setSelectedId(space?.id ?? null);
@@ -669,11 +700,51 @@ function SpaceManagerPanel({
   const submit = async () => {
     setError('');
     try {
+      if (!isSuperadmin) {
+        if (!selected) throw new Error('Select a Space first.');
+        await setSpaceUsers(selected.id, userIds);
+        await onChanged();
+        return;
+      }
       const id = await saveSpace({ id: selected?.id ?? null, name, slug, adminIds, userIds });
       await onChanged();
       setSelectedId(id);
     } catch (failure: unknown) {
       setError(failure instanceof Error ? failure.message : 'Unable to save space.');
+    }
+  };
+
+  const deleteSelectedSpace = async () => {
+    if (!selected) return;
+    const firstConfirmation = window.confirm(
+      `Delete space "${selected.name}" and all of its notebooks, tasks and logs?`
+    );
+    if (!firstConfirmation) return;
+
+    const typedName = window.prompt(
+      `This action cannot be undone. Type the exact space name "${selected.name}" to continue.`
+    );
+    if (typedName !== selected.name) {
+      if (typedName !== null) setError('Space name confirmation did not match.');
+      return;
+    }
+
+    setError('');
+    try {
+      await removeSpace(selected.id, selected.slug);
+      setSelectedId(null);
+      await onChanged();
+    } catch (failure: unknown) {
+      setError(failure instanceof Error ? failure.message : 'Unable to delete space.');
+    }
+  };
+
+  const copySharedLink = async () => {
+    try {
+      await navigator.clipboard.writeText(sharedLink);
+      setCopyMessage('Copied to clipboard.');
+    } catch {
+      setCopyMessage('Copy failed. Select and copy the link manually.');
     }
   };
 
@@ -690,9 +761,11 @@ function SpaceManagerPanel({
       )}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '220px 1fr' }, gap: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Button variant={!selected ? 'contained' : 'outlined'} onClick={() => selectSpace(null)}>
-            + New space
-          </Button>
+          {isSuperadmin && (
+            <Button variant={!selected ? 'contained' : 'outlined'} onClick={() => selectSpace(null)}>
+              + New space
+            </Button>
+          )}
           {spaces.map((space) => (
             <Button
               key={space.id}
@@ -709,12 +782,14 @@ function SpaceManagerPanel({
             size="small"
             label="Space name"
             value={name}
+            disabled={!isSuperadmin}
             onChange={(event) => setName(event.target.value.slice(0, 100))}
           />
           <TextField
             size="small"
             label="Slug"
             value={slug}
+            disabled={!isSuperadmin}
             onChange={(event) =>
               setSlug(
                 event.target.value
@@ -730,13 +805,14 @@ function SpaceManagerPanel({
               multiple
               label="Space admins"
               value={adminIds}
+              disabled={!isSuperadmin}
               onChange={(event) => setAdminIds(event.target.value as string[])}
               renderValue={(ids) =>
                 ids.map((id) => users.find((user) => user.id === id)?.email ?? id).join(', ')
               }
             >
               {users
-                .filter((user) => user.isActive)
+                .filter((user) => user.isActive && user.role === 'admin')
                 .map((user) => (
                   <MenuItem key={user.id} value={user.id}>
                     <Checkbox checked={adminIds.includes(user.id)} /> {user.nickname || user.email}
@@ -768,40 +844,50 @@ function SpaceManagerPanel({
             <Button
               variant="contained"
               onClick={() => void submit()}
-              disabled={!name.trim() || slug.length < 2 || adminIds.length === 0}
+              disabled={
+                (!selected && !isSuperadmin) || !name.trim() || slug.length < 2 || adminIds.length === 0
+              }
             >
-              {selected ? 'Update space' : 'Create space'}
+              {isSuperadmin ? (selected ? 'Update space' : 'Create space') : 'Save users'}
             </Button>
-            {selected && (
+            {selected && isSuperadmin && (
               <Button
-                onClick={() =>
-                  void navigator.clipboard.writeText(`${window.location.origin}/s/${selected.slug}`)
-                }
+                onClick={() => {
+                  setCopyMessage('');
+                  setSharedLink(`${window.location.origin}/s/${selected.slug}`);
+                }}
               >
                 Share link
               </Button>
             )}
             {selected && (
-              <Button
-                color="error"
-                onClick={() => {
-                  const confirmation = window.prompt(
-                    `Type ${selected.slug} to permanently delete this space.`
-                  );
-                  if (confirmation === selected.slug) {
-                    void removeSpace(selected.id, confirmation).then(async () => {
-                      setSelectedId(null);
-                      await onChanged();
-                    });
-                  }
-                }}
-              >
+              <Button color="error" onClick={() => void deleteSelectedSpace()}>
                 Delete space
               </Button>
             )}
           </Box>
         </Box>
       </Box>
+      <Dialog open={Boolean(sharedLink)} onClose={() => setSharedLink('')} fullWidth maxWidth="sm">
+        <DialogTitle>Space shared link</DialogTitle>
+        <DialogContent dividers>
+          <TextField
+            fullWidth
+            value={sharedLink}
+            slotProps={{ input: { readOnly: true } }}
+            onFocus={(event) => event.target.select()}
+          />
+          {copyMessage && (
+            <Typography role="status" sx={{ mt: 1, fontSize: '12px', color: NEO_MINT.textMuted }}>
+              {copyMessage}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => void copySharedLink()}>Copy</Button>
+          <Button onClick={() => setSharedLink('')}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -826,12 +912,15 @@ export default function SettingsDialog({
       { id: 'tags', label: 'Tag management' },
       { id: 'assistant', label: 'Assistant Advanced' },
     ];
-    if (activeSpace.isAdmin) items.push({ id: 'notebookAccess', label: 'Notebook access' });
-    if (profile.role === 'superadmin') {
-      items.push({ id: 'users', label: 'User management' }, { id: 'spaces', label: 'Space manager' });
+    if (activeSpace.isAdmin) {
+      items.push(
+        { id: 'notebookAccess', label: 'Notebook access' },
+        { id: 'users', label: 'User management' },
+        { id: 'spaces', label: 'Space manager' }
+      );
     }
     return items;
-  }, [activeSpace.isAdmin, profile.role]);
+  }, [activeSpace.isAdmin]);
 
   return (
     <Dialog
@@ -888,8 +977,20 @@ export default function SettingsDialog({
             {activeSection === 'notebookAccess' && (
               <NotebookAccessPanel space={activeSpace} notebooks={notebooks} />
             )}
-            {activeSection === 'users' && <UserManagementPanel currentUserId={profile.id} />}
-            {activeSection === 'spaces' && <SpaceManagerPanel spaces={spaces} onChanged={onSpacesChanged} />}
+            {activeSection === 'users' && (
+              <UserManagementPanel
+                currentUserId={profile.id}
+                profileRole={profile.role}
+                spaceId={activeSpace.id}
+              />
+            )}
+            {activeSection === 'spaces' && (
+              <SpaceManagerPanel
+                spaces={profile.role === 'superadmin' ? spaces : spaces.filter((space) => space.isAdmin)}
+                isSuperadmin={profile.role === 'superadmin'}
+                onChanged={onSpacesChanged}
+              />
+            )}
           </Box>
         </Box>
       </DialogContent>
