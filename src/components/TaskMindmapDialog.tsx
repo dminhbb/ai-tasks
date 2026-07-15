@@ -2,15 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
-import {
-  Box,
-  Checkbox,
-  Dialog,
-  IconButton,
-  Popover,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Box, Checkbox, Dialog, IconButton, Popover, Tooltip, Typography } from '@mui/material';
 import {
   Add as AddIcon,
   AssignmentTurnedIn as AssignmentTurnedInIcon,
@@ -30,7 +22,13 @@ import {
 import type { Subtask, Task } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { getTaskProgress } from '@/utils/taskProgress';
-import { STATUS_ORDER, compareSubtaskOrder, compareTaskListOrder, normalizeSubtaskSortOrders, reorderTasksWithinStatus } from '@/utils/taskOrdering';
+import {
+  STATUS_ORDER,
+  compareSubtaskOrder,
+  compareTaskListOrder,
+  normalizeSubtaskSortOrders,
+  reorderTasksWithinStatus,
+} from '@/utils/taskOrdering';
 
 const STORAGE_KEY = 'task-manager-mindmap-state';
 
@@ -112,11 +110,8 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function getNodeWidth(label: string, type: MindmapNodeType) {
-  const maxWidth = type === 'root' || type === 'tag'
-    ? TAG_MAX_WIDTH
-    : type === 'task'
-      ? TASK_MAX_WIDTH
-      : SUBTASK_MAX_WIDTH;
+  const maxWidth =
+    type === 'root' || type === 'tag' ? TAG_MAX_WIDTH : type === 'task' ? TASK_MAX_WIDTH : SUBTASK_MAX_WIDTH;
 
   const actionSpace = type === 'task' || type === 'subtask' ? NODE_ACTION_ZONE_WIDTH : 0;
   return clamp(label.trim().length * 8 + 52 + actionSpace, MIN_NODE_WIDTH, maxWidth);
@@ -152,17 +147,20 @@ function readPersistedState(notebookId: string): PersistedMindmapState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PersistedMindmapState>;
     return {
-      expandedTags: Array.isArray(parsed.expandedTags) ? parsed.expandedTags.filter((tag): tag is string => typeof tag === 'string') : [],
+      expandedTags: Array.isArray(parsed.expandedTags)
+        ? parsed.expandedTags.filter((tag): tag is string => typeof tag === 'string')
+        : [],
       expandedTaskIds: Array.isArray(parsed.expandedTaskIds)
         ? parsed.expandedTaskIds.filter((id): id is string => typeof id === 'string')
         : [],
-      filteredTags: Array.isArray(parsed.filteredTags) ? parsed.filteredTags.filter((tag): tag is string => typeof tag === 'string') : [],
+      filteredTags: Array.isArray(parsed.filteredTags)
+        ? parsed.filteredTags.filter((tag): tag is string => typeof tag === 'string')
+        : [],
       showAllTasks: parsed.showAllTasks === true,
-      viewMode: parsed.viewMode === 'assignee'
-        || parsed.viewMode === 'status'
-        || parsed.viewMode === 'today'
-        ? parsed.viewMode
-        : 'tag',
+      viewMode:
+        parsed.viewMode === 'assignee' || parsed.viewMode === 'status' || parsed.viewMode === 'today'
+          ? parsed.viewMode
+          : 'tag',
       pan: {
         x: typeof parsed.pan?.x === 'number' ? parsed.pan.x : 0,
         y: typeof parsed.pan?.y === 'number' ? parsed.pan.y : 0,
@@ -224,9 +222,13 @@ export default function TaskMindmapDialog({
   onSaveTasks,
 }: TaskMindmapDialogProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const panStartRef = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
+  const panStartRef = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(
+    null
+  );
 
-  const [mindmapState, setMindmapState] = useState<PersistedMindmapState>(() => getInitialMindmapState(notebookId));
+  const [mindmapState, setMindmapState] = useState<PersistedMindmapState>(() =>
+    getInitialMindmapState(notebookId)
+  );
   const [isPanning, setIsPanning] = useState(false);
   const [tagFilterAnchor, setTagFilterAnchor] = useState<HTMLElement | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
@@ -307,11 +309,15 @@ export default function TaskMindmapDialog({
     return tasks.filter((task) => task.status !== 'CANCELLED' && task.status !== 'DONE');
   }, [showAllTasks, tasks]);
 
-  const todayMindmapItems = useMemo(() => tasks
-    .flatMap((task) => task.subtasks
-      .filter((subtask) => subtask.isToday)
-      .map((subtask) => ({ task, subtask })))
-    .sort((left, right) => compareSubtaskOrder(left.subtask, right.subtask)), [tasks]);
+  const todayMindmapItems = useMemo(
+    () =>
+      tasks
+        .flatMap((task) =>
+          task.subtasks.filter((subtask) => subtask.isToday).map((subtask) => ({ task, subtask }))
+        )
+        .sort((left, right) => compareSubtaskOrder(left.subtask, right.subtask)),
+    [tasks]
+  );
 
   const tagLabels = useMemo(() => {
     const visibleTaskCounts = new Map<string, number>();
@@ -396,7 +402,11 @@ export default function TaskMindmapDialog({
               parentTask: task,
             };
             nodes.push(subtaskNode);
-            connections.push({ id: `task-subtask:${connectionPrefix || 'branch'}:${task.id}:${subtask.id}`, from: taskNode, to: subtaskNode });
+            connections.push({
+              id: `task-subtask:${connectionPrefix || 'branch'}:${task.id}:${subtask.id}`,
+              from: taskNode,
+              to: subtaskNode,
+            });
           });
         }
 
@@ -442,9 +452,10 @@ export default function TaskMindmapDialog({
         });
       });
 
-      const todayListHeight = todayMindmapItems.length > 0
-        ? todayMindmapItems.length * SUBTASK_HEIGHT + (todayMindmapItems.length - 1) * SUBTASK_GAP
-        : TAG_HEIGHT;
+      const todayListHeight =
+        todayMindmapItems.length > 0
+          ? todayMindmapItems.length * SUBTASK_HEIGHT + (todayMindmapItems.length - 1) * SUBTASK_GAP
+          : TAG_HEIGHT;
       rootNode.y = TOP_OFFSET + (todayListHeight - TAG_HEIGHT) / 2;
       nodes.push(rootNode);
       cursorY = TOP_OFFSET + todayListHeight + TAG_GAP;
@@ -501,7 +512,9 @@ export default function TaskMindmapDialog({
 
       const sortedRootEntries = Array.from(rootEntries.entries()).sort(([aKey, a], [bKey, b]) => {
         if (viewMode === 'status') {
-          return STATUS_ORDER[aKey as keyof typeof STATUS_ORDER] - STATUS_ORDER[bKey as keyof typeof STATUS_ORDER];
+          return (
+            STATUS_ORDER[aKey as keyof typeof STATUS_ORDER] - STATUS_ORDER[bKey as keyof typeof STATUS_ORDER]
+          );
         }
         return a.label.localeCompare(b.label);
       });
@@ -513,7 +526,9 @@ export default function TaskMindmapDialog({
             tag,
             tasks: root.tasks.filter((task) => (task.tags || []).includes(tag)),
           }))
-          .filter((entry) => entry.tasks.length > 0 && (filteredTags.length === 0 || selectedTags.has(entry.tag)));
+          .filter(
+            (entry) => entry.tasks.length > 0 && (filteredTags.length === 0 || selectedTags.has(entry.tag))
+          );
 
         if (rootTags.length === 0) continue;
 
@@ -548,14 +563,20 @@ export default function TaskMindmapDialog({
           const isTagExpanded = expandedTagSet.has(tagExpandId);
           const tagHasUrgent = entry.tasks.some((task) => task.status === 'URGENT');
           const tagGroupHeight = isTagExpanded
-            ? Math.max(TAG_HEIGHT, entry.tasks.reduce((total, task) => {
-                const subtasks = getVisibleSubtasks(task, showAllTasks);
-                const isTaskExpanded = expandedTaskSet.has(task.id) && subtasks.length > 0;
-                const taskHeight = isTaskExpanded
-                  ? Math.max(TASK_HEIGHT, subtasks.length * SUBTASK_HEIGHT + (subtasks.length - 1) * SUBTASK_GAP)
-                  : TASK_HEIGHT;
-                return total + taskHeight + TASK_GAP;
-              }, -TASK_GAP))
+            ? Math.max(
+                TAG_HEIGHT,
+                entry.tasks.reduce((total, task) => {
+                  const subtasks = getVisibleSubtasks(task, showAllTasks);
+                  const isTaskExpanded = expandedTaskSet.has(task.id) && subtasks.length > 0;
+                  const taskHeight = isTaskExpanded
+                    ? Math.max(
+                        TASK_HEIGHT,
+                        subtasks.length * SUBTASK_HEIGHT + (subtasks.length - 1) * SUBTASK_GAP
+                      )
+                    : TASK_HEIGHT;
+                  return total + taskHeight + TASK_GAP;
+                }, -TASK_GAP)
+              )
             : TAG_HEIGHT;
           const tagNode: MindmapNode = {
             id: tagExpandId,
@@ -605,7 +626,17 @@ export default function TaskMindmapDialog({
       height: maxY + BOTTOM_PADDING,
       rootCount: viewMode === 'tag' ? tagLabels.length : nodes.filter((node) => node.type === 'root').length,
     };
-  }, [allTagLabels, expandedTags, expandedTaskIds, filteredTags, showAllTasks, tagLabels, todayMindmapItems, viewMode, visibleTasks]);
+  }, [
+    allTagLabels,
+    expandedTags,
+    expandedTaskIds,
+    filteredTags,
+    showAllTasks,
+    tagLabels,
+    todayMindmapItems,
+    viewMode,
+    visibleTasks,
+  ]);
 
   const applyZoom = (nextZoom: number, originX?: number, originY?: number) => {
     const viewport = viewportRef.current;
@@ -720,14 +751,24 @@ export default function TaskMindmapDialog({
     if (subtask.completed) return;
 
     const completedAt = new Date().toISOString();
-    onSaveTasks(tasks.map((task) => task.id === parentTask.id ? {
-      ...task,
-      subtasks: task.subtasks.map((candidate) => candidate.id === subtask.id ? {
-        ...candidate,
-        completed: true,
-        completedAt,
-      } : candidate),
-    } : task));
+    onSaveTasks(
+      tasks.map((task) =>
+        task.id === parentTask.id
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((candidate) =>
+                candidate.id === subtask.id
+                  ? {
+                      ...candidate,
+                      completed: true,
+                      completedAt,
+                    }
+                  : candidate
+              ),
+            }
+          : task
+      )
+    );
   };
 
   const clearDragState = () => {
@@ -772,14 +813,22 @@ export default function TaskMindmapDialog({
   const handleSubtaskDragStart = (event: DragEvent<HTMLElement>, task: Task, subtask: Subtask) => {
     event.stopPropagation();
     event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('application/x-subtask', JSON.stringify({ taskId: task.id, subtaskId: subtask.id }));
+    event.dataTransfer.setData(
+      'application/x-subtask',
+      JSON.stringify({ taskId: task.id, subtaskId: subtask.id })
+    );
     event.dataTransfer.setData('text/plain', String(subtask.id));
     setDraggedSubtask({ taskId: task.id, subtaskId: subtask.id });
     setDraggedTaskId(null);
   };
 
   const handleSubtaskDragOver = (event: DragEvent<HTMLElement>, targetTask: Task, targetSubtask: Subtask) => {
-    if (!draggedSubtask || draggedSubtask.taskId !== targetTask.id || draggedSubtask.subtaskId === targetSubtask.id) return;
+    if (
+      !draggedSubtask ||
+      draggedSubtask.taskId !== targetTask.id ||
+      draggedSubtask.subtaskId === targetSubtask.id
+    )
+      return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -819,9 +868,13 @@ export default function TaskMindmapDialog({
     }
 
     reorderedSubtasks.splice(targetIndex, 0, sourceSubtask);
-    onSaveTasks(tasks.map((task) =>
-      task.id === targetTask.id ? { ...task, subtasks: normalizeSubtaskSortOrders(reorderedSubtasks) } : task
-    ));
+    onSaveTasks(
+      tasks.map((task) =>
+        task.id === targetTask.id
+          ? { ...task, subtasks: normalizeSubtaskSortOrders(reorderedSubtasks) }
+          : task
+      )
+    );
     clearDragState();
   };
 
@@ -836,36 +889,40 @@ export default function TaskMindmapDialog({
     const shouldShowProgress = isTask && progress > 0;
     const shouldShowTaskBadges = isTask && (shouldShowChildCount || shouldShowProgress);
     const isTaskDragOver = isTask && node.task?.id === dragOverTaskId;
-    const isSubtaskDragOver = isSubtask && node.parentTask && node.subtask
-      ? dragOverSubtask?.taskId === node.parentTask.id && dragOverSubtask.subtaskId === node.subtask.id
-      : false;
+    const isSubtaskDragOver =
+      isSubtask && node.parentTask && node.subtask
+        ? dragOverSubtask?.taskId === node.parentTask.id && dragOverSubtask.subtaskId === node.subtask.id
+        : false;
 
-    const backgroundColor = isRoot || isTag
-      ? NEO_MINT.primary
-      : isSubtask
-        ? node.completed
-          ? '#E5E7EB'
-          : '#F9A826'
-        : node.task?.status === 'TO DO'
-          ? '#E5E7EB'
-          : node.urgent
-            ? NEO_MINT.dangerSoft
-            : '#DBEAFE';
-    const borderColor = (isRoot || isTag) && node.urgent
-      ? NEO_MINT.danger
-      : node.urgent
+    const backgroundColor =
+      isRoot || isTag
+        ? NEO_MINT.primary
+        : isSubtask
+          ? node.completed
+            ? 'var(--surface-muted)'
+            : 'var(--warning-bg)'
+          : node.task?.status === 'TO DO'
+            ? 'var(--surface-muted)'
+            : node.urgent
+              ? NEO_MINT.dangerSoft
+              : 'var(--info-bg)';
+    const borderColor =
+      (isRoot || isTag) && node.urgent
         ? NEO_MINT.danger
-        : isRoot || isTag
-          ? NEO_MINT.primaryHover
-          : 'rgba(15, 23, 42, 0.10)';
+        : node.urgent
+          ? NEO_MINT.danger
+          : isRoot || isTag
+            ? NEO_MINT.primaryHover
+            : 'rgba(15, 23, 42, 0.10)';
     const borderWidth = node.urgent ? 3 : 1;
-    const color = isRoot || isTag
-      ? NEO_MINT.surface
-      : isSubtask && node.completed
-        ? NEO_MINT.textMuted
-      : node.urgent
-        ? NEO_MINT.danger
-        : NEO_MINT.textTitle;
+    const color =
+      isRoot || isTag
+        ? NEO_MINT.surface
+        : isSubtask && node.completed
+          ? NEO_MINT.textMuted
+          : node.urgent
+            ? NEO_MINT.danger
+            : NEO_MINT.textTitle;
 
     return (
       <Box
@@ -878,11 +935,13 @@ export default function TaskMindmapDialog({
         }}
         onDragOver={(event) => {
           if (node.type === 'task' && node.task) handleTaskDragOver(event, node.task);
-          if (node.type === 'subtask' && node.parentTask && node.subtask) handleSubtaskDragOver(event, node.parentTask, node.subtask);
+          if (node.type === 'subtask' && node.parentTask && node.subtask)
+            handleSubtaskDragOver(event, node.parentTask, node.subtask);
         }}
         onDrop={(event) => {
           if (node.type === 'task' && node.task) handleTaskDrop(event, node.task);
-          if (node.type === 'subtask' && node.parentTask && node.subtask) handleSubtaskDrop(event, node.parentTask, node.subtask);
+          if (node.type === 'subtask' && node.parentTask && node.subtask)
+            handleSubtaskDrop(event, node.parentTask, node.subtask);
         }}
         onDragLeave={(event) => {
           if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
@@ -942,7 +1001,7 @@ export default function TaskMindmapDialog({
               transition: 'opacity 0.15s ease',
             }}
           >
-            {(isTask && node.task) && (
+            {isTask && node.task && (
               <Tooltip title="Drag to reorder within this status">
                 <Box
                   component="span"
@@ -972,7 +1031,7 @@ export default function TaskMindmapDialog({
               </Tooltip>
             )}
 
-            {(isSubtask && node.parentTask && node.subtask) && (
+            {isSubtask && node.parentTask && node.subtask && (
               <Tooltip title="Drag to reorder within this task">
                 <Box
                   component="span"
@@ -1002,35 +1061,39 @@ export default function TaskMindmapDialog({
               </Tooltip>
             )}
 
-            {viewMode === 'today' && isSubtask && node.parentTask && node.subtask && !node.subtask.completed && (
-              <Tooltip title="Mark subtask Done">
-                <Box
-                  component="button"
-                  type="button"
-                  aria-label="Mark subtask Done"
-                  onClick={(event) => handleMarkSubtaskDone(event, node.parentTask!, node.subtask!)}
-                  sx={{
-                    width: 18,
-                    height: 18,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: 'none',
-                    p: 0,
-                    borderRadius: '6px',
-                    color: NEO_MINT.textBody,
-                    backgroundColor: 'transparent',
-                    cursor: 'pointer',
-                    '&:hover': {
-                      color: NEO_MINT.success,
-                      backgroundColor: 'rgba(255, 255, 255, 0.64)',
-                    },
-                  }}
-                >
-                  <CheckCircleIcon sx={{ fontSize: 15 }} />
-                </Box>
-              </Tooltip>
-            )}
+            {viewMode === 'today' &&
+              isSubtask &&
+              node.parentTask &&
+              node.subtask &&
+              !node.subtask.completed && (
+                <Tooltip title="Mark subtask Done">
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-label="Mark subtask Done"
+                    onClick={(event) => handleMarkSubtaskDone(event, node.parentTask!, node.subtask!)}
+                    sx={{
+                      width: 18,
+                      height: 18,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      p: 0,
+                      borderRadius: '6px',
+                      color: NEO_MINT.textBody,
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        color: NEO_MINT.success,
+                        backgroundColor: 'rgba(255, 255, 255, 0.64)',
+                      },
+                    }}
+                  >
+                    <CheckCircleIcon sx={{ fontSize: 15 }} />
+                  </Box>
+                </Tooltip>
+              )}
 
             {((isTask && node.task) || (isSubtask && node.parentTask)) && (
               <Tooltip title={isTask ? 'Open details' : 'Open task details'}>
@@ -1109,7 +1172,7 @@ export default function TaskMindmapDialog({
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: '999px',
-                  backgroundColor: '#F1F5F9',
+                  backgroundColor: 'var(--surface-soft)',
                   border: `1px solid ${NEO_MINT.cardBorderSoft}`,
                   color: progress >= 100 ? NEO_MINT.success : NEO_MINT.primary,
                   fontSize: '8px',
@@ -1201,7 +1264,6 @@ export default function TaskMindmapDialog({
             </IconButton>
           </Tooltip>
         )}
-
       </Box>
     );
   };
@@ -1218,7 +1280,7 @@ export default function TaskMindmapDialog({
         slotProps={{
           paper: {
             sx: {
-              backgroundColor: '#F8FAFC',
+              backgroundColor: 'var(--main-bg)',
               color: NEO_MINT.textTitle,
             },
           },
@@ -1237,9 +1299,7 @@ export default function TaskMindmapDialog({
           }}
         >
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontSize: '18px', fontWeight: 800, lineHeight: 1.2 }}>
-              Task mindmap
-            </Typography>
+            <Typography sx={{ fontSize: '18px', fontWeight: 800, lineHeight: 1.2 }}>Task mindmap</Typography>
             <Typography sx={{ fontSize: '12px', color: NEO_MINT.textMuted, fontWeight: 600 }}>
               {viewMode === 'today'
                 ? `Today view - ${todayMindmapItems.length} subtasks`
@@ -1273,7 +1333,11 @@ export default function TaskMindmapDialog({
                   '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
                 }}
               >
-                {showAllTasks ? <VisibilityIcon sx={{ fontSize: 22 }} /> : <VisibilityOffIcon sx={{ fontSize: 22 }} />}
+                {showAllTasks ? (
+                  <VisibilityIcon sx={{ fontSize: 22 }} />
+                ) : (
+                  <VisibilityOffIcon sx={{ fontSize: 22 }} />
+                )}
               </IconButton>
             </Tooltip>
             <Tooltip title={viewMode === 'assignee' ? 'Back to Tag view' : 'View by assignee'}>
@@ -1396,7 +1460,13 @@ export default function TaskMindmapDialog({
             },
           }}
         >
-          <Box sx={{ p: 1.5, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`, backgroundColor: NEO_MINT.surface }}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
+              backgroundColor: NEO_MINT.surface,
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
               <Box sx={{ minWidth: 0 }}>
                 <Typography sx={{ fontSize: '14px', fontWeight: 800, color: NEO_MINT.textTitle }}>
@@ -1518,7 +1588,7 @@ export default function TaskMindmapDialog({
             overflow: 'hidden',
             cursor: isPanning ? 'grabbing' : 'grab',
             touchAction: 'none',
-            backgroundColor: '#F8FAFC',
+            backgroundColor: 'var(--surface-soft)',
             backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.13) 1px, transparent 1px)',
             backgroundSize: '20px 20px',
           }}
@@ -1556,7 +1626,7 @@ export default function TaskMindmapDialog({
                     key={connection.id}
                     d={createPath(connection.from, connection.to)}
                     fill="none"
-                    stroke="rgba(15, 23, 42, 0.18)"
+                    stroke="var(--mindmap-connection)"
                     strokeWidth={2}
                     strokeLinecap="round"
                   />
@@ -1602,7 +1672,15 @@ export default function TaskMindmapDialog({
                 <ZoomOutIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Tooltip>
-            <Typography sx={{ width: 44, textAlign: 'center', fontSize: '12px', fontWeight: 800, color: NEO_MINT.textBody }}>
+            <Typography
+              sx={{
+                width: 44,
+                textAlign: 'center',
+                fontSize: '12px',
+                fontWeight: 800,
+                color: NEO_MINT.textBody,
+              }}
+            >
               {Math.round(zoom * 100)}%
             </Typography>
             <Tooltip title="Zoom in">
@@ -1626,7 +1704,6 @@ export default function TaskMindmapDialog({
           </Box>
         </Box>
       </Dialog>
-
     </>
   );
 }

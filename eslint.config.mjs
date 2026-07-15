@@ -1,6 +1,6 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import nextTs from 'eslint-config-next/typescript';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -8,13 +8,16 @@ const eslintConfig = defineConfig([
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
-    ".next/**",
-    ".next-*/**",
-    ".vercel/**",
-    "dist/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
+    '.next/**',
+    '.next-*/**',
+    '.vercel/**',
+    'dist/**',
+    'out/**',
+    'build/**',
+    'coverage/**',
+    'playwright-report/**',
+    'test-results/**',
+    'next-env.d.ts',
   ]),
 ]);
 

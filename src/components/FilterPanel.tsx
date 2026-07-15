@@ -1,19 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Typography, TextField, FormGroup, FormControlLabel, Checkbox,
-  Switch, Divider, Button, MenuItem, Select
+  Box,
+  Typography,
+  TextField,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Switch,
+  Divider,
+  Button,
+  MenuItem,
+  Select,
 } from '@mui/material';
 import { TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 
-
 const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  'URGENT':      { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
+  URGENT: { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
   'IN PROGRESS': { bg: 'rgba(15,118,110,0.10)', color: NEO_MINT.primary, border: 'rgba(15,118,110,0.24)' },
-  'TO DO':       { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
-  'PENDING':     { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
-  'CANCELLED':   { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
-  'DONE':        { bg: NEO_MINT.successSoft, color: NEO_MINT.success, border: NEO_MINT.successBorder },
+  'TO DO': { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
+  PENDING: { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
+  CANCELLED: { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
+  DONE: { bg: NEO_MINT.successSoft, color: NEO_MINT.success, border: NEO_MINT.successBorder },
 };
 
 export interface FilterState {
@@ -61,16 +69,18 @@ const ALL_STATUSES: TaskStatus[] = ['URGENT', 'IN PROGRESS', 'TO DO', 'PENDING',
 // ── Section label ────────────────────────────────────────────────────────────
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Typography sx={{
-      fontSize: 'clamp(10px, 4.5cqw, 11px)',
-      fontWeight: 700,
-      textTransform: 'uppercase',
-      letterSpacing: 0,
-      color: 'var(--sidebar-text-muted)',
-      mb: 1,
-      fontFamily: 'var(--font-gilroy)',
-      overflowWrap: 'anywhere',
-    }}>
+    <Typography
+      sx={{
+        fontSize: 'clamp(10px, 4.5cqw, 11px)',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: 0,
+        color: 'var(--sidebar-text-muted)',
+        mb: 1,
+        fontFamily: 'var(--font-gilroy)',
+        overflowWrap: 'anywhere',
+      }}
+    >
       {children}
     </Typography>
   );
@@ -78,8 +88,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ── Pill toggle chip ─────────────────────────────────────────────────────────
 function PillChip({
-  label, selected, color, onClick,
-}: { label: string; selected: boolean; color?: { bg: string; color: string; border: string }; onClick: () => void }) {
+  label,
+  selected,
+  color,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  color?: { bg: string; color: string; border: string };
+  onClick: () => void;
+}) {
   const activeBg = color ? color.bg : 'rgba(15,118,110,0.10)';
   const activeColor = color ? color.color : NEO_MINT.primary;
   const activeBorder = color ? color.border : 'rgba(15,118,110,0.24)';
@@ -88,7 +106,8 @@ function PillChip({
     <Box
       onClick={onClick}
       sx={{
-        display: 'inline-flex', alignItems: 'center',
+        display: 'inline-flex',
+        alignItems: 'center',
         minWidth: 0,
         maxWidth: '100%',
         px: 'clamp(8px, 4cqw, 10px)',
@@ -116,26 +135,33 @@ function PillChip({
   );
 }
 
-
-export default function FilterPanel({ filters, onChangeFilters, availableTags, availableAssignees, panelWidth = 288 }: FilterPanelProps) {
+export default function FilterPanel({
+  filters,
+  onChangeFilters,
+  availableTags,
+  availableAssignees,
+  panelWidth = 288,
+}: FilterPanelProps) {
   const [localFilters, setLocalFilters] = useState<Partial<FilterState>>({ ...INITIAL_FILTERS, ...filters });
   const isCompact = panelWidth < 260;
 
-  useEffect(() => { onChangeFilters(localFilters); }, [localFilters, onChangeFilters]);
+  useEffect(() => {
+    onChangeFilters(localFilters);
+  }, [localFilters, onChangeFilters]);
 
   const update = <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
-    setLocalFilters(prev => ({ ...prev, [key]: value }));
+    setLocalFilters((prev) => ({ ...prev, [key]: value }));
 
   const handleClear = () => setLocalFilters({ ...INITIAL_FILTERS });
 
   const toggleTag = (tag: string) => {
     const current = localFilters.tags || [];
-    update('tags', current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]);
+    update('tags', current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag]);
   };
 
   const toggleStatus = (status: TaskStatus) => {
     const current = localFilters.statuses || [];
-    update('statuses', current.includes(status) ? current.filter(s => s !== status) : [...current, status]);
+    update('statuses', current.includes(status) ? current.filter((s) => s !== status) : [...current, status]);
   };
 
   return (
@@ -148,7 +174,6 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
         minWidth: 0,
       }}
     >
-
       {/* Search */}
       <Box>
         <SectionLabel>Search Tasks</SectionLabel>
@@ -217,7 +242,7 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
                 <Checkbox
                   size="small"
                   checked={!!localFilters[key as keyof FilterState]}
-                  onChange={e => update(key as keyof FilterState, e.target.checked)}
+                  onChange={(e) => update(key as keyof FilterState, e.target.checked)}
                   sx={{
                     color: NEO_MINT.cardBorderSoft,
                     '&.Mui-checked': { color: NEO_MINT.primary },
@@ -225,8 +250,25 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
                   }}
                 />
               }
-              label={<Typography sx={{ fontSize: 'clamp(12px, 5.5cqw, 14px)', color: NEO_MINT.textTitle, fontWeight: 500, overflowWrap: 'anywhere' }}>{label}</Typography>}
-              sx={{ ml: 0, gap: 0.5, alignItems: 'flex-start', minWidth: 0, '& .MuiFormControlLabel-label': { minWidth: 0 } }}
+              label={
+                <Typography
+                  sx={{
+                    fontSize: 'clamp(12px, 5.5cqw, 14px)',
+                    color: NEO_MINT.textTitle,
+                    fontWeight: 500,
+                    overflowWrap: 'anywhere',
+                  }}
+                >
+                  {label}
+                </Typography>
+              }
+              sx={{
+                ml: 0,
+                gap: 0.5,
+                alignItems: 'flex-start',
+                minWidth: 0,
+                '& .MuiFormControlLabel-label': { minWidth: 0 },
+              }}
             />
           ))}
         </FormGroup>
@@ -236,15 +278,30 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
 
       {/* Tags */}
       <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 1.5, minWidth: 0 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 1,
+            mb: 1.5,
+            minWidth: 0,
+          }}
+        >
           <SectionLabel>Tags</SectionLabel>
           <Select
             size="small"
             variant="standard"
             value={localFilters.tagsOperator || 'OR'}
-            onChange={e => update('tagsOperator', e.target.value as FilterState['tagsOperator'])}
+            onChange={(e) => update('tagsOperator', e.target.value as FilterState['tagsOperator'])}
             disableUnderline
-            sx={{ fontSize: 'clamp(11px, 5cqw, 12px)', fontWeight: 700, color: NEO_MINT.primary, minWidth: 44, flexShrink: 0 }}
+            sx={{
+              fontSize: 'clamp(11px, 5cqw, 12px)',
+              fontWeight: 700,
+              color: NEO_MINT.primary,
+              minWidth: 44,
+              flexShrink: 0,
+            }}
           >
             <MenuItem value="OR">OR</MenuItem>
             <MenuItem value="AND">AND</MenuItem>
@@ -253,11 +310,18 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
         </Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, minWidth: 0 }}>
           {availableTags.length === 0 && (
-            <Typography sx={{ fontSize: 'clamp(12px, 5.2cqw, 13px)', color: NEO_MINT.textMuted, fontStyle: 'italic', overflowWrap: 'anywhere' }}>
+            <Typography
+              sx={{
+                fontSize: 'clamp(12px, 5.2cqw, 13px)',
+                color: NEO_MINT.textMuted,
+                fontStyle: 'italic',
+                overflowWrap: 'anywhere',
+              }}
+            >
               No tags available
             </Typography>
           )}
-          {availableTags.map(tag => (
+          {availableTags.map((tag) => (
             <PillChip
               key={tag}
               label={tag}
@@ -272,24 +336,43 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
 
       {/* Status */}
       <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 1.5, minWidth: 0 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 1,
+            mb: 1.5,
+            minWidth: 0,
+          }}
+        >
           <SectionLabel>Status</SectionLabel>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-            <Typography sx={{ fontSize: 'clamp(10px, 4.5cqw, 11px)', fontWeight: 700, color: NEO_MINT.textBody }}>OR</Typography>
+            <Typography
+              sx={{ fontSize: 'clamp(10px, 4.5cqw, 11px)', fontWeight: 700, color: NEO_MINT.textBody }}
+            >
+              OR
+            </Typography>
             <Switch
               size="small"
               checked={localFilters.statusOperator === 'NOT'}
-              onChange={e => update('statusOperator', e.target.checked ? 'NOT' : 'OR')}
+              onChange={(e) => update('statusOperator', e.target.checked ? 'NOT' : 'OR')}
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': { color: NEO_MINT.primary },
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: NEO_MINT.primary },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                  backgroundColor: NEO_MINT.primary,
+                },
               }}
             />
-            <Typography sx={{ fontSize: 'clamp(10px, 4.5cqw, 11px)', fontWeight: 700, color: NEO_MINT.danger }}>NOT</Typography>
+            <Typography
+              sx={{ fontSize: 'clamp(10px, 4.5cqw, 11px)', fontWeight: 700, color: NEO_MINT.danger }}
+            >
+              NOT
+            </Typography>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, minWidth: 0 }}>
-          {ALL_STATUSES.map(status => (
+          {ALL_STATUSES.map((status) => (
             <PillChip
               key={status}
               label={status}
@@ -318,12 +401,33 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
                 <Checkbox
                   size="small"
                   checked={!!localFilters[key as keyof FilterState]}
-                  onChange={e => update(key as keyof FilterState, e.target.checked)}
-                  sx={{ color: NEO_MINT.cardBorderSoft, '&.Mui-checked': { color: NEO_MINT.primary }, p: 0.75 }}
+                  onChange={(e) => update(key as keyof FilterState, e.target.checked)}
+                  sx={{
+                    color: NEO_MINT.cardBorderSoft,
+                    '&.Mui-checked': { color: NEO_MINT.primary },
+                    p: 0.75,
+                  }}
                 />
               }
-              label={<Typography sx={{ fontSize: 'clamp(12px, 5.5cqw, 14px)', color: NEO_MINT.textTitle, fontWeight: 500, overflowWrap: 'anywhere' }}>{label}</Typography>}
-              sx={{ ml: 0, gap: 0.5, alignItems: 'flex-start', minWidth: 0, '& .MuiFormControlLabel-label': { minWidth: 0 } }}
+              label={
+                <Typography
+                  sx={{
+                    fontSize: 'clamp(12px, 5.5cqw, 14px)',
+                    color: NEO_MINT.textTitle,
+                    fontWeight: 500,
+                    overflowWrap: 'anywhere',
+                  }}
+                >
+                  {label}
+                </Typography>
+              }
+              sx={{
+                ml: 0,
+                gap: 0.5,
+                alignItems: 'flex-start',
+                minWidth: 0,
+                '& .MuiFormControlLabel-label': { minWidth: 0 },
+              }}
             />
           ))}
         </FormGroup>
@@ -339,22 +443,27 @@ export default function FilterPanel({ filters, onChangeFilters, availableTags, a
           fullWidth
           value={localFilters.quickAssignee || ''}
           onChange={(e) => update('quickAssignee', e.target.value)}
-          sx={{ 
-            '& .MuiOutlinedInput-root': { 
+          sx={{
+            '& .MuiOutlinedInput-root': {
               borderRadius: '10px',
-              backgroundColor: NEO_MINT.surface, 
+              backgroundColor: NEO_MINT.surface,
               fontSize: 'clamp(12px, 5.5cqw, 14px)',
               '& .MuiOutlinedInput-notchedOutline': {
                 borderColor: NEO_MINT.cardBorderSoft,
-              }
-            } 
+              },
+            },
           }}
         >
-          <MenuItem value=""><em>All Assignees</em></MenuItem>
-          {availableAssignees.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+          <MenuItem value="">
+            <em>All Assignees</em>
+          </MenuItem>
+          {availableAssignees.map((a) => (
+            <MenuItem key={a} value={a}>
+              {a}
+            </MenuItem>
+          ))}
         </TextField>
       </Box>
     </Box>
-
   );
 }

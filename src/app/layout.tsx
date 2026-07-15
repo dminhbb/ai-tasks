@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
-import "./globals.css";
-import ThemeProvider from "@/components/ThemeProvider";
-import AuthProvider from "@/components/AuthProvider";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
+import './globals.css';
+import ThemeProvider from '@/components/ThemeProvider';
+import AuthProvider from '@/components/AuthProvider';
 
-const inter = Inter({ subsets: ["latin"], weight: ["400", "700"] });
+const inter = Inter({ subsets: ['latin'], weight: ['400', '700'] });
 
 export const metadata: Metadata = {
-  title: "AI Task Manager",
-  description: "Quản lý công việc thông minh với AI — Contractbook Design",
+  title: 'AI Task Manager',
+  description: 'Quản lý công việc thông minh với AI — Contractbook Design',
 };
 
 export default function RootLayout({

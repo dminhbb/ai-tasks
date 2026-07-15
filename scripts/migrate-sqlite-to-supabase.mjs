@@ -1,18 +1,23 @@
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
-import { createSupabaseAdminClient, findAuthUserByEmail, requiredEnvironment } from './supabase-admin-client.mjs';
+import {
+  createSupabaseAdminClient,
+  findAuthUserByEmail,
+  requiredEnvironment,
+} from './supabase-admin-client.mjs';
 
 const ownerEmail = (
-  process.env.MIGRATION_OWNER_EMAIL?.trim()
-  || process.env.SEED_SUPERADMIN_EMAIL?.trim()
-  || 'minhd.mbb@gmail.com'
+  process.env.MIGRATION_OWNER_EMAIL?.trim() ||
+  process.env.SEED_SUPERADMIN_EMAIL?.trim() ||
+  'minhd.mbb@gmail.com'
 ).toLocaleLowerCase();
 const databasePath = process.env.SQLITE_DATABASE_PATH?.trim() || 'data/task-manager.db';
 requiredEnvironment('SUPABASE_SECRET_KEY');
 
 const supabase = createSupabaseAdminClient();
 const owner = await findAuthUserByEmail(supabase, ownerEmail);
-if (!owner) throw new Error(`Auth user does not exist: ${ownerEmail}. Run npm run supabase:seed-admin first.`);
+if (!owner)
+  throw new Error(`Auth user does not exist: ${ownerEmail}. Run npm run supabase:seed-admin first.`);
 
 const db = new Database(databasePath, { readonly: true, fileMustExist: true });
 
@@ -139,7 +144,8 @@ try {
       .from('task_status_events')
       .delete()
       .in('notebook_id', migratedNotebookIds);
-    if (clearStatusError) throw new Error(`Unable to reset generated status events: ${clearStatusError.message}`);
+    if (clearStatusError)
+      throw new Error(`Unable to reset generated status events: ${clearStatusError.message}`);
   }
   await insertRows(
     'task_status_events',
@@ -163,10 +169,9 @@ try {
   );
 
   console.log(
-    `Migrated ${sourceNotebooks.length} notebooks, ${sourceTasks.length} tasks, `
-      + `${sourceSubtasks.length} subtasks and ${sourceTags.length} tags for ${ownerEmail}.`
+    `Migrated ${sourceNotebooks.length} notebooks, ${sourceTasks.length} tasks, ` +
+      `${sourceSubtasks.length} subtasks and ${sourceTags.length} tags for ${ownerEmail}.`
   );
 } finally {
   db.close();
 }
-

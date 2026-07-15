@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { 
-  Box, AppBar, Toolbar, Typography, IconButton, Button, 
-  Dialog, DialogContent, DialogTitle, Drawer, CircularProgress
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Drawer,
+  CircularProgress,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -74,13 +83,14 @@ const todayLabel = new Intl.DateTimeFormat('en-US', {
   day: '2-digit',
 }).format(new Date());
 
-
 export default function Home() {
   const { loading, profile, session, signOut } = useAuth();
 
   if (loading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', backgroundColor: 'var(--app-bg)' }}>
+      <Box
+        sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', backgroundColor: 'var(--app-bg)' }}
+      >
         <CircularProgress sx={{ color: NEO_MINT.primary }} />
       </Box>
     );
@@ -135,7 +145,9 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           availableNotebooks = [mainNotebook];
         }
         const currentNotebook =
-          availableNotebooks.find((notebook) => notebook.id === requestedNotebookId) ?? availableNotebooks[0] ?? null;
+          availableNotebooks.find((notebook) => notebook.id === requestedNotebookId) ??
+          availableNotebooks[0] ??
+          null;
         if (!currentNotebook) {
           if (isActive) setNotebooks([]);
           return;
@@ -195,9 +207,9 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       }
       const savedTodayWidth = Number(window.localStorage.getItem('task-manager-today-panel-width'));
       if (
-        !Number.isNaN(savedTodayWidth)
-        && savedTodayWidth >= MIN_DRAWER_WIDTH
-        && savedTodayWidth <= MAX_DRAWER_WIDTH
+        !Number.isNaN(savedTodayWidth) &&
+        savedTodayWidth >= MIN_DRAWER_WIDTH &&
+        savedTodayWidth <= MAX_DRAWER_WIDTH
       ) {
         setTodayPanelWidth(savedTodayWidth);
       }
@@ -206,65 +218,71 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     return () => window.cancelAnimationFrame(frameId);
   }, []);
 
-  const handleStartResize = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleStartResize = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
 
-    const startX = event.clientX;
-    const startWidth = drawerWidth;
-    let latestWidth = startWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+      const startX = event.clientX;
+      const startWidth = drawerWidth;
+      let latestWidth = startWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const nextWidth = Math.min(
-        MAX_DRAWER_WIDTH,
-        Math.max(MIN_DRAWER_WIDTH, startWidth + moveEvent.clientX - startX)
-      );
-      latestWidth = nextWidth;
-      setDrawerWidth(nextWidth);
-    };
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const nextWidth = Math.min(
+          MAX_DRAWER_WIDTH,
+          Math.max(MIN_DRAWER_WIDTH, startWidth + moveEvent.clientX - startX)
+        );
+        latestWidth = nextWidth;
+        setDrawerWidth(nextWidth);
+      };
 
-    const handleMouseUp = () => {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.localStorage.setItem('task-manager-sidebar-width', String(latestWidth));
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
+      const handleMouseUp = () => {
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.localStorage.setItem('task-manager-sidebar-width', String(latestWidth));
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [drawerWidth]);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [drawerWidth]
+  );
 
-  const handleStartTodayResize = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleStartTodayResize = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
 
-    const startX = event.clientX;
-    const startWidth = todayPanelWidth;
-    let latestWidth = startWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+      const startX = event.clientX;
+      const startWidth = todayPanelWidth;
+      let latestWidth = startWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const nextWidth = Math.min(
-        MAX_DRAWER_WIDTH,
-        Math.max(MIN_DRAWER_WIDTH, startWidth + startX - moveEvent.clientX)
-      );
-      latestWidth = nextWidth;
-      setTodayPanelWidth(nextWidth);
-    };
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const nextWidth = Math.min(
+          MAX_DRAWER_WIDTH,
+          Math.max(MIN_DRAWER_WIDTH, startWidth + startX - moveEvent.clientX)
+        );
+        latestWidth = nextWidth;
+        setTodayPanelWidth(nextWidth);
+      };
 
-    const handleMouseUp = () => {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.localStorage.setItem('task-manager-today-panel-width', String(latestWidth));
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
+      const handleMouseUp = () => {
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.localStorage.setItem('task-manager-today-panel-width', String(latestWidth));
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [todayPanelWidth]);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [todayPanelWidth]
+  );
 
   const handleSaveTasks = async (newTasks: Task[]) => {
     if (!activeNotebook?.permissions.manageTasks) {
@@ -294,7 +312,15 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--app-bg)', fontFamily: 'var(--font-gilroy)' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundColor: 'var(--app-bg)',
+        fontFamily: 'var(--font-gilroy)',
+      }}
+    >
       {/* ── AppBar ── */}
       <AppBar
         position="fixed"
@@ -306,7 +332,14 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           color: NEO_MINT.textTitle,
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, md: 2 }, minHeight: '64px !important', gap: { xs: 0.5, md: 1 } }}>
+        <Toolbar
+          sx={{
+            justifyContent: 'space-between',
+            px: { xs: 1, md: 2 },
+            minHeight: '64px !important',
+            gap: { xs: 0.5, md: 1 },
+          }}
+        >
           {/* Left: hamburger + brand */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 }, minWidth: 0 }}>
             <IconButton
@@ -325,15 +358,22 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             </IconButton>
 
             {/* Logo mark — Action Blue square with radius */}
-            <Box sx={{
-              width: 28, height: 28,
-              borderRadius: '8px',
-              backgroundColor: 'var(--primary)',
-              boxShadow: '0 6px 16px rgba(15, 118, 110, 0.18)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <Typography sx={{ color: NEO_MINT.surface, fontWeight: 700, fontSize: '14px', lineHeight: 1 }}>C</Typography>
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '8px',
+                backgroundColor: 'var(--primary)',
+                boxShadow: '0 6px 16px color-mix(in srgb, var(--primary) 22%, transparent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Typography sx={{ color: NEO_MINT.surface, fontWeight: 700, fontSize: '14px', lineHeight: 1 }}>
+                C
+              </Typography>
             </Box>
 
             <Typography
@@ -374,24 +414,22 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             </Button>
 
             <Button
-              variant="contained"
-              disableElevation
+              variant="text"
               startIcon={<AddIcon sx={{ fontSize: '17px !important' }} />}
               onClick={() => setIsAddOpen(true)}
               sx={{
                 ...TOP_ACTION_BUTTON_SX,
-                fontWeight: 700,
-                backgroundColor: NEO_MINT.primary,
-                color: NEO_MINT.surface,
+                color: NEO_MINT.textBody,
                 textTransform: 'none',
-                '&:hover': { 
-                  backgroundColor: NEO_MINT.primaryHover,
-                  boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px'
-                },
+                '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
               }}
             >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Create via AI</Box>
-              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>AI</Box>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Create via AI
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                AI
+              </Box>
             </Button>
 
             {/* Ghost button — secondary action */}
@@ -406,23 +444,36 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                 '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
               }}
             >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Manual Entry</Box>
-              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Manual</Box>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Manual Entry
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                Manual
+              </Box>
             </Button>
 
             <Button
-              variant="text"
+              variant="contained"
+              disableElevation
               startIcon={<AccountTreeIcon sx={{ fontSize: '17px !important' }} />}
               onClick={() => setIsMindmapOpen(true)}
               sx={{
                 ...TOP_ACTION_BUTTON_SX,
-                color: NEO_MINT.textBody,
+                backgroundColor: NEO_MINT.primary,
+                color: 'var(--text-inverse)',
                 textTransform: 'none',
-                '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
+                '&:hover': {
+                  backgroundColor: NEO_MINT.primaryHover,
+                  boxShadow: '0 8px 20px color-mix(in srgb, var(--primary) 22%, transparent)',
+                },
               }}
             >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Mindmap</Box>
-              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Map</Box>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Mindmap
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                Map
+              </Box>
             </Button>
 
             <Button
@@ -436,8 +487,12 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                 '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
               }}
             >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Today Tasks</Box>
-              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Today</Box>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Today Tasks
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                Today
+              </Box>
             </Button>
 
             <Button
@@ -450,8 +505,12 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                 '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
               }}
             >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>AI Search</Box>
-              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Search</Box>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                AI Search
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                Search
+              </Box>
             </Button>
           </Box>
 
@@ -510,9 +569,11 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
                 '&:hover': { backgroundColor: 'var(--primary-subtle)', color: NEO_MINT.primary },
               }}
             >
-              {isTodayPanelOpen
-                ? <CloseIcon sx={{ fontSize: 20 }} />
-                : <ViewSidebarIcon sx={{ fontSize: 20 }} />}
+              {isTodayPanelOpen ? (
+                <CloseIcon sx={{ fontSize: 20 }} />
+              ) : (
+                <ViewSidebarIcon sx={{ fontSize: 20 }} />
+              )}
             </IconButton>
           </Box>
         </Toolbar>
@@ -619,20 +680,33 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         <Toolbar sx={{ minHeight: '64px !important' }} />
 
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', flexDirection: 'column', gap: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              flexDirection: 'column',
+              gap: 3,
+            }}
+          >
             <CircularProgress size={40} sx={{ color: NEO_MINT.primary }} />
-            <Typography sx={{ color: NEO_MINT.textBody, fontSize: '16px', fontWeight: 500 }}>Gathering your tasks...</Typography>
+            <Typography sx={{ color: NEO_MINT.textBody, fontSize: '16px', fontWeight: 500 }}>
+              Gathering your tasks...
+            </Typography>
           </Box>
         ) : (
-          <Box sx={{ 
-            flexGrow: 1, 
-            display: 'flex', 
-            flexDirection: 'column',
-            maxWidth: '1280px',
-            width: '100%',
-            mx: 'auto',
-            minHeight: 0,
-          }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              maxWidth: '1280px',
+              width: '100%',
+              mx: 'auto',
+              minHeight: 0,
+            }}
+          >
             <TaskList
               tasks={tasks}
               filters={filters}
@@ -858,14 +932,13 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
           availableTags={settings.tags}
           availableAssignees={uniqueAssignees}
           onDelete={(id) => {
-            handleSaveTasks(tasks.filter(t => t.id !== id));
+            handleSaveTasks(tasks.filter((t) => t.id !== id));
             closeTaskDetails();
           }}
           onSave={(updatedTask) => {
-            const exists = tasks.some(t => t.id === updatedTask.id);
-            handleSaveTasks(exists
-              ? tasks.map(t => t.id === updatedTask.id ? updatedTask : t)
-              : [...tasks, updatedTask]
+            const exists = tasks.some((t) => t.id === updatedTask.id);
+            handleSaveTasks(
+              exists ? tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)) : [...tasks, updatedTask]
             );
             closeTaskDetails();
           }}

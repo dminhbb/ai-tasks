@@ -1,62 +1,65 @@
 /* Neo Mint Enterprise UI tokens */
 :root {
   /* App structure */
-  --app-bg: #DDE7EA;
-  --main-bg: #BFC9D1;
-  --surface: #FFFFFF;
-  --surface-soft: #F8FAFC;
-  --surface-muted: #EEF4F5;
+  --app-bg: #dde7ea;
+  --main-bg: #bfc9d1;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --surface-muted: #eef4f5;
 
   /* Sidebar / Panel */
-  --sidebar-bg: #F4F8F9;
-  --sidebar-border: #CBD5DA;
-  --sidebar-text: #1E293B;
-  --sidebar-text-muted: #64748B;
-  --sidebar-hover: #E6F3F1;
-  --sidebar-active-bg: #D6F3EF;
-  --sidebar-active-text: #0F766E;
+  --sidebar-bg: #f4f8f9;
+  --sidebar-border: #cbd5da;
+  --sidebar-text: #1e293b;
+  --sidebar-text-muted: #64748b;
+  --sidebar-hover: #e6f3f1;
+  --sidebar-active-bg: #d6f3ef;
+  --sidebar-active-text: #0f766e;
 
   /* Assistant / Slide panel */
-  --panel-bg: #F1F6F7;
-  --panel-border: #C7D2DA;
-  --panel-card-bg: #FFFFFF;
+  --panel-bg: #f1f6f7;
+  --panel-border: #c7d2da;
+  --panel-card-bg: #ffffff;
 
   /* Card */
-  --card-bg: #FFFFFF;
-  --card-border: #BFCBD3;
-  --card-border-soft: #CBD5DA;
+  --card-bg: #ffffff;
+  --card-border: #bfcbd3;
+  --card-border-soft: #cbd5da;
   --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.07), 0 8px 24px rgba(15, 23, 42, 0.06);
 
   /* Brand */
-  --primary: #0F766E;
-  --primary-hover: #115E59;
-  --primary-soft: #D6F3EF;
-  --primary-subtle: #ECFDF5;
-  --accent: #14B8A6;
+  --primary: #0f766e;
+  --primary-hover: #115e59;
+  --primary-soft: #d6f3ef;
+  --primary-subtle: #ecfdf5;
+  --accent: #14b8a6;
+  --mindmap-connection: rgba(15, 23, 42, 0.28);
 
   /* State */
-  --success: #16A34A;
-  --success-bg: #DCFCE7;
-  --warning: #D97706;
-  --warning-bg: #FEF3C7;
-  --danger: #DC2626;
-  --danger-bg: #FEE2E2;
-  --info: #2563EB;
-  --info-bg: #DBEAFE;
-  --due-date-change: #7C3AED;
-  --due-date-change-bg: #F3E8FF;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --warning: #d97706;
+  --warning-bg: #fef3c7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --danger-border: #fca5a5;
+  --info: #2563eb;
+  --info-bg: #dbeafe;
+  --success-border: #86efac;
+  --due-date-change: #7c3aed;
+  --due-date-change-bg: #f3e8ff;
 
   /* Text */
-  --text-title: #0B1220;
+  --text-title: #0b1220;
   --text-body: #334155;
-  --text-muted: #64748B;
-  --text-subtle: #7C8A9A;
-  --text-inverse: #F8FAFC;
+  --text-muted: #64748b;
+  --text-subtle: #7c8a9a;
+  --text-inverse: #f8fafc;
 
   /* Form */
-  --input-bg: #FFFFFF;
-  --input-border: #BFCBD3;
-  --input-focus: #0F766E;
+  --input-bg: #ffffff;
+  --input-border: #bfcbd3;
+  --input-focus: #0f766e;
 
   /* Radius */
   --radius-sm: 8px;
@@ -71,7 +74,7 @@
   --color-royal-amethyst: #8247f5;
   --color-sunset-gold: #ffa600;
   --color-skybound-blue: #0099ff;
-  --color-ocean-glimmer: #BB32D5;
+  --color-ocean-glimmer: #bb32d5;
   --color-glacier-blue: var(--primary-hover);
   --color-snow-white: var(--surface);
   --color-cloud-mist: var(--surface-soft);
@@ -83,7 +86,8 @@
   --color-text-black: var(--text-title);
 
   /* Typography */
-  --font-gilroy: 'Montserrat', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-gilroy:
+    'Montserrat', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-size-body: 14px;
   --leading-body: 1.71;
   --text-body-lg: 16px;
@@ -135,6 +139,104 @@
   --shadow-sm: var(--card-shadow);
   --shadow-sm-2: var(--card-shadow);
   --shadow-sm-3: var(--card-shadow);
+}
+
+:root[data-theme='midnight'] {
+  color-scheme: dark;
+  --app-bg: #070b14;
+  --main-bg: #0b1220;
+  --surface: #111827;
+  --surface-soft: #172033;
+  --surface-muted: #1e293b;
+  --sidebar-bg: #0f172a;
+  --sidebar-border: #334155;
+  --sidebar-text: #e2e8f0;
+  --sidebar-text-muted: #94a3b8;
+  --sidebar-hover: #173b3a;
+  --sidebar-active-bg: #134e4a;
+  --sidebar-active-text: #99f6e4;
+  --panel-bg: #101a2c;
+  --panel-border: #334155;
+  --panel-card-bg: #172033;
+  --card-bg: #111827;
+  --card-border: #475569;
+  --card-border-soft: #334155;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.28);
+  --primary: #5eead4;
+  --primary-hover: #99f6e4;
+  --primary-soft: #134e4a;
+  --primary-subtle: #123a3a;
+  --accent: #2dd4bf;
+  --mindmap-connection: rgba(148, 163, 184, 0.68);
+  --success: #4ade80;
+  --success-bg: #12351f;
+  --success-border: #22c55e;
+  --warning: #fbbf24;
+  --warning-bg: #3b2a0b;
+  --danger: #f87171;
+  --danger-bg: #401a1d;
+  --danger-border: #ef4444;
+  --info: #60a5fa;
+  --info-bg: #172a4d;
+  --due-date-change: #c4b5fd;
+  --due-date-change-bg: #2e2452;
+  --text-title: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-subtle: #8391a6;
+  --text-inverse: #07111f;
+  --input-bg: #0f172a;
+  --input-border: #475569;
+  --input-focus: #5eead4;
+}
+
+:root[data-theme='cobalt-contrast'] {
+  color-scheme: light;
+  --app-bg: #d7e3f4;
+  --main-bg: #c4d3e8;
+  --surface: #ffffff;
+  --surface-soft: #f3f7fc;
+  --surface-muted: #e2eaf5;
+  --sidebar-bg: #edf3fa;
+  --sidebar-border: #8294ae;
+  --sidebar-text: #102445;
+  --sidebar-text-muted: #52657f;
+  --sidebar-hover: #dce8ff;
+  --sidebar-active-bg: #c9dbff;
+  --sidebar-active-text: #0b2f73;
+  --panel-bg: #eaf1fa;
+  --panel-border: #8294ae;
+  --panel-card-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-border: #8294ae;
+  --card-border-soft: #a7b6ca;
+  --card-shadow: 0 2px 4px rgba(7, 21, 47, 0.14), 0 10px 24px rgba(7, 21, 47, 0.1);
+  --primary: #1746a2;
+  --primary-hover: #0b2f73;
+  --primary-soft: #c9dbff;
+  --primary-subtle: #e7efff;
+  --accent: #0066ff;
+  --mindmap-connection: rgba(7, 21, 47, 0.42);
+  --success: #087a35;
+  --success-bg: #d8f5e3;
+  --success-border: #28a85e;
+  --warning: #9a4d00;
+  --warning-bg: #ffe8bf;
+  --danger: #b42318;
+  --danger-bg: #ffe1de;
+  --danger-border: #e35d51;
+  --info: #1746a2;
+  --info-bg: #dce8ff;
+  --due-date-change: #5b21b6;
+  --due-date-change-bg: #ede4ff;
+  --text-title: #07152f;
+  --text-body: #1d3557;
+  --text-muted: #52657f;
+  --text-subtle: #5d708b;
+  --text-inverse: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #8294ae;
+  --input-focus: #1746a2;
 }
 
 *,

@@ -72,9 +72,7 @@ export default function LoginScreen() {
             <LockOutlined />
           </Box>
           <Box>
-            <Typography sx={{ color: NEO_MINT.textTitle, fontSize: 22, fontWeight: 800 }}>
-              AI TASK
-            </Typography>
+            <Typography sx={{ color: NEO_MINT.textTitle, fontSize: 22, fontWeight: 800 }}>AI TASK</Typography>
             <Typography sx={{ color: NEO_MINT.textMuted, fontSize: 12, fontWeight: 600 }}>
               Đăng nhập để tiếp tục
             </Typography>

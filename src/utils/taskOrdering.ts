@@ -1,12 +1,18 @@
 import type { Subtask, Task, TaskStatus } from '@/types';
 
+export const TODAY_TASK_TITLE = '##Today Task';
+
+export function isTodayTask(task: Pick<Task, 'title'>): boolean {
+  return task.title.trim().toLocaleLowerCase() === TODAY_TASK_TITLE.toLocaleLowerCase();
+}
+
 export const STATUS_ORDER: Record<TaskStatus, number> = {
-  'URGENT': 0,
+  URGENT: 0,
   'IN PROGRESS': 1,
   'TO DO': 2,
-  'PENDING': 3,
-  'CANCELLED': 4,
-  'DONE': 5,
+  PENDING: 3,
+  CANCELLED: 4,
+  DONE: 5,
 };
 
 export function compareTaskPriority(a: Task, b: Task) {
@@ -24,6 +30,10 @@ export function compareTaskPriority(a: Task, b: Task) {
 }
 
 export function compareTaskListOrder(a: Task, b: Task) {
+  const aIsTodayTask = isTodayTask(a);
+  const bIsTodayTask = isTodayTask(b);
+  if (aIsTodayTask !== bIsTodayTask) return aIsTodayTask ? -1 : 1;
+
   const aStatusSort = STATUS_ORDER[a.status];
   const bStatusSort = STATUS_ORDER[b.status];
   if (aStatusSort !== bStatusSort) return aStatusSort - bStatusSort;
@@ -40,7 +50,12 @@ export function compareSubtaskOrder(a: Subtask, b: Subtask) {
 export function reorderTasksWithinStatus(tasks: Task[], draggedTaskId: string, targetTaskId: string) {
   const draggedTask = tasks.find((task) => task.id === draggedTaskId);
   const targetTask = tasks.find((task) => task.id === targetTaskId);
-  if (!draggedTask || !targetTask || draggedTask.status !== targetTask.status || draggedTask.id === targetTask.id) {
+  if (
+    !draggedTask ||
+    !targetTask ||
+    draggedTask.status !== targetTask.status ||
+    draggedTask.id === targetTask.id
+  ) {
     return tasks;
   }
 

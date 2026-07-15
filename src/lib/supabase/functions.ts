@@ -6,8 +6,15 @@ import { getSupabaseBrowserClient } from './client';
 async function edgeFunctionErrorMessage(error: unknown, fallback: string): Promise<string> {
   if (error instanceof FunctionsHttpError) {
     try {
-      const payload = await error.context.clone().json() as { error?: unknown };
-      if (typeof payload.error === 'string' && payload.error.trim()) return payload.error;
+      const response = error.context.clone();
+      const payload = (await response.json()) as { error?: unknown };
+      if (
+        response.status >= 400 &&
+        response.status < 500 &&
+        typeof payload.error === 'string' &&
+        payload.error.trim()
+      )
+        return payload.error;
     } catch {
       // Keep the user-facing fallback when the response is not JSON.
     }
@@ -45,10 +52,15 @@ export async function extractTasksWithAi(text: string): Promise<z.infer<typeof e
     body: { text },
   });
   if (error) throw new Error(await edgeFunctionErrorMessage(error, 'Không thể phân tích task bằng AI.'));
-  return z.array(extractedTaskSchema).parse(data);
+  const parsed = z.array(extractedTaskSchema).safeParse(data);
+  if (!parsed.success) throw new Error('AI returned invalid task data.');
+  return parsed.data;
 }
 
-export async function askTaskAssistant(question: string, notebookId: string): Promise<{
+export async function askTaskAssistant(
+  question: string,
+  notebookId: string
+): Promise<{
   answer: string;
   tasks: Pick<Task, 'id' | 'title' | 'assignee' | 'status' | 'dueDate' | 'tags'>[];
   metrics: Record<string, string | number | null>;
@@ -57,5 +69,7 @@ export async function askTaskAssistant(question: string, notebookId: string): Pr
     body: { question, notebookId },
   });
   if (error) throw new Error(await edgeFunctionErrorMessage(error, 'Trợ lý AI không thể trả lời lúc này.'));
-  return assistantResponseSchema.parse(data);
+  const parsed = assistantResponseSchema.safeParse(data);
+  if (!parsed.success) throw new Error('AI assistant returned an invalid response.');
+  return parsed.data;
 }

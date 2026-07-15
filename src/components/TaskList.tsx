@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
 import type { DragEvent } from 'react';
-import { Box, Button, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, TextField, Typography, Tooltip } from '@mui/material';
+import {
+  Box,
+  Button,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  TextField,
+  Typography,
+  Tooltip,
+} from '@mui/material';
 import { DataGrid, GridColDef, GridSortModel, GridRowSelectionModel } from '@mui/x-data-grid';
 import { Delete, Label, VisibilityOff, Person, AssignmentTurnedIn, DragIndicator } from '@mui/icons-material';
 import { Task, TaskStatus } from '@/types';
@@ -8,17 +22,21 @@ import { isToday, isPast, parseISO, startOfDay, isBefore, endOfWeek, addWeeks, e
 import { FilterState } from './FilterPanel';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { getTaskProgress } from '@/utils/taskProgress';
-import { STATUS_ORDER, compareTaskPriority, reorderTasksWithinStatus } from '@/utils/taskOrdering';
-
+import {
+  STATUS_ORDER,
+  compareTaskPriority,
+  isTodayTask,
+  reorderTasksWithinStatus,
+} from '@/utils/taskOrdering';
 
 // ── Status configuration ─────────────────────────────────────────────────────
 const STATUS_STYLE: Record<TaskStatus, { bg: string; color: string; border: string }> = {
-  'URGENT':      { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
+  URGENT: { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
   'IN PROGRESS': { bg: 'rgba(15,118,110,0.10)', color: NEO_MINT.primary, border: 'rgba(15,118,110,0.24)' },
-  'TO DO':       { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
-  'PENDING':     { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
-  'CANCELLED':   { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
-  'DONE':        { bg: NEO_MINT.successSoft, color: NEO_MINT.success, border: NEO_MINT.successBorder },
+  'TO DO': { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
+  PENDING: { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
+  CANCELLED: { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
+  DONE: { bg: NEO_MINT.successSoft, color: NEO_MINT.success, border: NEO_MINT.successBorder },
 };
 
 const ACTIVE_STATUSES: TaskStatus[] = ['TO DO', 'IN PROGRESS', 'URGENT', 'PENDING'];
@@ -58,13 +76,34 @@ function evaluateSearch(text: string, query: string): boolean {
   let currentOp = 'AND';
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    if (token === 'or') { currentOp = 'OR'; continue; }
-    if (token === 'and' || token === '+') { currentOp = 'AND'; continue; }
+    if (token === 'or') {
+      currentOp = 'OR';
+      continue;
+    }
+    if (token === 'and' || token === '+') {
+      currentOp = 'AND';
+      continue;
+    }
     const hasToken = t.includes(token);
-    if (currentOp === 'AND') { isMatch = isMatch && hasToken; }
-    else { isMatch = isMatch || hasToken; currentOp = 'AND'; }
+    if (currentOp === 'AND') {
+      isMatch = isMatch && hasToken;
+    } else {
+      isMatch = isMatch || hasToken;
+      currentOp = 'AND';
+    }
   }
   return isMatch;
+}
+
+function compareGridValues(left: unknown, right: unknown): number {
+  if (left === right) return 0;
+  if (left === null || left === undefined) return 1;
+  if (right === null || right === undefined) return -1;
+  if (typeof left === 'number' && typeof right === 'number') return left - right;
+
+  const leftText = Array.isArray(left) ? left.join(',') : String(left);
+  const rightText = Array.isArray(right) ? right.join(',') : String(right);
+  return leftText.localeCompare(rightText, undefined, { numeric: true, sensitivity: 'base' });
 }
 
 // ── Action button shared style ────────────────────────────────────────────────
@@ -79,21 +118,25 @@ const actionBtnSx = {
 };
 
 function appendTasksToStatus(tasks: Task[], ids: string[], status: TaskStatus) {
-  let nextSortOrder = Math.max(
-    -1,
-    ...tasks
-      .filter(t => t.status === status && !ids.includes(t.id))
-      .map(t => Number.isFinite(t.sortOrder) ? t.sortOrder! : -1)
-  ) + 1;
+  let nextSortOrder =
+    Math.max(
+      -1,
+      ...tasks
+        .filter((t) => t.status === status && !ids.includes(t.id))
+        .map((t) => (Number.isFinite(t.sortOrder) ? t.sortOrder! : -1))
+    ) + 1;
 
-  return tasks.map(t => {
+  return tasks.map((t) => {
     if (!ids.includes(t.id)) return t;
     return { ...t, status, sortOrder: nextSortOrder++ };
   });
 }
 
 export default function TaskList({ tasks, filters, onSaveTasks, availableTags, onRowClick }: TaskListProps) {
-  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
+  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
   const [showAll, setShowAll] = useState(false);
 
@@ -111,22 +154,25 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
 
   const handleStatusChange = (id: string, newStatus: TaskStatus) => {
-    const currentTask = tasks.find(t => t.id === id);
-    const nextSortOrder = Math.max(
-      -1,
-      ...tasks
-        .filter(t => t.status === newStatus && t.id !== id)
-        .map(t => Number.isFinite(t.sortOrder) ? t.sortOrder! : -1)
-    ) + 1;
+    const currentTask = tasks.find((t) => t.id === id);
+    const nextSortOrder =
+      Math.max(
+        -1,
+        ...tasks
+          .filter((t) => t.status === newStatus && t.id !== id)
+          .map((t) => (Number.isFinite(t.sortOrder) ? t.sortOrder! : -1))
+      ) + 1;
 
-    onSaveTasks(tasks.map(t => {
-      if (t.id !== id) return t;
-      return {
-        ...t,
-        status: newStatus,
-        sortOrder: currentTask?.status === newStatus ? t.sortOrder : nextSortOrder,
-      };
-    }));
+    onSaveTasks(
+      tasks.map((t) => {
+        if (t.id !== id) return t;
+        return {
+          ...t,
+          status: newStatus,
+          sortOrder: currentTask?.status === newStatus ? t.sortOrder : nextSortOrder,
+        };
+      })
+    );
   };
 
   const handleDragStart = (event: DragEvent<HTMLElement>, taskId: string) => {
@@ -138,7 +184,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   };
 
   const handleDragOver = (event: DragEvent<HTMLElement>, targetTask: Task) => {
-    const draggedTask = draggedTaskId === null ? null : tasks.find(t => t.id === draggedTaskId);
+    const draggedTask = draggedTaskId === null ? null : tasks.find((t) => t.id === draggedTaskId);
     if (!draggedTask || draggedTask.status !== targetTask.status || draggedTask.id === targetTask.id) return;
 
     event.preventDefault();
@@ -151,7 +197,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     event.stopPropagation();
 
     const draggedId = event.dataTransfer.getData('text/plain') || draggedTaskId;
-    const draggedTask = tasks.find(t => t.id === draggedId);
+    const draggedTask = tasks.find((t) => t.id === draggedId);
     if (!draggedTask || draggedTask.status !== targetTask.status || draggedTask.id === targetTask.id) {
       setDraggedTaskId(null);
       setDragOverTaskId(null);
@@ -172,7 +218,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     const target = event.target instanceof HTMLElement ? event.target : null;
     const rowElement = target?.closest('[data-id]');
     const rowId = rowElement?.getAttribute('data-id');
-    return rowId ? tasks.find(t => t.id === rowId) : undefined;
+    return rowId ? tasks.find((t) => t.id === rowId) : undefined;
   };
 
   const handleGridDragOver = (event: DragEvent<HTMLElement>) => {
@@ -186,7 +232,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   };
 
   const handleDeleteSelected = (ids: string[]) => {
-    onSaveTasks(tasks.filter(t => !ids.includes(t.id)));
+    onSaveTasks(tasks.filter((t) => !ids.includes(t.id)));
     setSelectionModel({ type: 'include', ids: new Set() });
     setDeleteConfirmOpen(false);
   };
@@ -198,12 +244,14 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
 
   const handleAssignTag = (ids: string[]) => {
     if (!selectedTagToAssign) return;
-    onSaveTasks(tasks.map(t => {
-      if (ids.includes(t.id) && !t.tags.includes(selectedTagToAssign)) {
-        return { ...t, tags: [...t.tags, selectedTagToAssign] };
-      }
-      return t;
-    }));
+    onSaveTasks(
+      tasks.map((t) => {
+        if (ids.includes(t.id) && !t.tags.includes(selectedTagToAssign)) {
+          return { ...t, tags: [...t.tags, selectedTagToAssign] };
+        }
+        return t;
+      })
+    );
     setSelectionModel({ type: 'include', ids: new Set() });
     setTagDialogOpen(false);
   };
@@ -216,7 +264,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   };
 
   const handleAssignAssignee = (ids: string[]) => {
-    onSaveTasks(tasks.map(t => ids.includes(t.id) ? { ...t, assignee: selectedAssigneeToAssign } : t));
+    onSaveTasks(tasks.map((t) => (ids.includes(t.id) ? { ...t, assignee: selectedAssigneeToAssign } : t)));
     setSelectionModel({ type: 'include', ids: new Set() });
     setAssigneeDialogOpen(false);
   };
@@ -268,12 +316,25 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       ),
     },
     {
-      field: 'title', headerName: 'Task Title', flex: 1.25, minWidth: 160,
+      field: 'title',
+      headerName: 'Task Title',
+      flex: 1.25,
+      minWidth: 160,
       renderCell: (p) => {
         const dueDateChangeCount = Number(p.row.dueDateChangeCount || 0);
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, width: '100%' }}>
-            <Typography sx={{ fontSize: TASK_LIST_TEXT.title, fontWeight: 600, color: NEO_MINT.textTitle, whiteSpace: 'normal', lineHeight: 1.45, overflowWrap: 'anywhere', minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontSize: TASK_LIST_TEXT.title,
+                fontWeight: 600,
+                color: NEO_MINT.textTitle,
+                whiteSpace: 'normal',
+                lineHeight: 1.45,
+                overflowWrap: 'anywhere',
+                minWidth: 0,
+              }}
+            >
               {p.value}
             </Typography>
             {dueDateChangeCount >= 1 && (
@@ -305,36 +366,67 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       },
     },
     {
-      field: 'details', headerName: 'Details', flex: 0.95, minWidth: 120, resizable: true,
+      field: 'details',
+      headerName: 'Details',
+      flex: 0.95,
+      minWidth: 120,
+      resizable: true,
       renderCell: (p) => {
         const stripped = (p.value || '').replace(/&nbsp;/g, ' ').replace(/<[^>]+>/g, '');
         return (
-          <Typography sx={{ fontSize: TASK_LIST_TEXT.body, color: NEO_MINT.textBody, whiteSpace: 'normal', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+          <Typography
+            sx={{
+              fontSize: TASK_LIST_TEXT.body,
+              color: NEO_MINT.textBody,
+              whiteSpace: 'normal',
+              lineHeight: 1.35,
+              overflowWrap: 'anywhere',
+            }}
+          >
             {stripped.length > 40 ? stripped.substring(0, 40) + '…' : stripped}
           </Typography>
         );
       },
     },
     {
-      field: 'assignee', headerName: 'Assignee', width: 96, minWidth: 82, align: 'center', headerAlign: 'center',
+      field: 'assignee',
+      headerName: 'Assignee',
+      width: 96,
+      minWidth: 82,
+      align: 'center',
+      headerAlign: 'center',
       renderCell: (p) => (
-        <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           {p.value ? (
-            <Box sx={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              px: 1, py: 0,
-              borderRadius: '8px',
-              backgroundColor: 'var(--primary-subtle)',
-              border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-              color: NEO_MINT.primary,
-              fontSize: TASK_LIST_TEXT.badge, fontWeight: 700,
-              minWidth: 0,
-              maxWidth: '100%',
-              height: '22px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: 1,
+                py: 0,
+                borderRadius: '8px',
+                backgroundColor: 'var(--primary-subtle)',
+                border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                color: NEO_MINT.primary,
+                fontSize: TASK_LIST_TEXT.badge,
+                fontWeight: 700,
+                minWidth: 0,
+                maxWidth: '100%',
+                height: '22px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {p.value}
             </Box>
           ) : null}
@@ -356,8 +448,23 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
 
         const completed = subtasks.filter((subtask: Task['subtasks'][number]) => subtask.completed).length;
         return (
-          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ fontSize: TASK_LIST_TEXT.meta, fontWeight: 700, color: NEO_MINT.textBody, whiteSpace: 'nowrap' }}>
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: TASK_LIST_TEXT.meta,
+                fontWeight: 700,
+                color: NEO_MINT.textBody,
+                whiteSpace: 'nowrap',
+              }}
+            >
               {completed}/{subtasks.length}
             </Typography>
           </Box>
@@ -379,8 +486,23 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
         if (progress <= 0) return null;
 
         return (
-          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ fontSize: TASK_LIST_TEXT.meta, fontWeight: 800, color: progress >= 100 ? NEO_MINT.success : NEO_MINT.primary, whiteSpace: 'nowrap' }}>
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: TASK_LIST_TEXT.meta,
+                fontWeight: 800,
+                color: progress >= 100 ? NEO_MINT.success : NEO_MINT.primary,
+                whiteSpace: 'nowrap',
+              }}
+            >
               {progress}%
             </Typography>
           </Box>
@@ -388,26 +510,44 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       },
     },
     {
-      field: 'tags', headerName: 'Tags', width: 126, minWidth: 96, align: 'center', headerAlign: 'center',
+      field: 'tags',
+      headerName: 'Tags',
+      width: 126,
+      minWidth: 96,
+      align: 'center',
+      headerAlign: 'center',
       renderCell: (p) => (
-        <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', py: 0.5, justifyContent: 'center' }}>
             {(p.value || []).map((tag: string) => (
-              <Box key={tag} sx={{
-                px: 1, py: 0,
-                borderRadius: '8px',
-                backgroundColor: 'var(--surface-muted)',
-                border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-                color: NEO_MINT.textBody,
-                fontSize: TASK_LIST_TEXT.badge, fontWeight: 700,
-                height: '22px',
-                maxWidth: 96,
-                display: 'inline-flex',
-                alignItems: 'center',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}>
+              <Box
+                key={tag}
+                sx={{
+                  px: 1,
+                  py: 0,
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--surface-muted)',
+                  border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                  color: NEO_MINT.textBody,
+                  fontSize: TASK_LIST_TEXT.badge,
+                  fontWeight: 700,
+                  height: '22px',
+                  maxWidth: 96,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {tag}
               </Box>
             ))}
@@ -416,9 +556,22 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       ),
     },
     {
-      field: 'status', headerName: 'Status', width: 132, minWidth: 118, align: 'center', headerAlign: 'center',
+      field: 'status',
+      headerName: 'Status',
+      width: 132,
+      minWidth: 118,
+      align: 'center',
+      headerAlign: 'center',
       renderCell: (p) => (
-        <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <Select
             size="small"
             value={p.value}
@@ -449,28 +602,45 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
                 justifyContent: 'center',
                 pr: '24px !important',
                 minHeight: '22px',
-              }
+              },
             }}
           >
-            {Object.keys(STATUS_ORDER).map(s => (
-              <MenuItem key={s} value={s} sx={{ fontSize: TASK_LIST_TEXT.body, fontWeight: 500 }}>{s}</MenuItem>
+            {Object.keys(STATUS_ORDER).map((s) => (
+              <MenuItem key={s} value={s} sx={{ fontSize: TASK_LIST_TEXT.body, fontWeight: 500 }}>
+                {s}
+              </MenuItem>
             ))}
           </Select>
         </Box>
       ),
     },
     {
-      field: 'dueDate', headerName: 'Due Date', width: 96, minWidth: 90, align: 'center', headerAlign: 'center',
+      field: 'dueDate',
+      headerName: 'Due Date',
+      width: 96,
+      minWidth: 90,
+      align: 'center',
+      headerAlign: 'center',
       renderCell: (p) => {
         if (!p.value) return null;
         const isOverdue = isPast(startOfDay(parseISO(p.value))) && !isToday(parseISO(p.value));
         return (
-          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{
-              fontSize: TASK_LIST_TEXT.meta,
-              fontWeight: 600,
-              color: isOverdue ? NEO_MINT.danger : NEO_MINT.textBody,
-            }}>
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: TASK_LIST_TEXT.meta,
+                fontWeight: 600,
+                color: isOverdue ? NEO_MINT.danger : NEO_MINT.textBody,
+              }}
+            >
               {p.value.substring(0, 10)}
             </Typography>
           </Box>
@@ -480,60 +650,86 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   ];
 
   // ── Filtering ───────────────────────────────────────────────────────────────
-  let rows = tasks.map(t => ({ ...t, statusSort: STATUS_ORDER[t.status], tagsStr: t.tags.join(',') }));
+  let rows = tasks.map((t) => ({ ...t, statusSort: STATUS_ORDER[t.status], tagsStr: t.tags.join(',') }));
 
-  if (!showAll) rows = rows.filter(t => t.status !== 'DONE' && t.status !== 'CANCELLED');
+  if (!showAll) rows = rows.filter((t) => t.status !== 'DONE' && t.status !== 'CANCELLED');
 
   if (filters.searchQuery) {
-    rows = rows.filter(t => evaluateSearch(`${t.title} ${t.details} ${t.assignee} ${t.tags.join(' ')}`, filters.searchQuery || ''));
+    rows = rows.filter((t) =>
+      evaluateSearch(`${t.title} ${t.details} ${t.assignee} ${t.tags.join(' ')}`, filters.searchQuery || '')
+    );
   }
 
   const isActiveStatus = (s: string) => ACTIVE_STATUSES.includes(s as TaskStatus);
 
   if (filters.dueToday) {
     const todayEnd = endOfDay(new Date());
-    rows = rows.filter(t => isActiveStatus(t.status) && t.dueDate && (isBefore(parseISO(t.dueDate), todayEnd) || isToday(parseISO(t.dueDate))));
+    rows = rows.filter(
+      (t) =>
+        isActiveStatus(t.status) &&
+        t.dueDate &&
+        (isBefore(parseISO(t.dueDate), todayEnd) || isToday(parseISO(t.dueDate)))
+    );
   }
   if (filters.dueInWeek) {
     const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
-    rows = rows.filter(t => isActiveStatus(t.status) && t.dueDate && isBefore(parseISO(t.dueDate), endOfDay(weekEnd)));
+    rows = rows.filter(
+      (t) => isActiveStatus(t.status) && t.dueDate && isBefore(parseISO(t.dueDate), endOfDay(weekEnd))
+    );
   }
   if (filters.dueNextWeek) {
     const nextWeekEnd = endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 });
-    rows = rows.filter(t => isActiveStatus(t.status) && t.dueDate && isBefore(parseISO(t.dueDate), endOfDay(nextWeekEnd)));
+    rows = rows.filter(
+      (t) => isActiveStatus(t.status) && t.dueDate && isBefore(parseISO(t.dueDate), endOfDay(nextWeekEnd))
+    );
   }
   if (filters.overdue) {
-    rows = rows.filter(t => t.dueDate && isPast(startOfDay(parseISO(t.dueDate))) && !isToday(parseISO(t.dueDate)));
+    rows = rows.filter(
+      (t) => t.dueDate && isPast(startOfDay(parseISO(t.dueDate))) && !isToday(parseISO(t.dueDate))
+    );
   }
   if (filters.tags && filters.tags.length > 0) {
-    rows = rows.filter(t => {
-      if (filters.tagsOperator === 'AND') return filters.tags!.every(tag => t.tags.includes(tag));
-      if (filters.tagsOperator === 'NOT') return !filters.tags!.some(tag => t.tags.includes(tag));
-      return filters.tags!.some(tag => t.tags.includes(tag));
+    rows = rows.filter((t) => {
+      if (filters.tagsOperator === 'AND') return filters.tags!.every((tag) => t.tags.includes(tag));
+      if (filters.tagsOperator === 'NOT') return !filters.tags!.some((tag) => t.tags.includes(tag));
+      return filters.tags!.some((tag) => t.tags.includes(tag));
     });
   }
   if (filters.statuses && filters.statuses.length > 0) {
-    rows = rows.filter(t => {
-      if (filters.statusOperator === 'AND') return filters.statuses!.every(s => t.status === s);
-      if (filters.statusOperator === 'NOT') return !filters.statuses!.some(s => t.status === s);
-      return filters.statuses!.some(s => t.status === s);
+    rows = rows.filter((t) => {
+      if (filters.statusOperator === 'AND') return filters.statuses!.every((s) => t.status === s);
+      if (filters.statusOperator === 'NOT') return !filters.statuses!.some((s) => t.status === s);
+      return filters.statuses!.some((s) => t.status === s);
     });
   }
-  if (filters.quickUrgent) rows = rows.filter(t => t.status === 'URGENT');
-  if (filters.quickNotFinished) rows = rows.filter(t => !['PENDING', 'CANCELLED', 'DONE'].includes(t.status));
+  if (filters.quickUrgent) rows = rows.filter((t) => t.status === 'URGENT');
+  if (filters.quickNotFinished)
+    rows = rows.filter((t) => !['PENDING', 'CANCELLED', 'DONE'].includes(t.status));
   if (filters.quickIncompleteToday) {
-    rows = rows.filter(t => {
+    rows = rows.filter((t) => {
       const isIncomplete = t.status !== 'DONE' && t.status !== 'CANCELLED';
-      const isDueOrOverdue = t.dueDate && (isBefore(parseISO(t.dueDate), new Date()) || isToday(parseISO(t.dueDate)));
+      const isDueOrOverdue =
+        t.dueDate && (isBefore(parseISO(t.dueDate), new Date()) || isToday(parseISO(t.dueDate)));
       return isIncomplete && isDueOrOverdue;
     });
   }
   if (filters.quickAssignee) {
     const q = filters.quickAssignee.toLowerCase();
-    rows = rows.filter(t => t.assignee && t.assignee.toLowerCase().includes(q));
+    rows = rows.filter((t) => t.assignee && t.assignee.toLowerCase().includes(q));
   }
 
   rows.sort((a, b) => {
+    const aIsTodayTask = isTodayTask(a);
+    const bIsTodayTask = isTodayTask(b);
+    if (aIsTodayTask !== bIsTodayTask) return aIsTodayTask ? -1 : 1;
+
+    for (const sortItem of sortModel) {
+      const leftValue = (a as unknown as Record<string, unknown>)[sortItem.field];
+      const rightValue = (b as unknown as Record<string, unknown>)[sortItem.field];
+      const fieldCompare = compareGridValues(leftValue, rightValue);
+      if (fieldCompare !== 0) return sortItem.sort === 'desc' ? -fieldCompare : fieldCompare;
+    }
+
     if (a.statusSort !== b.statusSort) return a.statusSort - b.statusSort;
     const priorityCompare = compareTaskPriority(a, b);
     if (priorityCompare !== 0) return priorityCompare;
@@ -550,32 +746,44 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
     if (rows[i].statusSort !== rows[i + 1].statusSort) statusBorderRows.add(rows[i].id);
   }
 
-  const actualSelectedIds = selectionModel.type === 'include'
-    ? Array.from(selectionModel.ids || []).map(String)
-    : rows.map(r => r.id).filter(id => !(selectionModel.ids || new Set()).has(id));
+  const actualSelectedIds =
+    selectionModel.type === 'include'
+      ? Array.from(selectionModel.ids || []).map(String)
+      : rows.map((r) => r.id).filter((id) => !(selectionModel.ids || new Set()).has(id));
 
   const hasSelection = actualSelectedIds.length > 0;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-
       {/* Toolbar strip */}
-      <Box sx={{
-        display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap',
-        px: 2, py: 1.5,
-        backgroundColor: 'var(--card-bg)',
-        borderRadius: '12px',
-        border: '1px solid var(--card-border)',
-        boxShadow: NEO_MINT.shadowSm,
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 1,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          px: 2,
+          py: 1.5,
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '12px',
+          border: '1px solid var(--card-border)',
+          boxShadow: NEO_MINT.shadowSm,
+        }}
+      >
         <Button
           variant="outlined"
           size="small"
           startIcon={<Delete sx={{ fontSize: '16px !important' }} />}
           disabled={!hasSelection}
           onClick={() => setDeleteConfirmOpen(true)}
-          sx={{ ...actionBtnSx, borderColor: NEO_MINT.dangerBorder, color: NEO_MINT.danger, backgroundColor: '#fff', '&:hover': { backgroundColor: NEO_MINT.dangerSoft, borderColor: NEO_MINT.danger } }}
+          sx={{
+            ...actionBtnSx,
+            borderColor: NEO_MINT.dangerBorder,
+            color: NEO_MINT.danger,
+            backgroundColor: NEO_MINT.surface,
+            '&:hover': { backgroundColor: NEO_MINT.dangerSoft, borderColor: NEO_MINT.danger },
+          }}
         >
           Delete
         </Button>
@@ -585,7 +793,17 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           startIcon={<Label sx={{ fontSize: '16px !important' }} />}
           disabled={!hasSelection}
           onClick={() => setTagDialogOpen(true)}
-          sx={{ ...actionBtnSx, borderColor: NEO_MINT.cardBorderSoft, color: NEO_MINT.textTitle, backgroundColor: '#fff', '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary } }}
+          sx={{
+            ...actionBtnSx,
+            borderColor: NEO_MINT.cardBorderSoft,
+            color: NEO_MINT.textTitle,
+            backgroundColor: NEO_MINT.surface,
+            '&:hover': {
+              backgroundColor: 'var(--primary-subtle)',
+              borderColor: NEO_MINT.primary,
+              color: NEO_MINT.primary,
+            },
+          }}
         >
           Add Tag
         </Button>
@@ -595,7 +813,17 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           startIcon={<AssignmentTurnedIn sx={{ fontSize: '16px !important' }} />}
           disabled={!hasSelection}
           onClick={() => setStatusDialogOpen(true)}
-          sx={{ ...actionBtnSx, borderColor: NEO_MINT.cardBorderSoft, color: NEO_MINT.textTitle, backgroundColor: '#fff', '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary } }}
+          sx={{
+            ...actionBtnSx,
+            borderColor: NEO_MINT.cardBorderSoft,
+            color: NEO_MINT.textTitle,
+            backgroundColor: NEO_MINT.surface,
+            '&:hover': {
+              backgroundColor: 'var(--primary-subtle)',
+              borderColor: NEO_MINT.primary,
+              color: NEO_MINT.primary,
+            },
+          }}
         >
           Set Status
         </Button>
@@ -605,7 +833,17 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           startIcon={<Person sx={{ fontSize: '16px !important' }} />}
           disabled={!hasSelection}
           onClick={() => setAssigneeDialogOpen(true)}
-          sx={{ ...actionBtnSx, borderColor: NEO_MINT.cardBorderSoft, color: NEO_MINT.textTitle, backgroundColor: '#fff', '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary } }}
+          sx={{
+            ...actionBtnSx,
+            borderColor: NEO_MINT.cardBorderSoft,
+            color: NEO_MINT.textTitle,
+            backgroundColor: NEO_MINT.surface,
+            '&:hover': {
+              backgroundColor: 'var(--primary-subtle)',
+              borderColor: NEO_MINT.primary,
+              color: NEO_MINT.primary,
+            },
+          }}
         >
           Assignee
         </Button>
@@ -615,7 +853,13 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           startIcon={<VisibilityOff sx={{ fontSize: '16px !important' }} />}
           disabled={!hasSelection}
           onClick={() => handleHideSelected(actualSelectedIds)}
-          sx={{ ...actionBtnSx, borderColor: NEO_MINT.cardBorderSoft, color: NEO_MINT.textBody, backgroundColor: '#fff', '&:hover': { backgroundColor: 'var(--surface-muted)', borderColor: NEO_MINT.cardBorderSoft } }}
+          sx={{
+            ...actionBtnSx,
+            borderColor: NEO_MINT.cardBorderSoft,
+            color: NEO_MINT.textBody,
+            backgroundColor: NEO_MINT.surface,
+            '&:hover': { backgroundColor: 'var(--surface-muted)', borderColor: NEO_MINT.cardBorderSoft },
+          }}
         >
           Hide
         </Button>
@@ -643,16 +887,17 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       </Box>
 
       {/* Data Grid */}
-      <Box sx={{
-        minHeight: 500,
-        height: rows.length > 0 ? Math.max(500, Math.min(rows.length * 56 + 112, 1200)) : 500,
-        borderRadius: '12px',
-        border: '1px solid var(--card-border)',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        backgroundColor: 'var(--card-bg)',
-        boxShadow: NEO_MINT.shadowSm,
-      }}
+      <Box
+        sx={{
+          minHeight: 500,
+          height: rows.length > 0 ? Math.max(500, Math.min(rows.length * 56 + 112, 1200)) : 500,
+          borderRadius: '12px',
+          border: '1px solid var(--card-border)',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          boxShadow: NEO_MINT.shadowSm,
+        }}
         onDragOver={handleGridDragOver}
         onDrop={handleGridDrop}
         onDragLeave={(event) => {
@@ -667,6 +912,7 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           disableRowSelectionOnClick
           rowHeight={56}
           sortModel={sortModel}
+          sortingMode="server"
           onSortModelChange={(model) => setSortModel(model)}
           onRowSelectionModelChange={setSelectionModel}
           rowSelectionModel={selectionModel}
@@ -746,22 +992,37 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       {/* ── Dialogs ─────────────────────────────────────────────────────────── */}
 
       {/* Delete confirm */}
-      <Dialog 
-        open={deleteConfirmOpen} 
+      <Dialog
+        open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         slotProps={{ paper: { sx: { borderRadius: '16px', p: 1 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, color: NEO_MINT.textTitle }}>Confirm Deletion</DialogTitle>
         <DialogContent>
           <Typography sx={{ fontSize: TASK_LIST_TEXT.body, color: NEO_MINT.textBody }}>
-            Are you sure you want to delete <strong style={{ color: NEO_MINT.danger }}>{actualSelectedIds.length}</strong> selected tasks?
+            Are you sure you want to delete{' '}
+            <strong style={{ color: NEO_MINT.danger }}>{actualSelectedIds.length}</strong> selected tasks?
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setDeleteConfirmOpen(false)} variant="text" sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="text"
+            sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={() => handleDeleteSelected(actualSelectedIds)}
-            sx={{ borderRadius: '10px', backgroundColor: NEO_MINT.danger, color: '#fff', fontWeight: 700, px: 2.5, textTransform: 'none', '&:hover': { backgroundColor: '#b91c1c' } }}
+            sx={{
+              borderRadius: '10px',
+              backgroundColor: NEO_MINT.danger,
+              color: '#fff',
+              fontWeight: 700,
+              px: 2.5,
+              textTransform: 'none',
+              '&:hover': { backgroundColor: '#b91c1c' },
+            }}
             variant="contained"
             disableElevation
           >
@@ -771,8 +1032,8 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       </Dialog>
 
       {/* Assign Tag */}
-      <Dialog 
-        open={tagDialogOpen} 
+      <Dialog
+        open={tagDialogOpen}
         onClose={() => setTagDialogOpen(false)}
         slotProps={{ paper: { sx: { borderRadius: '16px', p: 1 } } }}
       >
@@ -780,23 +1041,38 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
         <DialogContent sx={{ minWidth: 360, pt: 2 }}>
           <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
             <InputLabel>Select Tag</InputLabel>
-            <Select 
-              value={selectedTagToAssign} 
-              label="Select Tag" 
+            <Select
+              value={selectedTagToAssign}
+              label="Select Tag"
               onChange={(e) => setSelectedTagToAssign(e.target.value)}
               sx={{ borderRadius: '8px' }}
             >
-              {availableTags.map(tag => <MenuItem key={tag} value={tag}>{tag}</MenuItem>)}
+              {availableTags.map((tag) => (
+                <MenuItem key={tag} value={tag}>
+                  {tag}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setTagDialogOpen(false)} sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-          <Button 
-            onClick={() => handleAssignTag(actualSelectedIds)} 
-            variant="contained" 
+          <Button
+            onClick={() => setTagDialogOpen(false)}
+            sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => handleAssignTag(actualSelectedIds)}
+            variant="contained"
             disableElevation
-            sx={{ borderRadius: '10px', backgroundColor: NEO_MINT.primary, px: 2.5, textTransform: 'none', fontWeight: 700 }}
+            sx={{
+              borderRadius: '10px',
+              backgroundColor: NEO_MINT.primary,
+              px: 2.5,
+              textTransform: 'none',
+              fontWeight: 700,
+            }}
           >
             Apply Tag
           </Button>
@@ -804,8 +1080,8 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       </Dialog>
 
       {/* Assign Status */}
-      <Dialog 
-        open={statusDialogOpen} 
+      <Dialog
+        open={statusDialogOpen}
         onClose={() => setStatusDialogOpen(false)}
         slotProps={{ paper: { sx: { borderRadius: '16px', p: 1 } } }}
       >
@@ -813,23 +1089,38 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
         <DialogContent sx={{ minWidth: 360, pt: 2 }}>
           <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
             <InputLabel>Select Status</InputLabel>
-            <Select 
-              value={selectedStatusToAssign} 
-              label="Select Status" 
+            <Select
+              value={selectedStatusToAssign}
+              label="Select Status"
               onChange={(e) => setSelectedStatusToAssign(e.target.value as TaskStatus)}
               sx={{ borderRadius: '8px' }}
             >
-              {Object.keys(STATUS_ORDER).map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+              {Object.keys(STATUS_ORDER).map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setStatusDialogOpen(false)} sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-          <Button 
-            onClick={() => handleAssignStatus(actualSelectedIds)} 
-            variant="contained" 
+          <Button
+            onClick={() => setStatusDialogOpen(false)}
+            sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => handleAssignStatus(actualSelectedIds)}
+            variant="contained"
             disableElevation
-            sx={{ borderRadius: '10px', backgroundColor: NEO_MINT.primary, px: 2.5, textTransform: 'none', fontWeight: 700 }}
+            sx={{
+              borderRadius: '10px',
+              backgroundColor: NEO_MINT.primary,
+              px: 2.5,
+              textTransform: 'none',
+              fontWeight: 700,
+            }}
           >
             Update
           </Button>
@@ -837,8 +1128,8 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
       </Dialog>
 
       {/* Assign Assignee */}
-      <Dialog 
-        open={assigneeDialogOpen} 
+      <Dialog
+        open={assigneeDialogOpen}
         onClose={() => setAssigneeDialogOpen(false)}
         slotProps={{ paper: { sx: { borderRadius: '16px', p: 1 } } }}
       >
@@ -856,12 +1147,23 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           />
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setAssigneeDialogOpen(false)} sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-          <Button 
-            onClick={() => handleAssignAssignee(actualSelectedIds)} 
-            variant="contained" 
+          <Button
+            onClick={() => setAssigneeDialogOpen(false)}
+            sx={{ color: NEO_MINT.textBody, textTransform: 'none', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => handleAssignAssignee(actualSelectedIds)}
+            variant="contained"
             disableElevation
-            sx={{ borderRadius: '10px', backgroundColor: NEO_MINT.primary, px: 2.5, textTransform: 'none', fontWeight: 700 }}
+            sx={{
+              borderRadius: '10px',
+              backgroundColor: NEO_MINT.primary,
+              px: 2.5,
+              textTransform: 'none',
+              fontWeight: 700,
+            }}
           >
             Assign
           </Button>

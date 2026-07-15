@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography,
-  FormControl, InputLabel, Select, MenuItem, Checkbox
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Box,
+  Typography,
+  ButtonBase,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
 } from '@mui/material';
 import { AssistantConfiguredIntent, AssistantIntent, Settings, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
-
+import { APP_THEME_OPTIONS, useThemeContext } from '@/components/ThemeProvider';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -37,20 +49,23 @@ const createBlankIntent = (): AssistantConfiguredIntent => ({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Typography sx={{
-      fontSize: '11px',
-      fontWeight: 700,
-      textTransform: 'uppercase',
-      letterSpacing: 0,
-      color: NEO_MINT.textBody,
-      mb: 1.5,
-      fontFamily: 'var(--font-gilroy)',
-    }}>
+    <Typography
+      sx={{
+        fontSize: '11px',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: 0,
+        color: NEO_MINT.textBody,
+        mb: 1.5,
+        fontFamily: 'var(--font-gilroy)',
+      }}
+    >
       {children}
     </Typography>
   );
 }
 export default function SettingsDialog({ open, settings, onClose, onSave }: SettingsDialogProps) {
+  const { themeName, setThemeName } = useThemeContext();
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
   const [newTag, setNewTag] = useState('');
   const [intentDraft, setIntentDraft] = useState<AssistantConfiguredIntent>(() => createBlankIntent());
@@ -65,7 +80,7 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
   };
 
   const handleDeleteTag = (tagToDelete: string) => {
-    setLocalSettings({ ...localSettings, tags: localSettings.tags.filter(tag => tag !== tagToDelete) });
+    setLocalSettings({ ...localSettings, tags: localSettings.tags.filter((tag) => tag !== tagToDelete) });
   };
 
   const handleSaveIntent = () => {
@@ -80,7 +95,7 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
     };
     const current = localSettings.assistantIntents || [];
     const nextIntents = editingIntentId
-      ? current.map((intent) => intent.id === editingIntentId ? nextIntent : intent)
+      ? current.map((intent) => (intent.id === editingIntentId ? nextIntent : intent))
       : [...current, nextIntent];
 
     setLocalSettings({ ...localSettings, assistantIntents: nextIntents });
@@ -114,10 +129,10 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
       maxWidth="md"
       slotProps={{
         paper: {
@@ -148,6 +163,69 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
       <DialogTitle sx={{ fontWeight: 700, color: NEO_MINT.textTitle }}>System Settings</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box>
+            <SectionLabel>Appearance</SectionLabel>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+                gap: 1,
+              }}
+            >
+              {APP_THEME_OPTIONS.map((option) => {
+                const selected = option.id === themeName;
+                return (
+                  <ButtonBase
+                    key={option.id}
+                    onClick={() => setThemeName(option.id)}
+                    aria-pressed={selected}
+                    sx={{
+                      minWidth: 0,
+                      p: 1.25,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                      gap: 0.75,
+                      textAlign: 'left',
+                      borderRadius: '12px',
+                      border: `2px solid ${selected ? 'var(--primary)' : 'var(--card-border-soft)'}`,
+                      backgroundColor: selected ? 'var(--primary-subtle)' : 'var(--surface-soft)',
+                      transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                      '&:hover': {
+                        borderColor: 'var(--primary)',
+                        backgroundColor: 'var(--primary-subtle)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {option.swatches.map((color) => (
+                        <Box
+                          key={color}
+                          component="span"
+                          sx={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: '7px',
+                            backgroundColor: color,
+                            border: '1px solid rgba(15, 23, 42, 0.18)',
+                          }}
+                        />
+                      ))}
+                    </Box>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-title)' }}>
+                      {option.label}
+                    </Typography>
+                    <Typography sx={{ fontSize: '10px', lineHeight: 1.4, color: 'var(--text-muted)' }}>
+                      {option.description}
+                    </Typography>
+                  </ButtonBase>
+                );
+              })}
+            </Box>
+            <Typography sx={{ mt: 0.75, fontSize: '10px', color: 'var(--text-muted)' }}>
+              Theme selection is saved only in this browser.
+            </Typography>
+          </Box>
 
           {/* Tags management */}
           <Box>
@@ -181,30 +259,49 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                 Add
               </Button>
             </Box>
-            <Box sx={{
-              display: 'flex', flexWrap: 'wrap', gap: 0.6,
-              p: 1.25,
-              minHeight: 52,
-              borderRadius: '12px',
-              backgroundColor: 'var(--surface-soft)',
-              border: '1px solid var(--card-border-soft)',
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 0.6,
+                p: 1.25,
+                minHeight: 52,
+                borderRadius: '12px',
+                backgroundColor: 'var(--surface-soft)',
+                border: '1px solid var(--card-border-soft)',
+              }}
+            >
               {localSettings.tags.length === 0 && (
-                <Typography sx={{ fontSize: '13px', color: NEO_MINT.textMuted, fontStyle: 'italic', alignSelf: 'center', width: '100%', textAlign: 'center' }}>
+                <Typography
+                  sx={{
+                    fontSize: '13px',
+                    color: NEO_MINT.textMuted,
+                    fontStyle: 'italic',
+                    alignSelf: 'center',
+                    width: '100%',
+                    textAlign: 'center',
+                  }}
+                >
                   No tags defined yet
                 </Typography>
               )}
-              {localSettings.tags.map(tag => (
-                <Box key={tag} sx={{
-                  display: 'inline-flex', alignItems: 'center', gap: 0.5,
-                  px: 1, py: 0.25,
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--surface-muted)',
-                  border: `1px solid ${NEO_MINT.cardBorderSoft}`,
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: NEO_MINT.textBody,
-                }}>
+              {localSettings.tags.map((tag) => (
+                <Box
+                  key={tag}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--surface-muted)',
+                    border: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: NEO_MINT.textBody,
+                  }}
+                >
                   {tag}
                   <Box
                     component="span"
@@ -228,12 +325,14 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
 
           {/* Assistant intents */}
           <Box>
-            <Box sx={{
-              p: 1.25,
-              borderRadius: '12px',
-              backgroundColor: 'var(--surface-soft)',
-              border: '1px solid var(--card-border-soft)',
-            }}>
+            <Box
+              sx={{
+                p: 1.25,
+                borderRadius: '12px',
+                backgroundColor: 'var(--surface-soft)',
+                border: '1px solid var(--card-border-soft)',
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
                 <Box sx={{ minWidth: 0 }}>
                   <SectionLabel>Assistant Advanced</SectionLabel>
@@ -251,7 +350,11 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                     color: NEO_MINT.textTitle,
                     fontWeight: 700,
                     textTransform: 'none',
-                    '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary },
+                    '&:hover': {
+                      backgroundColor: 'var(--primary-subtle)',
+                      borderColor: NEO_MINT.primary,
+                      color: NEO_MINT.primary,
+                    },
                   }}
                 >
                   {showAssistantIntents ? 'Hide' : 'Configure'}
@@ -260,34 +363,48 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
 
               {showAssistantIntents && (
                 <Box sx={{ mt: 1.25 }}>
-                  <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 0.75,
-                    p: 1.25,
-                    mb: 1.25,
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--panel-bg)',
-                    border: '1px solid var(--panel-border)',
-                  }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.75,
+                      p: 1.25,
+                      mb: 1.25,
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--panel-bg)',
+                      border: '1px solid var(--panel-border)',
+                    }}
+                  >
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1 }}>
                       <TextField
                         label="Label"
                         size="small"
                         value={intentDraft.label}
-                        onChange={(e) => setIntentDraft({ ...intentDraft, label: e.target.value.slice(0, 80) })}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface } }}
+                        onChange={(e) =>
+                          setIntentDraft({ ...intentDraft, label: e.target.value.slice(0, 80) })
+                        }
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '10px',
+                            fontSize: '13px',
+                            backgroundColor: NEO_MINT.surface,
+                          },
+                        }}
                       />
                       <FormControl size="small">
                         <InputLabel>Intent</InputLabel>
                         <Select
                           label="Intent"
                           value={intentDraft.intent}
-                          onChange={(e) => setIntentDraft({ ...intentDraft, intent: e.target.value as AssistantIntent })}
+                          onChange={(e) =>
+                            setIntentDraft({ ...intentDraft, intent: e.target.value as AssistantIntent })
+                          }
                           sx={{ borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface }}
                         >
                           {ASSISTANT_INTENTS.map((intent) => (
-                            <MenuItem key={intent} value={intent}>{intent}</MenuItem>
+                            <MenuItem key={intent} value={intent}>
+                              {intent}
+                            </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
@@ -297,38 +414,76 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                       label="Suggestion question"
                       size="small"
                       value={intentDraft.question}
-                      onChange={(e) => setIntentDraft({ ...intentDraft, question: e.target.value.slice(0, 255) })}
+                      onChange={(e) =>
+                        setIntentDraft({ ...intentDraft, question: e.target.value.slice(0, 255) })
+                      }
                       slotProps={{ htmlInput: { maxLength: 255 } }}
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface } }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '10px',
+                          fontSize: '13px',
+                          backgroundColor: NEO_MINT.surface,
+                        },
+                      }}
                     />
 
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 104px 144px 104px' }, gap: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: '1fr 104px 144px 104px' },
+                        gap: 1,
+                      }}
+                    >
                       <TextField
                         label="Tag"
                         size="small"
                         value={intentDraft.tag || ''}
                         onChange={(e) => setIntentDraft({ ...intentDraft, tag: e.target.value })}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface } }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '10px',
+                            fontSize: '13px',
+                            backgroundColor: NEO_MINT.surface,
+                          },
+                        }}
                       />
                       <TextField
                         label="Days"
                         size="small"
                         type="number"
                         value={intentDraft.days ?? ''}
-                        onChange={(e) => setIntentDraft({ ...intentDraft, days: e.target.value === '' ? undefined : Number(e.target.value) })}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface } }}
+                        onChange={(e) =>
+                          setIntentDraft({
+                            ...intentDraft,
+                            days: e.target.value === '' ? undefined : Number(e.target.value),
+                          })
+                        }
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '10px',
+                            fontSize: '13px',
+                            backgroundColor: NEO_MINT.surface,
+                          },
+                        }}
                       />
                       <FormControl size="small">
                         <InputLabel>Status</InputLabel>
                         <Select
                           label="Status"
                           value={intentDraft.status || ''}
-                          onChange={(e) => setIntentDraft({ ...intentDraft, status: e.target.value ? e.target.value as TaskStatus : undefined })}
+                          onChange={(e) =>
+                            setIntentDraft({
+                              ...intentDraft,
+                              status: e.target.value ? (e.target.value as TaskStatus) : undefined,
+                            })
+                          }
                           sx={{ borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface }}
                         >
                           <MenuItem value="">None</MenuItem>
                           {TASK_STATUSES.map((status) => (
-                            <MenuItem key={status} value={status}>{status}</MenuItem>
+                            <MenuItem key={status} value={status}>
+                              {status}
+                            </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
@@ -337,12 +492,21 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                         <Select
                           label="Period"
                           value={intentDraft.period || ''}
-                          onChange={(e) => setIntentDraft({ ...intentDraft, period: e.target.value ? e.target.value as AssistantConfiguredIntent['period'] : undefined })}
+                          onChange={(e) =>
+                            setIntentDraft({
+                              ...intentDraft,
+                              period: e.target.value
+                                ? (e.target.value as AssistantConfiguredIntent['period'])
+                                : undefined,
+                            })
+                          }
                           sx={{ borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface }}
                         >
                           <MenuItem value="">None</MenuItem>
                           {PERIODS.map((period) => (
-                            <MenuItem key={period} value={period}>{period}</MenuItem>
+                            <MenuItem key={period} value={period}>
+                              {period}
+                            </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
@@ -352,14 +516,38 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                       label="Search query override"
                       size="small"
                       value={intentDraft.query || ''}
-                      onChange={(e) => setIntentDraft({ ...intentDraft, query: e.target.value.slice(0, 255) })}
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: '13px', backgroundColor: NEO_MINT.surface } }}
+                      onChange={(e) =>
+                        setIntentDraft({ ...intentDraft, query: e.target.value.slice(0, 255) })
+                      }
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '10px',
+                          fontSize: '13px',
+                          backgroundColor: NEO_MINT.surface,
+                        },
+                      }}
                     />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 1,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <Box
                         onClick={() => setIntentDraft({ ...intentDraft, enabled: !intentDraft.enabled })}
-                        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35, cursor: 'pointer', color: NEO_MINT.textBody, fontSize: '12px', fontWeight: 600 }}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.35,
+                          cursor: 'pointer',
+                          color: NEO_MINT.textBody,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        }}
                       >
                         <Checkbox size="small" checked={intentDraft.enabled} />
                         Enabled
@@ -381,7 +569,14 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                           onClick={handleSaveIntent}
                           variant="contained"
                           disableElevation
-                          sx={{ borderRadius: '10px', backgroundColor: NEO_MINT.primary, color: NEO_MINT.surface, fontWeight: 700, px: 1.5, textTransform: 'none' }}
+                          sx={{
+                            borderRadius: '10px',
+                            backgroundColor: NEO_MINT.primary,
+                            color: NEO_MINT.surface,
+                            fontWeight: 700,
+                            px: 1.5,
+                            textTransform: 'none',
+                          }}
                         >
                           {editingIntentId ? 'Update Intent' : 'Add Intent'}
                         </Button>
@@ -403,19 +598,50 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
                           border: '1px solid var(--card-border-soft)',
                         }}
                       >
-                        <Checkbox size="small" checked={intent.enabled} onChange={() => handleToggleIntent(intent.id)} />
+                        <Checkbox
+                          size="small"
+                          checked={intent.enabled}
+                          onChange={() => handleToggleIntent(intent.id)}
+                        />
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NEO_MINT.textTitle, overflowWrap: 'anywhere' }}>
+                          <Typography
+                            sx={{
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              color: NEO_MINT.textTitle,
+                              overflowWrap: 'anywhere',
+                            }}
+                          >
                             {intent.label || intent.question}
                           </Typography>
-                          <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted, overflowWrap: 'anywhere' }}>
+                          <Typography
+                            sx={{ fontSize: '11px', color: NEO_MINT.textMuted, overflowWrap: 'anywhere' }}
+                          >
                             {intent.intent} - {intent.question}
                           </Typography>
                         </Box>
-                        <Button size="small" onClick={() => handleEditIntent(intent)} sx={{ borderRadius: '8px', color: NEO_MINT.primary, fontWeight: 700, textTransform: 'none' }}>
+                        <Button
+                          size="small"
+                          onClick={() => handleEditIntent(intent)}
+                          sx={{
+                            borderRadius: '8px',
+                            color: NEO_MINT.primary,
+                            fontWeight: 700,
+                            textTransform: 'none',
+                          }}
+                        >
                           Edit
                         </Button>
-                        <Button size="small" onClick={() => handleDeleteIntent(intent.id)} sx={{ borderRadius: '8px', color: NEO_MINT.danger, fontWeight: 700, textTransform: 'none' }}>
+                        <Button
+                          size="small"
+                          onClick={() => handleDeleteIntent(intent.id)}
+                          sx={{
+                            borderRadius: '8px',
+                            color: NEO_MINT.danger,
+                            fontWeight: 700,
+                            textTransform: 'none',
+                          }}
+                        >
                           Delete
                         </Button>
                       </Box>
@@ -425,15 +651,14 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
               )}
             </Box>
           </Box>
-
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 3 }}>
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: '10px', 
-            color: NEO_MINT.textBody, 
+            borderRadius: '10px',
+            color: NEO_MINT.textBody,
             fontWeight: 600,
             textTransform: 'none',
             px: 2,
@@ -453,13 +678,15 @@ export default function SettingsDialog({ open, settings, onClose, onSave }: Sett
             fontWeight: 700,
             px: 2.5,
             textTransform: 'none',
-            '&:hover': { backgroundColor: NEO_MINT.primaryHover, boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px' },
+            '&:hover': {
+              backgroundColor: NEO_MINT.primaryHover,
+              boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px',
+            },
           }}
         >
           Save Settings
         </Button>
       </DialogActions>
     </Dialog>
-
   );
 }

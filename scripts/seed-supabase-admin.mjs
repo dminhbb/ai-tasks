@@ -1,4 +1,8 @@
-import { createSupabaseAdminClient, findAuthUserByEmail, requiredEnvironment } from './supabase-admin-client.mjs';
+import {
+  createSupabaseAdminClient,
+  findAuthUserByEmail,
+  requiredEnvironment,
+} from './supabase-admin-client.mjs';
 
 const email = (process.env.SEED_SUPERADMIN_EMAIL?.trim() || 'minhd.mbb@gmail.com').toLocaleLowerCase();
 const password = requiredEnvironment('SEED_SUPERADMIN_PASSWORD');
@@ -24,7 +28,8 @@ if (user) {
     password,
     email_confirm: true,
   });
-  if (error || !data.user) throw new Error(`Unable to create the seed user: ${error?.message ?? 'unknown error'}`);
+  if (error || !data.user)
+    throw new Error(`Unable to create the seed user: ${error?.message ?? 'unknown error'}`);
   user = data.user;
 }
 

@@ -3,11 +3,13 @@ import {
   authenticatedClient,
   handleOptions,
   jsonResponse,
+  readJsonBody,
   safeFunctionError,
   validateRequestEnvelope,
 } from '../_shared/http.ts';
 
 const MAX_TEXT_LENGTH = 12_000;
+const MAX_REQUEST_BYTES = 16_384;
 
 const taskArraySchema = {
   type: 'array',
@@ -29,12 +31,12 @@ const taskArraySchema = {
 Deno.serve(async (request: Request) => {
   const optionsResponse = handleOptions(request);
   if (optionsResponse) return optionsResponse;
-  const envelopeError = validateRequestEnvelope(request);
+  const envelopeError = validateRequestEnvelope(request, MAX_REQUEST_BYTES);
   if (envelopeError) return envelopeError;
 
   try {
     await authenticatedClient(request);
-    const body = (await request.json()) as { text?: unknown };
+    const body = await readJsonBody<{ text?: unknown }>(request, MAX_REQUEST_BYTES);
     if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > MAX_TEXT_LENGTH) {
       return jsonResponse(request, { error: 'Text must contain 1 to 12000 characters.' }, 400);
     }

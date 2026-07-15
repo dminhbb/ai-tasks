@@ -60,34 +60,47 @@ export default function NotebookDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: '12px', p: 0.75 } } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      slotProps={{ paper: { sx: { borderRadius: '12px', p: 0.75 } } }}
+    >
       <DialogTitle sx={{ fontWeight: 800, color: NEO_MINT.textTitle }}>Notebooks</DialogTitle>
       <DialogContent>
-        {canCreate && <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          <TextField
-            size="small"
-            fullWidth
-            placeholder="New notebook name..."
-            value={newName}
-            onChange={(event) => setNewName(event.target.value.slice(0, 80))}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void handleCreate();
-              }
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-          />
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={() => void handleCreate()}
-            disabled={!newName.trim()}
-            sx={{ borderRadius: '10px', backgroundColor: NEO_MINT.primary, fontWeight: 700, textTransform: 'none' }}
-          >
-            Create
-          </Button>
-        </Box>}
+        {canCreate && (
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="New notebook name..."
+              value={newName}
+              onChange={(event) => setNewName(event.target.value.slice(0, 80))}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void handleCreate();
+                }
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            />
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={() => void handleCreate()}
+              disabled={!newName.trim()}
+              sx={{
+                borderRadius: '10px',
+                backgroundColor: NEO_MINT.primary,
+                fontWeight: 700,
+                textTransform: 'none',
+              }}
+            >
+              Create
+            </Button>
+          </Box>
+        )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {notebooks.map((notebook) => {
@@ -123,7 +136,15 @@ export default function NotebookDialog({
                   />
                 ) : (
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: '13px', fontWeight: 800, color: isActive ? NEO_MINT.primary : NEO_MINT.textTitle, textTransform: 'uppercase', overflowWrap: 'anywhere' }}>
+                    <Typography
+                      sx={{
+                        fontSize: '13px',
+                        fontWeight: 800,
+                        color: isActive ? NEO_MINT.primary : NEO_MINT.textTitle,
+                        textTransform: 'uppercase',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
                       {notebook.name}
                     </Typography>
                     <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted }}>
@@ -133,35 +154,52 @@ export default function NotebookDialog({
                 )}
 
                 {isEditing ? (
-                  <Button size="small" onClick={() => void handleRename()} sx={{ borderRadius: '8px', color: NEO_MINT.primary, fontWeight: 700, textTransform: 'none' }}>
+                  <Button
+                    size="small"
+                    onClick={() => void handleRename()}
+                    sx={{
+                      borderRadius: '8px',
+                      color: NEO_MINT.primary,
+                      fontWeight: 700,
+                      textTransform: 'none',
+                    }}
+                  >
                     Save
                   </Button>
                 ) : (
                   <>
-                    <IconButton size="small" onClick={() => onOpen(notebook.id)} sx={{ color: NEO_MINT.primary }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => onOpen(notebook.id)}
+                      sx={{ color: NEO_MINT.primary }}
+                    >
                       <Launch sx={{ fontSize: 18 }} />
                     </IconButton>
-                    {notebook.permissions.manageNotebook && <IconButton
-                      size="small"
-                      onClick={() => {
-                        setEditingId(notebook.id);
-                        setEditingName(notebook.name);
-                      }}
-                      sx={{ color: NEO_MINT.textBody }}
-                    >
-                      <Edit sx={{ fontSize: 18 }} />
-                    </IconButton>}
-                    {notebook.permissions.manageNotebook && <IconButton
-                      size="small"
-                      onClick={() => {
-                        if (window.confirm(`Delete notebook "${notebook.name}" and all of its data?`)) {
-                          void onDelete(notebook.id);
-                        }
-                      }}
-                      sx={{ color: NEO_MINT.danger }}
-                    >
-                      <Delete sx={{ fontSize: 18 }} />
-                    </IconButton>}
+                    {notebook.permissions.manageNotebook && (
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setEditingId(notebook.id);
+                          setEditingName(notebook.name);
+                        }}
+                        sx={{ color: NEO_MINT.textBody }}
+                      >
+                        <Edit sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    )}
+                    {notebook.permissions.manageNotebook && (
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (window.confirm(`Delete notebook "${notebook.name}" and all of its data?`)) {
+                            void onDelete(notebook.id);
+                          }
+                        }}
+                        sx={{ color: NEO_MINT.danger }}
+                      >
+                        <Delete sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    )}
                   </>
                 )}
               </Box>
@@ -170,7 +208,10 @@ export default function NotebookDialog({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} sx={{ borderRadius: '10px', color: NEO_MINT.textBody, fontWeight: 700, textTransform: 'none' }}>
+        <Button
+          onClick={onClose}
+          sx={{ borderRadius: '10px', color: NEO_MINT.textBody, fontWeight: 700, textTransform: 'none' }}
+        >
           Close
         </Button>
       </DialogActions>

@@ -5,7 +5,6 @@ import type { AssistantConfiguredIntent, Task } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { askTaskAssistant } from '@/lib/supabase/functions';
 
-
 type AssistantTask = Pick<Task, 'id' | 'title' | 'assignee' | 'status' | 'dueDate' | 'tags'>;
 
 type AssistantResponse = {
@@ -22,7 +21,12 @@ type TaskAssistantPanelProps = {
   onTaskClick: (task: Task) => void;
 };
 
-export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId, onTaskClick }: TaskAssistantPanelProps) {
+export default function TaskAssistantPanel({
+  tasks,
+  assistantIntents,
+  notebookId,
+  onTaskClick,
+}: TaskAssistantPanelProps) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [relatedTasks, setRelatedTasks] = useState<AssistantTask[]>([]);
@@ -124,7 +128,13 @@ export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId
         <Button
           variant="contained"
           disableElevation
-          startIcon={loading ? <CircularProgress size={16} sx={{ color: NEO_MINT.surface }} /> : <Send sx={{ fontSize: '16px !important' }} />}
+          startIcon={
+            loading ? (
+              <CircularProgress size={16} sx={{ color: NEO_MINT.surface }} />
+            ) : (
+              <Send sx={{ fontSize: '16px !important' }} />
+            )
+          }
           disabled={!question.trim() || loading}
           onClick={() => void handleAsk()}
           sx={{
@@ -145,34 +155,36 @@ export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, mt: 1 }}>
-        {assistantIntents.filter((intent) => intent.enabled).map((intent) => (
-          <Button
-            key={intent.id}
-            size="small"
-            variant="outlined"
-            disabled={loading}
-            onClick={() => setQuestion(intent.question.slice(0, 255))}
-            sx={{
-              borderRadius: '10px',
-              borderColor: NEO_MINT.cardBorderSoft,
-              color: NEO_MINT.textBody,
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'none',
-              backgroundColor: 'var(--panel-card-bg)',
-              minHeight: 24,
-              px: 1,
-              py: 0.2,
-              '&:hover': {
-                backgroundColor: 'var(--primary-subtle)',
-                borderColor: 'var(--primary)',
-                color: NEO_MINT.primary,
-              },
-            }}
-          >
-            {intent.label || intent.question}
-          </Button>
-        ))}
+        {assistantIntents
+          .filter((intent) => intent.enabled)
+          .map((intent) => (
+            <Button
+              key={intent.id}
+              size="small"
+              variant="outlined"
+              disabled={loading}
+              onClick={() => setQuestion(intent.question.slice(0, 255))}
+              sx={{
+                borderRadius: '10px',
+                borderColor: NEO_MINT.cardBorderSoft,
+                color: NEO_MINT.textBody,
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'none',
+                backgroundColor: 'var(--panel-card-bg)',
+                minHeight: 24,
+                px: 1,
+                py: 0.2,
+                '&:hover': {
+                  backgroundColor: 'var(--primary-subtle)',
+                  borderColor: 'var(--primary)',
+                  color: NEO_MINT.primary,
+                },
+              }}
+            >
+              {intent.label || intent.question}
+            </Button>
+          ))}
       </Box>
 
       {(answer || error) && (
@@ -186,11 +198,11 @@ export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId
           }}
         >
           {error ? (
-            <Typography sx={{ fontSize: '13px', color: '#dc2626', lineHeight: 1.6 }}>
-              {error}
-            </Typography>
+            <Typography sx={{ fontSize: '13px', color: '#dc2626', lineHeight: 1.6 }}>{error}</Typography>
           ) : (
-            <Typography sx={{ fontSize: '13px', color: NEO_MINT.textTitle, lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+            <Typography
+              sx={{ fontSize: '13px', color: NEO_MINT.textTitle, lineHeight: 1.65, whiteSpace: 'pre-line' }}
+            >
               {answer}
             </Typography>
           )}
@@ -213,16 +225,44 @@ export default function TaskAssistantPanel({ tasks, assistantIntents, notebookId
                       backgroundColor: 'var(--surface-muted)',
                       cursor: fullTask ? 'pointer' : 'default',
                       border: '1px solid transparent',
-                      '&:hover': fullTask ? { backgroundColor: 'var(--primary-subtle)', borderColor: 'var(--primary-soft)' } : undefined,
+                      '&:hover': fullTask
+                        ? { backgroundColor: 'var(--primary-subtle)', borderColor: 'var(--primary-soft)' }
+                        : undefined,
                     }}
                   >
-                    <Typography sx={{ flex: 1, minWidth: 0, fontSize: '11px', fontWeight: 700, color: NEO_MINT.textTitle, overflowWrap: 'anywhere' }}>
+                    <Typography
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: NEO_MINT.textTitle,
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
                       {task.title}
                     </Typography>
-                    <Typography sx={{ fontSize: '10px', fontWeight: 700, color: NEO_MINT.textBody, whiteSpace: 'nowrap', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <Typography
+                      sx={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        color: NEO_MINT.textBody,
+                        whiteSpace: 'nowrap',
+                        maxWidth: 110,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
                       {task.assignee || 'Unassigned'}
                     </Typography>
-                    <Typography sx={{ fontSize: '10px', fontWeight: 700, color: NEO_MINT.textMuted, whiteSpace: 'nowrap' }}>
+                    <Typography
+                      sx={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        color: NEO_MINT.textMuted,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {task.dueDate ? task.dueDate.substring(0, 10) : task.status}
                     </Typography>
                   </Box>

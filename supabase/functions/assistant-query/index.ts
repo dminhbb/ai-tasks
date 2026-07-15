@@ -3,6 +3,7 @@ import {
   authenticatedClient,
   handleOptions,
   jsonResponse,
+  readJsonBody,
   safeFunctionError,
   validateRequestEnvelope,
 } from '../_shared/http.ts';
@@ -10,6 +11,7 @@ import {
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_QUESTION_LENGTH = 500;
 const MAX_TASKS_IN_PROMPT = 250;
+const MAX_REQUEST_BYTES = 2_048;
 
 const answerSchema = {
   type: 'object',
@@ -32,21 +34,27 @@ interface AssistantAnswer {
 function isAssistantAnswer(value: unknown): value is AssistantAnswer {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<AssistantAnswer>;
-  return typeof candidate.answer === 'string'
-    && Array.isArray(candidate.relatedTaskIds)
-    && candidate.relatedTaskIds.every((id) => typeof id === 'string' && UUID_PATTERN.test(id));
+  return (
+    typeof candidate.answer === 'string' &&
+    Array.isArray(candidate.relatedTaskIds) &&
+    candidate.relatedTaskIds.every((id) => typeof id === 'string' && UUID_PATTERN.test(id))
+  );
 }
 
 Deno.serve(async (request: Request) => {
   const optionsResponse = handleOptions(request);
   if (optionsResponse) return optionsResponse;
-  const envelopeError = validateRequestEnvelope(request);
+  const envelopeError = validateRequestEnvelope(request, MAX_REQUEST_BYTES);
   if (envelopeError) return envelopeError;
 
   try {
     const { supabase } = await authenticatedClient(request);
-    const body = (await request.json()) as { question?: unknown; notebookId?: unknown };
-    if (typeof body.question !== 'string' || !body.question.trim() || body.question.length > MAX_QUESTION_LENGTH) {
+    const body = await readJsonBody<{ question?: unknown; notebookId?: unknown }>(request, MAX_REQUEST_BYTES);
+    if (
+      typeof body.question !== 'string' ||
+      !body.question.trim() ||
+      body.question.length > MAX_QUESTION_LENGTH
+    ) {
       return jsonResponse(request, { error: 'Question must contain 1 to 500 characters.' }, 400);
     }
     if (typeof body.notebookId !== 'string' || !UUID_PATTERN.test(body.notebookId)) {

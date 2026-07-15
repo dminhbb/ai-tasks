@@ -34,9 +34,11 @@ function compareTodayItems(left: TodaySubtaskItem, right: TodaySubtaskItem): num
 
 export function getTodaySubtaskItems(tasks: Task[], now: number): TodaySubtaskItem[] {
   return tasks
-    .flatMap((task) => task.subtasks
-      .filter((subtask) => isVisibleTodaySubtask(subtask, now))
-      .map((subtask) => ({ task, subtask, suggested: false })))
+    .flatMap((task) =>
+      task.subtasks
+        .filter((subtask) => isVisibleTodaySubtask(subtask, now))
+        .map((subtask) => ({ task, subtask, suggested: false }))
+    )
     .sort(compareTodayItems);
 }
 
@@ -99,9 +101,7 @@ export function reorderTodaySubtasks(
   if (targetIndex === -1) return tasks;
 
   reorderedItems.splice(targetIndex, 0, dragged);
-  const priorityBySubtaskId = new Map(
-    reorderedItems.map((item, index) => [item.subtask.id, index])
-  );
+  const priorityBySubtaskId = new Map(reorderedItems.map((item, index) => [item.subtask.id, index]));
 
   return tasks.map((task) => ({
     ...task,

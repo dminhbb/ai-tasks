@@ -38,4 +38,3 @@ export function getSupabaseConfigurationError(): string | null {
     return error instanceof Error ? error.message : 'Supabase is not configured.';
   }
 }
-

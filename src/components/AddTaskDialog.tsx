@@ -1,25 +1,41 @@
 import React, { useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Autocomplete, Button, TextField, Box, CircularProgress, Typography,
-  IconButton, Select, MenuItem, Tooltip
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Autocomplete,
+  Button,
+  TextField,
+  Box,
+  CircularProgress,
+  Typography,
+  IconButton,
+  Select,
+  MenuItem,
+  Tooltip,
 } from '@mui/material';
 import {
-  NavigateBefore, NavigateNext, ThumbUp, ThumbDown,
-  AutoAwesome, Add, Delete
+  NavigateBefore,
+  NavigateNext,
+  ThumbUp,
+  ThumbDown,
+  AutoAwesome,
+  Add,
+  Delete,
 } from '@mui/icons-material';
 import { Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
+import { sanitizeRichText } from '@/utils/richText';
 import { extractTasksWithAi } from '@/lib/supabase/functions';
 
-
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
-  'URGENT':      { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
+  URGENT: { bg: NEO_MINT.dangerSoft, color: NEO_MINT.danger, border: NEO_MINT.dangerBorder },
   'IN PROGRESS': { bg: 'rgba(15,118,110,0.10)', color: NEO_MINT.primary, border: 'rgba(15,118,110,0.24)' },
-  'TO DO':       { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
-  'PENDING':     { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
-  'CANCELLED':   { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
-  'DONE':        { bg: NEO_MINT.successSoft, color: NEO_MINT.success, border: NEO_MINT.successBorder },
+  'TO DO': { bg: NEO_MINT.surfaceMuted, color: NEO_MINT.primaryHover, border: NEO_MINT.cardBorderSoft },
+  PENDING: { bg: NEO_MINT.surfaceSoft, color: NEO_MINT.textBody, border: NEO_MINT.cardBorderSoft },
+  CANCELLED: { bg: NEO_MINT.outline, color: NEO_MINT.textMuted, border: NEO_MINT.cardBorderSoft },
+  DONE: { bg: NEO_MINT.successSoft, color: NEO_MINT.success, border: NEO_MINT.successBorder },
 };
 
 const AI_CONTEXT_PREFIX =
@@ -47,11 +63,14 @@ function TagPill({ label, selected, onClick }: { label: string; selected: boolea
     <Box
       onClick={onClick}
       sx={{
-        display: 'inline-flex', alignItems: 'center',
-        px: 1, py: 0.35,
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: 1,
+        py: 0.35,
         borderRadius: '8px',
         cursor: 'pointer',
-        fontSize: '11px', fontWeight: 600,
+        fontSize: '11px',
+        fontWeight: 600,
         userSelect: 'none',
         transition: 'all 0.15s ease',
         backgroundColor: selected ? 'rgba(15,118,110,0.10)' : NEO_MINT.surfaceMuted,
@@ -65,12 +84,21 @@ function TagPill({ label, selected, onClick }: { label: string; selected: boolea
   );
 }
 
-export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags, availableAssignees, skipAI = false }: AddTaskDialogProps) {
+export default function AddTaskDialog({
+  open,
+  onClose,
+  onAddTasks,
+  availableTags,
+  availableAssignees,
+  skipAI = false,
+}: AddTaskDialogProps) {
   const [freetext, setFreetext] = useState('');
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | null>>({});
   const [parsedTasks, setParsedTasks] = useState<Partial<Task>[] | null>(
-    skipAI ? [{ title: '', details: '', assignee: '', dueDate: null, notes: '', tags: [], status: 'TO DO' }] : null
+    skipAI
+      ? [{ title: '', details: '', assignee: '', dueDate: null, notes: '', tags: [], status: 'TO DO' }]
+      : null
   );
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -91,8 +119,7 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
     }
   };
 
-  const handleFeedback = (type: 'up' | 'down') =>
-    setFeedback(prev => ({ ...prev, [currentIndex]: type }));
+  const handleFeedback = (type: 'up' | 'down') => setFeedback((prev) => ({ ...prev, [currentIndex]: type }));
 
   const updateCurrentTask = <K extends keyof Task>(field: K, value: Task[K]) => {
     if (!parsedTasks) return;
@@ -103,7 +130,18 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
 
   const handleAddMore = () => {
     if (!parsedTasks) return;
-    const newTasks = [...parsedTasks, { title: '', details: '', assignee: '', dueDate: null, notes: '', tags: [], status: 'TO DO' as TaskStatus }];
+    const newTasks = [
+      ...parsedTasks,
+      {
+        title: '',
+        details: '',
+        assignee: '',
+        dueDate: null,
+        notes: '',
+        tags: [],
+        status: 'TO DO' as TaskStatus,
+      },
+    ];
     setParsedTasks(newTasks);
     setCurrentIndex(newTasks.length - 1);
   };
@@ -117,15 +155,18 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
 
   const handleSaveAll = () => {
     if (!parsedTasks) return;
-    const nonEmpty = parsedTasks.filter(pt => pt.title && pt.title.trim() !== '');
-    if (nonEmpty.length === 0) { alert('Please enter a title for at least 1 task.'); return; }
+    const nonEmpty = parsedTasks.filter((pt) => pt.title && pt.title.trim() !== '');
+    if (nonEmpty.length === 0) {
+      alert('Please enter a title for at least 1 task.');
+      return;
+    }
     const newTasks: Task[] = nonEmpty.map((pt) => ({
       id: crypto.randomUUID(),
       createdAt: pt.createdAt || new Date().toISOString(),
       inProgressAt: pt.inProgressAt || null,
       doneAt: pt.doneAt || null,
       title: pt.title || 'Untitled',
-      details: (pt.details || '').replace(/&nbsp;/g, ' '),
+      details: sanitizeRichText((pt.details || '').replace(/&nbsp;/g, ' ')),
       assignee: normalizeAssigneeName(pt.assignee || ''),
       tags: pt.tags || [],
       status: pt.status || 'TO DO',
@@ -144,10 +185,7 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
   const statusStyle = STATUS_STYLE[currentStatus] || STATUS_STYLE['TO DO'];
   const assigneeOptions = Array.from(
     new Map(
-      [
-        ...availableAssignees,
-        currentTask?.assignee,
-      ]
+      [...availableAssignees, currentTask?.assignee]
         .map((assignee) => normalizeAssigneeName(assignee || ''))
         .filter(Boolean)
         .map((assignee) => [assignee.toLocaleLowerCase(), assignee])
@@ -155,30 +193,43 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
   ).sort((a, b) => a.localeCompare(b));
   const normalizedAssignee = normalizeAssigneeName(currentTask?.assignee || '');
 
-  const dialogTitle = skipAI
-    ? 'Manual Entry'
-    : (parsedTasks ? 'Review Tasks' : 'AI Task Extraction');
+  const dialogTitle = skipAI ? 'Manual Entry' : parsedTasks ? 'Review Tasks' : 'AI Task Extraction';
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
       maxWidth="sm"
-      slotProps={{ paper: { sx: { borderRadius: '12px', p: 0.75, border: '1px solid var(--card-border)', boxShadow: NEO_MINT.shadowSm } } }}
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '12px',
+            p: 0.75,
+            border: '1px solid var(--card-border)',
+            boxShadow: NEO_MINT.shadowSm,
+          },
+        },
+      }}
     >
       <DialogTitle sx={{ fontWeight: 700, color: NEO_MINT.textTitle }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <span>{dialogTitle}</span>
           {parsedTasks && !skipAI && (
-            <Box sx={{
-              display: 'inline-flex', alignItems: 'center', gap: 1,
-              px: 1, py: 0.35,
-              borderRadius: '8px',
-              backgroundColor: 'var(--primary-soft)',
-              color: NEO_MINT.primary,
-              fontSize: '11px', fontWeight: 700,
-            }}>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 1,
+                py: 0.35,
+                borderRadius: '8px',
+                backgroundColor: 'var(--primary-soft)',
+                color: NEO_MINT.primary,
+                fontSize: '11px',
+                fontWeight: 700,
+              }}
+            >
               <AutoAwesome sx={{ fontSize: '14px !important' }} />
               AI-POWERED
             </Box>
@@ -198,22 +249,27 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
               value={freetext}
               onChange={(e) => setFreetext(e.target.value)}
               placeholder="e.g., John prepare report by Friday. Sarah review Q2 documentation by 30/5..."
-              sx={{ 
-                '& .MuiOutlinedInput-root': { 
-                  borderRadius: '10px', 
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '10px',
                   fontSize: '14px',
                   backgroundColor: NEO_MINT.surface,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: NEO_MINT.cardBorderSoft }
-                } 
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: NEO_MINT.cardBorderSoft },
+                },
               }}
             />
-            <Box sx={{
-              px: 1.5, py: 1.25,
-              borderRadius: '12px',
-              backgroundColor: 'var(--primary-subtle)',
-              border: '1px solid var(--primary-soft)',
-            }}>
-              <Typography sx={{ fontSize: '13px', color: NEO_MINT.primary, lineHeight: 1.5, fontWeight: 500 }}>
+            <Box
+              sx={{
+                px: 1.5,
+                py: 1.25,
+                borderRadius: '12px',
+                backgroundColor: 'var(--primary-subtle)',
+                border: '1px solid var(--primary-soft)',
+              }}
+            >
+              <Typography
+                sx={{ fontSize: '13px', color: NEO_MINT.primary, lineHeight: 1.5, fontWeight: 500 }}
+              >
                 AI parsing is ready for assignee, task title, and due date.
               </Typography>
             </Box>
@@ -221,20 +277,24 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
         ) : (
           /* ── Step 2: review carousel ── */
           <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-
             {/* Navigation bar */}
-            <Box sx={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              px: 1.5, py: 0.75,
-              borderRadius: '12px',
-              backgroundColor: 'var(--surface-soft)',
-              border: '1px solid var(--card-border-soft)',
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 1.5,
+                py: 0.75,
+                borderRadius: '12px',
+                backgroundColor: 'var(--surface-soft)',
+                border: '1px solid var(--card-border-soft)',
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <IconButton
                   size="small"
                   disabled={currentIndex === 0}
-                  onClick={() => setCurrentIndex(c => c - 1)}
+                  onClick={() => setCurrentIndex((c) => c - 1)}
                   sx={{ color: NEO_MINT.textTitle, '&:hover': { backgroundColor: NEO_MINT.surfaceMuted } }}
                 >
                   <NavigateBefore fontSize="small" />
@@ -245,7 +305,7 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
                 <IconButton
                   size="small"
                   disabled={currentIndex === parsedTasks.length - 1}
-                  onClick={() => setCurrentIndex(c => c + 1)}
+                  onClick={() => setCurrentIndex((c) => c + 1)}
                   sx={{ color: NEO_MINT.textTitle, '&:hover': { backgroundColor: NEO_MINT.surfaceMuted } }}
                 >
                   <NavigateNext fontSize="small" />
@@ -323,22 +383,29 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
                   '& .MuiSelect-icon': { color: statusStyle.color },
                 }}
               >
-                {(['URGENT', 'IN PROGRESS', 'TO DO', 'PENDING', 'CANCELLED', 'DONE'] as TaskStatus[]).map(s => (
-                  <MenuItem key={s} value={s} sx={{ fontSize: '13px', fontWeight: 600 }}>{s}</MenuItem>
-                ))}
+                {(['URGENT', 'IN PROGRESS', 'TO DO', 'PENDING', 'CANCELLED', 'DONE'] as TaskStatus[]).map(
+                  (s) => (
+                    <MenuItem key={s} value={s} sx={{ fontSize: '13px', fontWeight: 600 }}>
+                      {s}
+                    </MenuItem>
+                  )
+                )}
               </Select>
 
               {/* Tags */}
               {availableTags.length > 0 && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {availableTags.map(tag => (
+                  {availableTags.map((tag) => (
                     <TagPill
                       key={tag}
                       label={tag}
                       selected={(currentTask?.tags || []).includes(tag)}
                       onClick={() => {
                         const curr = currentTask?.tags || [];
-                        updateCurrentTask('tags', curr.includes(tag) ? curr.filter((t: string) => t !== tag) : [...curr, tag]);
+                        updateCurrentTask(
+                          'tags',
+                          curr.includes(tag) ? curr.filter((t: string) => t !== tag) : [...curr, tag]
+                        );
                       }}
                     />
                   ))}
@@ -384,7 +451,11 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
                 value={currentTask?.dueDate ? currentTask.dueDate.substring(0, 10) : ''}
                 onChange={(e) => updateCurrentTask('dueDate', e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
-                sx={{ flex: '1 1 180px', minWidth: 180, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                sx={{
+                  flex: '1 1 180px',
+                  minWidth: 180,
+                  '& .MuiOutlinedInput-root': { borderRadius: '10px' },
+                }}
               />
             </Box>
 
@@ -409,8 +480,11 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
                   startIcon={<Delete sx={{ fontSize: '18px !important' }} />}
                   onClick={handleRemoveCurrent}
                   sx={{
-                    borderRadius: '10px', fontSize: '12px', fontWeight: 600,
-                    color: NEO_MINT.danger, textTransform: 'none',
+                    borderRadius: '10px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: NEO_MINT.danger,
+                    textTransform: 'none',
                     '&:hover': { backgroundColor: NEO_MINT.dangerSoft },
                   }}
                 >
@@ -423,10 +497,18 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
                 startIcon={<Add sx={{ fontSize: '18px !important' }} />}
                 onClick={handleAddMore}
                 sx={{
-                  borderRadius: '10px', fontSize: '12px', fontWeight: 600,
-                  color: NEO_MINT.textTitle, borderColor: NEO_MINT.cardBorderSoft,
-                  textTransform: 'none', px: 2,
-                  '&:hover': { backgroundColor: 'var(--primary-subtle)', borderColor: NEO_MINT.primary, color: NEO_MINT.primary },
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: NEO_MINT.textTitle,
+                  borderColor: NEO_MINT.cardBorderSoft,
+                  textTransform: 'none',
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'var(--primary-subtle)',
+                    borderColor: NEO_MINT.primary,
+                    color: NEO_MINT.primary,
+                  },
                 }}
               >
                 Add another
@@ -440,8 +522,11 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: '10px', color: NEO_MINT.textBody, fontWeight: 600,
-            textTransform: 'none', px: 2,
+            borderRadius: '10px',
+            color: NEO_MINT.textBody,
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 2,
             '&:hover': { backgroundColor: 'var(--surface-muted)' },
           }}
         >
@@ -461,17 +546,21 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
               fontWeight: 700,
               px: 3,
               textTransform: 'none',
-              '&:hover': { backgroundColor: NEO_MINT.primaryHover, boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px' },
+              '&:hover': {
+                backgroundColor: NEO_MINT.primaryHover,
+                boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px',
+              },
               '&.Mui-disabled': { backgroundColor: NEO_MINT.surfaceMuted, color: NEO_MINT.textMuted },
             }}
           >
-            {loading
-              ? <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <CircularProgress size={18} sx={{ color: NEO_MINT.textMuted }} />
-                  <span>Parsing...</span>
-                </Box>
-              : 'Extract Tasks'
-            }
+            {loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <CircularProgress size={18} sx={{ color: NEO_MINT.textMuted }} />
+                <span>Parsing...</span>
+              </Box>
+            ) : (
+              'Extract Tasks'
+            )}
           </Button>
         ) : (
           <Button
@@ -485,7 +574,10 @@ export default function AddTaskDialog({ open, onClose, onAddTasks, availableTags
               fontWeight: 700,
               px: 3,
               textTransform: 'none',
-              '&:hover': { backgroundColor: NEO_MINT.primaryHover, boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px' },
+              '&:hover': {
+                backgroundColor: NEO_MINT.primaryHover,
+                boxShadow: 'rgba(15, 118, 110, 0.16) 0px 8px 24px',
+              },
             }}
           >
             Save All ({parsedTasks.length})

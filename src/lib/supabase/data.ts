@@ -111,29 +111,30 @@ export async function listNotebooks(profile: UserProfile): Promise<Notebook[]> {
         .from('notebooks')
         .select('id, owner_id, name, created_at, updated_at, last_accessed_at')
         .order('last_accessed_at', { ascending: false }),
-      supabase
-        .from('notebook_members')
-        .select('notebook_id, role, permissions')
-        .eq('user_id', profile.id),
+      supabase.from('notebook_members').select('notebook_id, role, permissions').eq('user_id', profile.id),
     ]);
 
   if (notebookError || membershipError) throw new Error('Không thể tải danh sách notebook.');
 
   const memberships = new Map(
-    z.array(membershipRowSchema)
+    z
+      .array(membershipRowSchema)
       .parse(membershipData ?? [])
       .map((membership) => [membership.notebook_id, membership])
   );
 
-  return z.array(notebookRowSchema).parse(notebookData ?? []).map((row) => ({
-    id: row.id,
-    ownerId: row.owner_id,
-    name: row.name,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastAccessedAt: row.last_accessed_at,
-    permissions: permissionsForProfile(profile, memberships.get(row.id)),
-  }));
+  return z
+    .array(notebookRowSchema)
+    .parse(notebookData ?? [])
+    .map((row) => ({
+      id: row.id,
+      ownerId: row.owner_id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      lastAccessedAt: row.last_accessed_at,
+      permissions: permissionsForProfile(profile, memberships.get(row.id)),
+    }));
 }
 
 export async function createNotebook(name: string, profile: UserProfile): Promise<Notebook> {
@@ -192,45 +193,50 @@ export async function touchNotebook(notebookId: string, canManageNotebook: boole
 export async function readTasks(notebookId: string): Promise<Task[]> {
   const { data, error } = await getSupabaseBrowserClient()
     .from('tasks')
-    .select(`
+    .select(
+      `
       id, title, details, assignee, status, progress, sort_order,
       start_date, due_date, notes, created_at, in_progress_at, done_at,
       subtasks(id, title, completed, is_today, completed_at, sort_order),
       task_tags(tag),
       task_due_date_events(id)
-    `)
+    `
+    )
     .eq('notebook_id', notebookId)
     .order('sort_order', { ascending: true });
 
   if (error) throw new Error('Không thể tải danh sách task.');
 
-  return z.array(taskRowSchema).parse(data ?? []).map((row) => ({
-    id: row.id,
-    createdAt: row.created_at,
-    inProgressAt: row.in_progress_at,
-    doneAt: row.done_at,
-    title: row.title,
-    details: row.details,
-    assignee: row.assignee,
-    tags: row.task_tags.map(({ tag }) => tag),
-    status: row.status as TaskStatus,
-    progress: row.progress,
-    sortOrder: row.sort_order,
-    startDate: row.start_date,
-    dueDate: row.due_date,
-    dueDateChangeCount: row.task_due_date_events.length,
-    notes: row.notes,
-    subtasks: [...row.subtasks]
-      .sort((left, right) => left.sort_order - right.sort_order)
-      .map((subtask): Subtask => ({
-        id: subtask.id,
-        title: subtask.title,
-        completed: subtask.completed,
-        isToday: subtask.is_today,
-        completedAt: subtask.completed_at,
-        sortOrder: subtask.sort_order,
-      })),
-  }));
+  return z
+    .array(taskRowSchema)
+    .parse(data ?? [])
+    .map((row) => ({
+      id: row.id,
+      createdAt: row.created_at,
+      inProgressAt: row.in_progress_at,
+      doneAt: row.done_at,
+      title: row.title,
+      details: row.details,
+      assignee: row.assignee,
+      tags: row.task_tags.map(({ tag }) => tag),
+      status: row.status as TaskStatus,
+      progress: row.progress,
+      sortOrder: row.sort_order,
+      startDate: row.start_date,
+      dueDate: row.due_date,
+      dueDateChangeCount: row.task_due_date_events.length,
+      notes: row.notes,
+      subtasks: [...row.subtasks]
+        .sort((left, right) => left.sort_order - right.sort_order)
+        .map((subtask): Subtask => ({
+          id: subtask.id,
+          title: subtask.title,
+          completed: subtask.completed,
+          isToday: subtask.is_today,
+          completedAt: subtask.completed_at,
+          sortOrder: subtask.sort_order,
+        })),
+    }));
 }
 
 function comparableTask(task: Task): string {
@@ -287,7 +293,11 @@ export async function saveTasks(
 
   const deletedIds = previousTasks.filter((task) => !nextIds.has(task.id)).map((task) => task.id);
   if (deletedIds.length > 0) {
-    const { error } = await supabase.from('tasks').delete().eq('notebook_id', notebookId).in('id', deletedIds);
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('notebook_id', notebookId)
+      .in('id', deletedIds);
     if (error) throw new Error('Không thể xóa task.');
   }
 
@@ -310,12 +320,10 @@ export async function readSettings(notebookId: string): Promise<Settings> {
 }
 
 export async function writeSettings(notebookId: string, settings: Settings): Promise<void> {
-  const { error } = await getSupabaseBrowserClient()
-    .from('notebook_settings')
-    .upsert({
-      notebook_id: notebookId,
-      tags: settings.tags,
-      assistant_intents: settings.assistantIntents,
-    });
+  const { error } = await getSupabaseBrowserClient().from('notebook_settings').upsert({
+    notebook_id: notebookId,
+    tags: settings.tags,
+    assistant_intents: settings.assistantIntents,
+  });
   if (error) throw new Error('Bạn không có quyền thay đổi cài đặt notebook.');
 }
