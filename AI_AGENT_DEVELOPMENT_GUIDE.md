@@ -1,7 +1,7 @@
 # AI TASK — AI Agent Development Guide
 
 > Last reviewed: 2026-07-16  
-> Current database migration: `20260715000900_fractional_work_hours.sql`  
+> Current database migration source: `20260716000100_recurrent_tasks.sql` (apply status must be verified per Supabase project)  
 > This document is the primary technical handoff for AI coding agents working in this repository.
 
 ## Quick Start for AI Agent
@@ -44,8 +44,9 @@ AI TASK is a multi-Space task manager with:
 - Global users and Space-scoped access.
 - Multiple Notebooks in each Space.
 - Tasks, tags, rich-text details, subtasks, ordering, filters, and history.
-- Today Tasks popup, Today right panel, batch entry, suggestions, and Mindmap mode.
-- Gemini-assisted task extraction and task-data search.
+- Today Tasks popup, Today right panel, batch entry, suggestions, Undo deletion, and Mindmap mode.
+- A separate Recurr Task schedule module for non-executing recurrent templates.
+- Gemini-assisted task extraction and task-data search, plus non-AI notebook title search.
 - User, Space, Notebook-access, tag, assistant, and theme settings according to role.
 - Shared cloud data for localhost, Vercel, Cloudflare Pages, and the Windows portable build.
 
@@ -211,6 +212,8 @@ The global `admin` role alone does not grant access to every Space. It must be p
 | `task_status_events` | Task status history. |
 | `task_due_date_events` | Due-date change history. |
 | `subtask_completion_events` | Subtask completion/reopen history and logged work hours. |
+| `recurrent_tasks` | Separate parent templates used only by the Recurr Task schedule. |
+| `recurrent_subtasks` | Ordered recurring schedule items, recurrence rule, anchor date, and weekdays. |
 | `ai_request_log` | Per-user AI quota accounting. |
 | `user_admin_audit_events` | User administration audit history. |
 
@@ -286,8 +289,28 @@ The database columns use `numeric(4,1)`. Update both `subtasks.work_hours` and t
 - Suggested rows have a muted/gray background and do not switch `isToday` on automatically.
 - Batch add accepts one subtask per non-empty line, up to 100 lines, and adds them as Today items to `(Untitle Tasks)`.
 - Today Tasks supports completion/status changes, work log, Today toggle, move, delete, and reordering.
+- Completed subtasks are sorted after active subtasks in both the Today popup and right panel.
+- Deleting a subtask from the Today popup hides it immediately and shows an Undo toast for five seconds; only expiry persists deletion.
+- The Today popup uses a responsive grid/table with a fixed action footer. Keep the grid usable without horizontal scrolling except at very narrow widths.
 
-### 8.4 Mindmap
+### 8.4 Recurr Task
+
+- Recurrent Tasks are separate from normal `tasks` and never appear in the main task list or create execution tasks automatically.
+- The full-screen `Recurr Task` screen has a Mindmap-style opaque dotted background and a responsive three-week grid. Weeks begin on Monday.
+- The first visible week is based on the current schedule reference; Prev/Next moves one week, and Today resets the reference date.
+- Parent recurrent tasks are expandable. Only recurrent subtasks have schedules.
+- Supported recurrence values are `weekly`, `bi-weekly`, `monthly`, `quarterly`, `half-yearly`, and `yearly`.
+- Weekly and bi-weekly subtasks support one or more weekdays, numbered Monday `1` through Sunday `7`; all types use an anchor date.
+- Highlight the full Today column and the week containing Today whenever it is visible.
+- CRUD is scoped to the active Notebook. Deleting a recurrent task requires two UI confirmations and cascades its recurrent subtasks; deleting a recurrent subtask requires one confirmation.
+
+### 8.5 Notebook title search
+
+- `TaskList` has a non-AI toolbar search for Task and Subtask titles in the current Notebook.
+- Search results appear below the toolbar using the same result-surface pattern as AI Search; clicking a result opens the parent Task Details dialog.
+- The clear (X) control resets the keyword and hides the results panel.
+
+### 8.6 Mindmap
 
 - Normal mode renders task hierarchy.
 - Today mode shows a `##TODAY` root connected directly to Today subtasks, omitting parent Task nodes.
@@ -350,6 +373,7 @@ Space Manager behavior:
 - `src/components/TodayBatchAddDialog.tsx`: free-text batch entry.
 - `src/components/TodayMoveSubtaskDialog.tsx`: filtered parent-task selection.
 - `src/components/TaskMindmapDialog.tsx`: standard and Today Mindmap modes.
+- `src/components/RecurringTasksDialog.tsx`: full-screen recurrent schedule and recurrent task/subtask editing.
 - `src/components/TaskAssistantPanel.tsx`: AI Search UI.
 - `src/components/AddTaskDialog.tsx`: AI/manual task creation flow.
 
@@ -371,11 +395,12 @@ Space Manager behavior:
 - `src/utils/subtaskWork.ts`: status/completion/work-hour invariant.
 - `src/utils/subtaskMove.ts`: move-dialog filtering.
 - `src/utils/richText.ts`: DOMPurify-based rich-text sanitization.
+- `src/utils/recurrentSchedule.ts`: Monday-based three-week calendar and recurrence matching rules.
 
 ### 9.5 Supabase integration
 
 - `src/lib/supabase/client.ts`: browser client and public environment validation.
-- `src/lib/supabase/data.ts`: Space, Notebook, task, settings, and membership data access.
+- `src/lib/supabase/data.ts`: Space, Notebook, normal task, recurrent task, settings, and membership data access.
 - `src/lib/supabase/functions.ts`: Edge Function calls and Zod response validation.
 - `supabase/functions/_shared/http.ts`: CORS, authentication, request limits, quota, and safe responses.
 - `supabase/functions/_shared/gemini.ts`: Gemini request implementation and timeout.
@@ -396,6 +421,7 @@ Space Manager behavior:
 | `set_notebook_users(uuid, uuid[])` | Assigns regular users to a Notebook. |
 | `save_task_bundle_with_work_hours(...)` | Atomic task, subtasks, tags, status, and work-hour save path. |
 | `move_subtask(uuid, uuid, uuid)` | Authorized subtask move to another Task in the Notebook. |
+| `save_recurrent_task_bundle(uuid, jsonb, jsonb)` | Atomic authorized recurrent task/subtask template save. |
 | `consume_ai_quota()` | Enforces per-user AI request quota. |
 
 Security-definer functions must:
@@ -426,10 +452,11 @@ Never modify these after they have been applied. Add a later migration instead.
 | `20260715000700_space_admin_user_management.sql` | Space-admin regular-user membership RPC. |
 | `20260715000800_subtask_status.sql` | Three-state subtask status and completion sync. |
 | `20260715000900_fractional_work_hours.sql` | Decimal work hours and expanded allowed values. |
+| `20260716000100_recurrent_tasks.sql` | Separate recurrent task tables, RLS, triggers, and atomic save RPC. |
 
 Every migration currently has a matching manual rollback in `supabase/rollbacks/`.
 
-Last verified linked-project state on 2026-07-15: local and remote migrations matched through `20260715000900`. Always run `npx.cmd supabase migration list` again before assuming another environment has the same state.
+Last verified linked-project state on 2026-07-15: local and remote migrations matched through `20260715000900`. `20260716000100_recurrent_tasks.sql` is a newer local migration and must be applied separately. Always run `npx.cmd supabase migration list` again before assuming another environment has the same state.
 
 ## 12. Database change workflow
 

@@ -2,7 +2,7 @@
 
 ## Current architecture
 
-- Next.js `16.2.6`, React `19.2.4`, TypeScript strict mode, MUI `9`.
+- Next.js `16.2.10`, React `19.2.4`, TypeScript strict mode, MUI `9`.
 - Browser-side Supabase Auth and Data API so the same app works on localhost, Vercel, Cloudflare Pages, and the Windows portable server.
 - Supabase PostgreSQL is the only application datastore.
 - Supabase Edge Functions own Gemini calls and secrets.
@@ -25,7 +25,10 @@ The archive includes a consistent SQLite snapshot and legacy settings. Treat it 
 - `src/components/AuthProvider.tsx`: Supabase session and profile loading.
 - `src/components/LoginScreen.tsx`: email/password login UI.
 - `src/lib/supabase/client.ts`: browser Supabase client and public env validation.
-- `src/lib/supabase/data.ts`: notebook/task/settings data access.
+- `src/lib/supabase/data.ts`: Space, Notebook, normal task, recurrent task, and settings data access.
+- `src/components/TodayWorkspace.tsx`: Today right panel and popup, including the five-second Undo deletion toast.
+- `src/components/RecurringTasksDialog.tsx`: separate full-screen recurrent schedule; it does not generate normal tasks.
+- `src/utils/recurrentSchedule.ts`: weekly through yearly schedule matching and Monday-based three-week calendar.
 - `src/lib/supabase/functions.ts`: typed Edge Function calls.
 - `supabase/migrations/`: schema, RLS, task bundle RPC, and AI quota.
 - `supabase/rollbacks/`: matching manual rollback scripts.
@@ -39,7 +42,7 @@ The archive includes a consistent SQLite snapshot and legacy settings. Treat it 
 - Notebook assignment: `notebook_members`.
 - Admin detail permissions: JSON flags `manage_tasks`, `manage_notebook`, `manage_settings`.
 - RLS helper functions in the non-exposed `private` schema enforce permissions.
-- No user-management UI exists yet; manage users and notebook memberships from Supabase.
+- User, Space, Notebook-access, tag, assistant, and theme management are available from Settings according to role.
 
 ## Secrets
 
@@ -59,8 +62,9 @@ npm.cmd run build:cloudflare
 npm.cmd run supabase:seed-admin
 npm.cmd run supabase:migrate-data
 npm.cmd run package:portable
+npx.cmd supabase migration list
 ```
 
 ## Deployment status
 
-The code and migrations are prepared locally. A real Supabase project URL and secret key are required before `db push`, user seeding, legacy data migration, or Edge Function deployment can happen.
+The code and migrations are prepared locally. The recurrent-task migration `20260716000100_recurrent_tasks.sql` has a matching rollback and must be applied to each target Supabase project before opening Recurr Task. A real Supabase project URL and secret key are required before `db push`, user seeding, legacy data migration, or Edge Function deployment can happen.

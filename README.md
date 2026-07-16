@@ -28,6 +28,8 @@ npm.cmd run supabase:migrate-data
 
 The seed script creates or updates `minhd.mbb@gmail.com`, confirms its email, and assigns the `superadmin` role. The password is read only from `SEED_SUPERADMIN_PASSWORD`; it is intentionally absent from source control. For a fresh account without migrated data, the application creates `MAIN` after the first sign-in.
 
+`supabase db push` includes the separate Recurrent Tasks schema (`recurrent_tasks`, `recurrent_subtasks`, RLS, and `save_recurrent_task_bundle`). Apply it before opening the `Recurr Task` screen. The matching manual rollback is `supabase/rollbacks/20260716000100_recurrent_tasks.down.sql`.
+
 Run `supabase:migrate-data` once. It reads `data/task-manager.db`, migrates all notebooks/tasks/subtasks/tags/history to UUID records, and deliberately excludes the legacy Gemini key.
 
 ## Deploy Edge Functions
@@ -66,6 +68,12 @@ Settings separates Appearance, Tag management, Assistant Advanced, and Notebook 
 Database RLS is the source of truth. Hiding a button in the frontend is only a usability measure.
 
 Spaces are opened at `/s/{slug}`. Users who belong to multiple spaces can switch from the compact Space selector in the top toolbar. Space share links use the same slug route. Deleting a space cascades its notebooks, tasks, subtasks, tags, and logs at the database layer, so test deletion on staging and keep a database backup.
+
+## Recurrent Tasks and notebook search
+
+Recurrent Tasks are schedule templates stored separately from normal Tasks. They only appear in the full-screen `Recurr Task` view, never generate execution tasks automatically, and support weekly, bi-weekly, monthly, quarterly, half-yearly, and yearly rules. Weekly and bi-weekly rules can select multiple weekdays.
+
+The normal Task toolbar also includes a non-AI title search for Tasks and Subtasks in the current Notebook. Results open the parent Task Details dialog; the X button clears the query and closes the result panel.
 
 ## Build and deploy
 

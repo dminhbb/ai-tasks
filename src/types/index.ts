@@ -112,3 +112,27 @@ export interface AssistantConfiguredIntent {
   query?: string;
   period?: 'week' | 'month' | 'all';
 }
+
+export type RecurrenceType = 'weekly' | 'bi-weekly' | 'monthly' | 'quarterly' | 'half-yearly' | 'yearly';
+
+export interface RecurrentSubtask {
+  id: string;
+  title: string;
+  assignee: string;
+  tags: string[];
+  notes: string;
+  recurrence: RecurrenceType;
+  anchorDate: string;
+  weekdays: number[];
+  sortOrder: number;
+}
+
+export interface RecurrentTask {
+  id: string;
+  title: string;
+  assignee: string;
+  tags: string[];
+  notes: string;
+  sortOrder: number;
+  subtasks: RecurrentSubtask[];
+}

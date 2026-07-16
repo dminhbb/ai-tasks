@@ -9,6 +9,8 @@ import type {
   Task,
   TaskStatus,
   UserProfile,
+  RecurrentTask,
+  RecurrentSubtask,
 } from '@/types';
 import { getSupabaseBrowserClient } from './client';
 
@@ -74,6 +76,28 @@ const taskRowSchema = z.object({
   subtasks: z.array(subtaskRowSchema).default([]),
   task_tags: z.array(z.object({ tag: z.string() })).default([]),
   task_due_date_events: z.array(z.object({ id: z.number() })).default([]),
+});
+
+const recurrentSubtaskRowSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  assignee: z.string(),
+  tags: z.array(z.string()),
+  notes: z.string(),
+  recurrence: z.enum(['weekly', 'bi-weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly']),
+  anchor_date: z.string(),
+  weekdays: z.array(z.number().int().min(1).max(7)),
+  sort_order: z.number().int(),
+});
+
+const recurrentTaskRowSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  assignee: z.string(),
+  tags: z.array(z.string()),
+  notes: z.string(),
+  sort_order: z.number().int(),
+  recurrent_subtasks: z.array(recurrentSubtaskRowSchema).default([]),
 });
 
 const assistantIntentSchema = z.object({
@@ -375,6 +399,77 @@ export async function moveSubtask(
   });
   if (error) throw new Error('Không thể chuyển subtask sang task đã chọn.');
   return readTasks(notebookId);
+}
+
+export async function readRecurrentTasks(notebookId: string): Promise<RecurrentTask[]> {
+  const { data, error } = await getSupabaseBrowserClient()
+    .from('recurrent_tasks')
+    .select(
+      'id, title, assignee, tags, notes, sort_order, recurrent_subtasks(id, title, assignee, tags, notes, recurrence, anchor_date, weekdays, sort_order)'
+    )
+    .eq('notebook_id', notebookId)
+    .order('sort_order', { ascending: true });
+  if (error) throw new Error('KhĂ´ng thá»ƒ táº£i recurrent tasks.');
+
+  return z
+    .array(recurrentTaskRowSchema)
+    .parse(data ?? [])
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      assignee: row.assignee,
+      tags: row.tags,
+      notes: row.notes,
+      sortOrder: row.sort_order,
+      subtasks: [...row.recurrent_subtasks]
+        .sort((left, right) => left.sort_order - right.sort_order)
+        .map((subtask): RecurrentSubtask => ({
+          id: subtask.id,
+          title: subtask.title,
+          assignee: subtask.assignee,
+          tags: subtask.tags,
+          notes: subtask.notes,
+          recurrence: subtask.recurrence,
+          anchorDate: subtask.anchor_date,
+          weekdays: subtask.weekdays,
+          sortOrder: subtask.sort_order,
+        })),
+    }));
+}
+
+export async function saveRecurrentTask(notebookId: string, task: RecurrentTask): Promise<void> {
+  const { error } = await getSupabaseBrowserClient().rpc('save_recurrent_task_bundle', {
+    requested_notebook_id: notebookId,
+    task_data: {
+      id: task.id,
+      title: task.title.trim(),
+      assignee: task.assignee.trim(),
+      tags: task.tags,
+      notes: task.notes,
+      sortOrder: task.sortOrder,
+    },
+    subtask_data: task.subtasks.map((subtask) => ({
+      id: subtask.id,
+      title: subtask.title.trim(),
+      assignee: subtask.assignee.trim(),
+      tags: subtask.tags,
+      notes: subtask.notes,
+      recurrence: subtask.recurrence,
+      anchorDate: subtask.anchorDate,
+      weekdays: subtask.weekdays,
+      sortOrder: subtask.sortOrder,
+    })),
+  });
+  if (error) throw new Error('KhĂ´ng thá»ƒ lÆ°u recurrent task.');
+}
+
+export async function deleteRecurrentTask(notebookId: string, taskId: string): Promise<void> {
+  const { error } = await getSupabaseBrowserClient()
+    .from('recurrent_tasks')
+    .delete()
+    .eq('notebook_id', notebookId)
+    .eq('id', taskId);
+  if (error) throw new Error('KhĂ´ng thá»ƒ xĂ³a recurrent task.');
 }
 
 export async function readSettings(spaceId: string): Promise<Settings> {

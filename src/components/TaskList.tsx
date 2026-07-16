@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import {
   Box,
@@ -10,6 +10,8 @@ import {
   DialogContent,
   DialogActions,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   TextField,
   Typography,
@@ -24,6 +26,8 @@ import {
   AssignmentTurnedIn,
   DragIndicator,
   PushPin,
+  Search,
+  Close,
 } from '@mui/icons-material';
 import { Task, TaskStatus } from '@/types';
 import { isToday, isPast, parseISO, startOfDay, isBefore, endOfWeek, addWeeks, endOfDay } from 'date-fns';
@@ -82,6 +86,12 @@ interface TaskListProps {
   onSaveTasks: (tasks: Task[]) => void;
   availableTags: string[];
   onRowClick?: (task: Task) => void;
+}
+
+interface NotebookTextSearchResult {
+  id: string;
+  task: Task;
+  matchedSubtaskTitle: string | null;
 }
 
 function evaluateSearch(text: string, query: string): boolean {
@@ -176,8 +186,27 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
   const [selectedAssigneeToAssign, setSelectedAssigneeToAssign] = useState('');
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [notebookSearchQuery, setNotebookSearchQuery] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+
+  const notebookSearchResults = useMemo<NotebookTextSearchResult[]>(() => {
+    const normalizedQuery = notebookSearchQuery.trim().toLocaleLowerCase();
+    if (!normalizedQuery) return [];
+
+    return tasks.flatMap((task) => {
+      const results: NotebookTextSearchResult[] = [];
+      if (task.title.toLocaleLowerCase().includes(normalizedQuery)) {
+        results.push({ id: `task-${task.id}`, task, matchedSubtaskTitle: null });
+      }
+      task.subtasks.forEach((subtask) => {
+        if (subtask.title.toLocaleLowerCase().includes(normalizedQuery)) {
+          results.push({ id: `subtask-${subtask.id}`, task, matchedSubtaskTitle: subtask.title });
+        }
+      });
+      return results;
+    });
+  }, [notebookSearchQuery, tasks]);
 
   const handleStatusChange = (id: string, newStatus: TaskStatus) => {
     const currentTask = tasks.find((t) => t.id === id);
@@ -896,6 +925,46 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           Hide
         </Button>
 
+        <TextField
+          size="small"
+          value={notebookSearchQuery}
+          onChange={(event) => setNotebookSearchQuery(event.target.value.slice(0, 160))}
+          placeholder="Search task or subtask"
+          slotProps={{
+            htmlInput: { maxLength: 160, 'aria-label': 'Search task and subtask titles' },
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: notebookSearchQuery ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    aria-label="Clear notebook search"
+                    onClick={() => setNotebookSearchQuery('')}
+                    edge="end"
+                  >
+                    <Close fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
+            },
+          }}
+          sx={{
+            width: { xs: '100%', sm: 228 },
+            ml: { sm: 0.5 },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '9px',
+              backgroundColor: 'var(--input-bg)',
+              fontSize: '12px',
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--input-border)' },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--input-focus)' },
+            },
+          }}
+        />
+
         <Box sx={{ flexGrow: 1 }} />
 
         {hasSelection && (
@@ -917,6 +986,72 @@ export default function TaskList({ tasks, filters, onSaveTasks, availableTags, o
           {showAll ? 'Hide Completed' : 'Show All'}
         </Button>
       </Box>
+
+      {notebookSearchQuery.trim() && (
+        <Box
+          aria-live="polite"
+          sx={{
+            p: 1.5,
+            borderRadius: '14px',
+            backgroundColor: 'var(--panel-card-bg)',
+            border: '1px solid var(--card-border-soft)',
+          }}
+        >
+          <Typography sx={{ fontSize: '12px', fontWeight: 800, color: NEO_MINT.textTitle }}>
+            Search results · {notebookSearchResults.length}
+          </Typography>
+          {notebookSearchResults.length === 0 ? (
+            <Typography sx={{ mt: 0.75, fontSize: '12px', color: NEO_MINT.textMuted }}>
+              No task or subtask title matches “{notebookSearchQuery.trim()}”.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+              {notebookSearchResults.slice(0, 20).map((result) => (
+                <Box
+                  key={result.id}
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={() => onRowClick?.(result.task)}
+                  onKeyDown={(event) => {
+                    if (onRowClick && (event.key === 'Enter' || event.key === ' ')) onRowClick(result.task);
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1,
+                    py: 0.75,
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--surface-muted)',
+                    cursor: onRowClick ? 'pointer' : 'default',
+                    border: '1px solid transparent',
+                    '&:hover': onRowClick
+                      ? { backgroundColor: 'var(--primary-subtle)', borderColor: 'var(--primary-soft)' }
+                      : undefined,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: NEO_MINT.textTitle,
+                    }}
+                    noWrap
+                  >
+                    {result.task.title}
+                    {result.matchedSubtaskTitle ? ` / ${result.matchedSubtaskTitle}` : ''}
+                  </Typography>
+                  <Typography sx={{ fontSize: '11px', color: NEO_MINT.textBody, whiteSpace: 'nowrap' }}>
+                    {result.matchedSubtaskTitle ? 'Subtask' : 'Task'}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
 
       {/* Data Grid */}
       <Box

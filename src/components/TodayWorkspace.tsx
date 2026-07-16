@@ -34,7 +34,7 @@ import SubtaskStatusControl from '@/components/SubtaskStatusControl';
 import { cycleSubtaskStatus, setSubtaskWorkHours } from '@/utils/subtaskWork';
 
 const VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000;
-const PENDING_DELETE_DURATION_MS = 10 * 1000;
+const PENDING_DELETE_DURATION_MS = 5 * 1000;
 const TODAY_DIALOG_GRID_COLUMNS = {
   xs: '68px 58px minmax(320px, 1fr) 90px 58px 64px 74px 56px',
   md: '68px 58px minmax(0, 1fr) 90px 58px 64px 74px 56px',
@@ -627,8 +627,10 @@ export default function TodayWorkspace({
       />
       <Snackbar
         open={pendingDeletion !== null}
-        message="Subtask will be deleted in 10 seconds."
+        autoHideDuration={PENDING_DELETE_DURATION_MS}
+        message="Subtask will be deleted in 5 seconds."
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ zIndex: (theme) => theme.zIndex.modal + 2 }}
         action={
           <Button color="inherit" size="small" onClick={undoDeleteSubtask} sx={{ fontWeight: 800 }}>
             Undo

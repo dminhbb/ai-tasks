@@ -23,6 +23,7 @@ import {
   AutoAwesome as AiSearchIcon,
   Logout as LogoutIcon,
   Today as TodayIcon,
+  Repeat as RepeatIcon,
   ViewSidebar as ViewSidebarIcon,
 } from '@mui/icons-material';
 import TaskList from '@/components/TaskList';
@@ -34,9 +35,10 @@ import TaskAssistantPanel from '@/components/TaskAssistantPanel';
 import TaskMindmapDialog from '@/components/TaskMindmapDialog';
 import NotebookDialog from '@/components/NotebookDialog';
 import TodayWorkspace from '@/components/TodayWorkspace';
+import RecurringTasksDialog from '@/components/RecurringTasksDialog';
 import SpaceSelectionScreen from '@/components/SpaceSelectionScreen';
 import AccessErrorScreen from '@/components/AccessErrorScreen';
-import type { Notebook, Space, Task, Settings, UserProfile } from '@/types';
+import type { Notebook, RecurrentTask, Space, Task, Settings, UserProfile } from '@/types';
 import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
 import { requestedSpaceFromPath, spaceUrl } from '@/utils/spaceRouting';
@@ -51,8 +53,11 @@ import {
   listSpaces,
   moveSubtask,
   readSettings,
+  readRecurrentTasks,
   readTasks,
   renameNotebook,
+  saveRecurrentTask,
+  deleteRecurrentTask,
   saveTasks,
   touchNotebook,
   writeSettings,
@@ -141,6 +146,7 @@ export default function Home() {
 
 function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOut: () => Promise<void> }) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [recurrentTasks, setRecurrentTasks] = useState<RecurrentTask[]>([]);
   const [settings, setSettings] = useState<Settings>({ tags: [], assistantIntents: [] });
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [activeNotebook, setActiveNotebook] = useState<Notebook | null>(null);
@@ -151,6 +157,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddManualOpen, setIsAddManualOpen] = useState(false);
   const [isMindmapOpen, setIsMindmapOpen] = useState(false);
+  const [isRecurringOpen, setIsRecurringOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
@@ -215,9 +222,10 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         url.searchParams.set('notebookId', currentNotebook.id);
         window.history.replaceState(null, '', url.toString());
 
-        const [tasksData, settingsData] = await Promise.all([
+        const [tasksData, settingsData, recurrentTasksData] = await Promise.all([
           readTasks(currentNotebook.id),
           readSettings(currentSpace.id),
+          readRecurrentTasks(currentNotebook.id),
         ]);
 
         if (!isActive) return;
@@ -226,6 +234,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
         setActiveSpace(currentSpace);
         setActiveNotebook(currentNotebook);
         setTasks(tasksData);
+        setRecurrentTasks(recurrentTasksData);
         setSettings(settingsData);
       } catch (loadError: unknown) {
         window.alert(loadError instanceof Error ? loadError.message : 'Không thể tải dữ liệu ứng dụng.');
@@ -352,6 +361,18 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       setTasks(previousTasks);
       throw moveError instanceof Error ? moveError : new Error('Không thể chuyển subtask.');
     }
+  };
+
+  const handleSaveRecurrentTask = async (task: RecurrentTask) => {
+    if (!activeNotebook?.permissions.manageTasks) return;
+    await saveRecurrentTask(activeNotebook.id, task);
+    setRecurrentTasks(await readRecurrentTasks(activeNotebook.id));
+  };
+
+  const handleDeleteRecurrentTask = async (task: RecurrentTask) => {
+    if (!activeNotebook?.permissions.manageTasks) return;
+    await deleteRecurrentTask(activeNotebook.id, task.id);
+    setRecurrentTasks(await readRecurrentTasks(activeNotebook.id));
   };
 
   const closeTaskDetails = () => {
@@ -579,6 +600,24 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
               </Box>
               <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
                 Map
+              </Box>
+            </Button>
+
+            <Button
+              variant="text"
+              startIcon={<RepeatIcon sx={{ fontSize: '17px !important' }} />}
+              onClick={() => setIsRecurringOpen(true)}
+              sx={{
+                ...TOP_ACTION_BUTTON_SX,
+                color: NEO_MINT.textBody,
+                '&:hover': { backgroundColor: 'var(--surface-muted)', color: NEO_MINT.textTitle },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Recurr Task
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                Recurr
               </Box>
             </Button>
 
@@ -901,6 +940,16 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
               setReturnToTodayAfterTaskDetails(true);
               setSelectedTask(task);
             }}
+          />
+          <RecurringTasksDialog
+            open={isRecurringOpen}
+            tasks={recurrentTasks}
+            availableTags={settings.tags}
+            availableAssignees={uniqueAssignees}
+            canManageTasks={activeNotebook?.permissions.manageTasks ?? false}
+            onClose={() => setIsRecurringOpen(false)}
+            onSaveTask={handleSaveRecurrentTask}
+            onDeleteTask={handleDeleteRecurrentTask}
           />
         </Box>
       </Drawer>
