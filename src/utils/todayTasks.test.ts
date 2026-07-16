@@ -71,6 +71,24 @@ describe('Today task rules', () => {
     expect(reordered.find((task) => task.id === 'task-one')?.subtasks[0].sortOrder).toBe(1);
   });
 
+  it('places completed Today subtasks after incomplete subtasks', () => {
+    const task = makeTask({
+      subtasks: [
+        makeSubtask({
+          id: 'done',
+          isToday: true,
+          sortOrder: 0,
+          status: 'DONE',
+          completed: true,
+          completedAt: '2026-07-15T10:00:00.000Z',
+        }),
+        makeSubtask({ id: 'open', isToday: true, sortOrder: 1 }),
+      ],
+    });
+
+    expect(getTodaySubtaskItems([task], NOW).map((item) => item.subtask.id)).toEqual(['open', 'done']);
+  });
+
   it('reorders and normalizes subtasks', () => {
     const result = reorderSubtasksWithinTask(
       [makeSubtask({ id: 'one', sortOrder: 0 }), makeSubtask({ id: 'two', sortOrder: 1 })],

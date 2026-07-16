@@ -61,6 +61,9 @@ import {
 const DEFAULT_DRAWER_WIDTH = 288;
 const MIN_DRAWER_WIDTH = 220;
 const MAX_DRAWER_WIDTH = 520;
+const DEFAULT_TODAY_PANEL_WIDTH = 432;
+const MIN_TODAY_PANEL_WIDTH = 320;
+const MAX_TODAY_PANEL_WIDTH = 720;
 
 const TOP_ACTION_BUTTON_SX = {
   minHeight: 34,
@@ -157,7 +160,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
   const [isTodayDialogOpen, setIsTodayDialogOpen] = useState(false);
   const [returnToTodayAfterTaskDetails, setReturnToTodayAfterTaskDetails] = useState(false);
   const [isTodayPanelOpen, setIsTodayPanelOpen] = useState(false);
-  const [todayPanelWidth, setTodayPanelWidth] = useState(DEFAULT_DRAWER_WIDTH);
+  const [todayPanelWidth, setTodayPanelWidth] = useState(DEFAULT_TODAY_PANEL_WIDTH);
   const [filters, setFilters] = useState<Partial<FilterState>>({});
 
   const uniqueAssignees = Array.from(
@@ -247,8 +250,8 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
       const savedTodayWidth = Number(window.localStorage.getItem('task-manager-today-panel-width'));
       if (
         !Number.isNaN(savedTodayWidth) &&
-        savedTodayWidth >= MIN_DRAWER_WIDTH &&
-        savedTodayWidth <= MAX_DRAWER_WIDTH
+        savedTodayWidth >= MIN_TODAY_PANEL_WIDTH &&
+        savedTodayWidth <= MAX_TODAY_PANEL_WIDTH
       ) {
         setTodayPanelWidth(savedTodayWidth);
       }
@@ -302,8 +305,8 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const nextWidth = Math.min(
-          MAX_DRAWER_WIDTH,
-          Math.max(MIN_DRAWER_WIDTH, startWidth + startX - moveEvent.clientX)
+          MAX_TODAY_PANEL_WIDTH,
+          Math.max(MIN_TODAY_PANEL_WIDTH, startWidth + startX - moveEvent.clientX)
         );
         latestWidth = nextWidth;
         setTodayPanelWidth(nextWidth);

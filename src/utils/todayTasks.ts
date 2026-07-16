@@ -26,7 +26,10 @@ export function isVisibleTodaySubtask(subtask: Subtask, now: number): boolean {
   return now - completedTime <= COMPLETED_VISIBILITY_DAYS * MILLISECONDS_PER_DAY;
 }
 
-function compareTodayItems(left: TodaySubtaskItem, right: TodaySubtaskItem): number {
+export function compareTodaySubtaskItems(left: TodaySubtaskItem, right: TodaySubtaskItem): number {
+  const completionOrder = Number(left.subtask.completed) - Number(right.subtask.completed);
+  if (completionOrder !== 0) return completionOrder;
+
   const subtaskOrder = compareSubtaskOrder(left.subtask, right.subtask);
   if (subtaskOrder !== 0) return subtaskOrder;
   return left.task.id.localeCompare(right.task.id);
@@ -39,7 +42,7 @@ export function getTodaySubtaskItems(tasks: Task[], now: number): TodaySubtaskIt
         .filter((subtask) => isVisibleTodaySubtask(subtask, now))
         .map((subtask) => ({ task, subtask, suggested: false }))
     )
-    .sort(compareTodayItems);
+    .sort(compareTodaySubtaskItems);
 }
 
 function isTaskDueForSuggestion(task: Task, now: number): boolean {
@@ -63,7 +66,7 @@ export function getSuggestedTodaySubtaskItems(tasks: Task[], now: number): Today
         .find((candidate) => !candidate.completed && !candidate.isToday);
       return subtask ? [{ task, subtask, suggested: true }] : [];
     })
-    .sort(compareTodayItems);
+    .sort(compareTodaySubtaskItems);
 }
 
 export function reorderSubtasksWithinTask(
