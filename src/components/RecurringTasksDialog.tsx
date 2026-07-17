@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Autocomplete,
   Box,
@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import {
   Add,
+  Check,
   Close,
   Delete,
   DragIndicator,
@@ -27,9 +28,10 @@ import {
   NavigateNext,
   Repeat,
 } from '@mui/icons-material';
-import { addWeeks, format, isSameWeek } from 'date-fns';
-import type { RecurrentSubtask, RecurrentTask, RecurrenceType } from '@/types';
+import { addDays, addWeeks, format, isSameDay, isSameWeek, subDays } from 'date-fns';
+import type { RecurrentOccurrenceState, RecurrentSubtask, RecurrentTask, RecurrenceType } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
+import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
 import {
   getThreeWeekDays,
   isTodayScheduleDate,
@@ -59,9 +61,72 @@ const SCHEDULE_GRID_COLUMNS =
 const SCHEDULE_MINIMUM_WIDTH = 1000;
 const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
 
+interface PendingOccurrenceWorkLog {
+  subtask: RecurrentSubtask;
+  occurrenceDate: string;
+}
+
+function occurrenceStateKey(recurrentSubtaskId: string, occurrenceDate: string): string {
+  return `${recurrentSubtaskId}:${occurrenceDate}`;
+}
+
+function isOccurrenceEditable(date: Date): boolean {
+  const today = new Date();
+  return isSameDay(date, today) || isSameDay(date, subDays(today, 1));
+}
+
 function truncateNotes(notes: string) {
   const normalizedNotes = notes.trim();
   return normalizedNotes.length > 70 ? `${normalizedNotes.slice(0, 70)}....` : normalizedNotes || '—';
+}
+
+interface OccurrenceStatusMarkerProps {
+  status: RecurrentOccurrenceState['status'];
+  editable: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}
+
+function OccurrenceStatusMarker({ status, editable, disabled, onClick }: OccurrenceStatusMarkerProps) {
+  const statusLabel = status === 'TO DO' ? 'To Do' : status === 'IN PROGRESS' ? 'In Progress' : 'Done';
+  const tooltip = editable
+    ? `${statusLabel} — click to change status`
+    : `${statusLabel} — only Today and Yesterday can be changed`;
+
+  return (
+    <Tooltip title={tooltip}>
+      <span>
+        <IconButton
+          size="small"
+          disabled={disabled || !editable}
+          aria-label={`Recurrent occurrence status: ${statusLabel}`}
+          onClick={onClick}
+          sx={{ width: 24, height: 24, p: 0.25 }}
+        >
+          {status === 'TO DO' && (
+            <Box
+              aria-hidden="true"
+              sx={{ width: 15, height: 15, borderRadius: '4px', backgroundColor: NEO_MINT.primary }}
+            />
+          )}
+          {status === 'IN PROGRESS' && (
+            <Box
+              aria-hidden="true"
+              sx={{
+                width: 0,
+                height: 0,
+                ml: 0.25,
+                borderTop: '7px solid transparent',
+                borderBottom: '7px solid transparent',
+                borderLeft: `12px solid ${NEO_MINT.primary}`,
+              }}
+            />
+          )}
+          {status === 'DONE' && <Check aria-hidden="true" sx={{ fontSize: 20, color: NEO_MINT.success }} />}
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
 }
 
 interface RecurringTasksDialogProps {
@@ -70,6 +135,12 @@ interface RecurringTasksDialogProps {
   availableTags: string[];
   availableAssignees: string[];
   canManageTasks: boolean;
+  onLoadOccurrenceStates: (fromDate: string, toDate: string) => Promise<RecurrentOccurrenceState[]>;
+  onCycleOccurrence: (
+    recurrentSubtaskId: string,
+    occurrenceDate: string,
+    workHours?: number
+  ) => Promise<RecurrentOccurrenceState>;
   onClose: () => void;
   onSaveTask: (task: RecurrentTask) => Promise<void>;
   onDeleteTask: (task: RecurrentTask) => Promise<void>;
@@ -441,6 +512,8 @@ export default function RecurringTasksDialog({
   availableTags,
   availableAssignees,
   canManageTasks,
+  onLoadOccurrenceStates,
+  onCycleOccurrence,
   onClose,
   onSaveTask,
   onDeleteTask,
@@ -452,7 +525,85 @@ export default function RecurringTasksDialog({
     task: RecurrentTask;
     subtask: RecurrentSubtask;
   } | null>(null);
+  const [occurrenceStates, setOccurrenceStates] = useState<RecurrentOccurrenceState[]>([]);
+  const [pendingWorkLog, setPendingWorkLog] = useState<PendingOccurrenceWorkLog | null>(null);
+  const [pendingWorkHours, setPendingWorkHours] = useState(0);
+  const [isUpdatingOccurrence, setIsUpdatingOccurrence] = useState(false);
   const scheduleDays = useMemo(() => getThreeWeekDays(referenceDate), [referenceDate]);
+  const scheduleStartDate = format(scheduleDays[0], 'yyyy-MM-dd');
+  const scheduleEndDate = format(scheduleDays[scheduleDays.length - 1], 'yyyy-MM-dd');
+  const occurrenceStateByKey = useMemo(
+    () =>
+      new Map(
+        occurrenceStates.map((state) => [
+          occurrenceStateKey(state.recurrentSubtaskId, state.occurrenceDate),
+          state,
+        ])
+      ),
+    [occurrenceStates]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    let isActive = true;
+    void onLoadOccurrenceStates(scheduleStartDate, scheduleEndDate)
+      .then((states) => {
+        if (isActive) setOccurrenceStates(states);
+      })
+      .catch((error: unknown) => {
+        if (!isActive) return;
+        setOccurrenceStates([]);
+        window.alert(error instanceof Error ? error.message : 'Không thể tải trạng thái công việc định kỳ.');
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [onLoadOccurrenceStates, open, scheduleEndDate, scheduleStartDate]);
+
+  const applyOccurrenceState = (state: RecurrentOccurrenceState) => {
+    setOccurrenceStates((current) => {
+      const withoutCurrent = current.filter(
+        (item) =>
+          item.recurrentSubtaskId !== state.recurrentSubtaskId || item.occurrenceDate !== state.occurrenceDate
+      );
+      return state.status === 'TO DO' ? withoutCurrent : [...withoutCurrent, state];
+    });
+  };
+
+  const handleOccurrenceClick = async (subtask: RecurrentSubtask, date: Date) => {
+    if (!canManageTasks || !isOccurrenceEditable(date) || isUpdatingOccurrence) return;
+    const occurrenceDate = format(date, 'yyyy-MM-dd');
+    const currentState = occurrenceStateByKey.get(occurrenceStateKey(subtask.id, occurrenceDate));
+    if (currentState?.status === 'IN PROGRESS') {
+      setPendingWorkLog({ subtask, occurrenceDate });
+      setPendingWorkHours(currentState.workHours);
+      return;
+    }
+
+    setIsUpdatingOccurrence(true);
+    try {
+      applyOccurrenceState(await onCycleOccurrence(subtask.id, occurrenceDate));
+    } catch (error: unknown) {
+      window.alert(error instanceof Error ? error.message : 'Không thể cập nhật công việc định kỳ.');
+    } finally {
+      setIsUpdatingOccurrence(false);
+    }
+  };
+
+  const completePendingOccurrence = async () => {
+    if (!pendingWorkLog || isUpdatingOccurrence) return;
+    setIsUpdatingOccurrence(true);
+    try {
+      applyOccurrenceState(
+        await onCycleOccurrence(pendingWorkLog.subtask.id, pendingWorkLog.occurrenceDate, pendingWorkHours)
+      );
+      setPendingWorkLog(null);
+    } catch (error: unknown) {
+      window.alert(error instanceof Error ? error.message : 'Không thể hoàn thành công việc định kỳ.');
+    } finally {
+      setIsUpdatingOccurrence(false);
+    }
+  };
   const toggleExpanded = (taskId: string) =>
     setCollapsedTaskIds((current) => {
       const next = new Set(current);
@@ -673,6 +824,10 @@ export default function RecurringTasksDialog({
                       alignItems: 'center',
                       minHeight: 42,
                       borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                      backgroundColor:
+                        occursOnDate(subtask, new Date()) || occursOnDate(subtask, addDays(new Date(), 1))
+                          ? 'color-mix(in srgb, var(--primary) 8%, var(--surface))'
+                          : NEO_MINT.surface,
                       '& > *': {
                         boxSizing: 'border-box',
                         minWidth: 0,
@@ -686,6 +841,7 @@ export default function RecurringTasksDialog({
                         justifyContent: 'flex-start',
                         pl: 4,
                         color: NEO_MINT.textBody,
+                        fontWeight: 400,
                         textTransform: 'none',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -720,18 +876,21 @@ export default function RecurringTasksDialog({
                               : 'transparent',
                         }}
                       >
-                        {occursOnDate(subtask, day) && (
-                          <Tooltip title={RECURRENCE_LABELS[subtask.recurrence]}>
-                            <Box
-                              sx={{
-                                width: 16,
-                                height: 16,
-                                borderRadius: '5px',
-                                backgroundColor: NEO_MINT.primary,
-                              }}
-                            />
-                          </Tooltip>
-                        )}
+                        {occursOnDate(subtask, day) &&
+                          (() => {
+                            const occurrenceDate = format(day, 'yyyy-MM-dd');
+                            const state = occurrenceStateByKey.get(
+                              occurrenceStateKey(subtask.id, occurrenceDate)
+                            );
+                            return (
+                              <OccurrenceStatusMarker
+                                status={state?.status ?? 'TO DO'}
+                                editable={isOccurrenceEditable(day)}
+                                disabled={!canManageTasks || isUpdatingOccurrence}
+                                onClick={() => void handleOccurrenceClick(subtask, day)}
+                              />
+                            );
+                          })()}
                       </Box>
                     ))}
                   </Box>
@@ -740,6 +899,39 @@ export default function RecurringTasksDialog({
           ))}
         </Box>
       </Box>
+      <Dialog
+        open={pendingWorkLog !== null}
+        onClose={() => {
+          if (!isUpdatingOccurrence) setPendingWorkLog(null);
+        }}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Log work</DialogTitle>
+        <DialogContent dividers sx={{ display: 'grid', gap: 2, pt: 2 }}>
+          <Typography sx={{ color: NEO_MINT.textBody }}>{pendingWorkLog?.subtask.title}</Typography>
+          <Typography sx={{ fontSize: '12px', color: NEO_MINT.textMuted }}>
+            {pendingWorkLog?.occurrenceDate}
+          </Typography>
+          <SubtaskWorkLogSelect
+            value={pendingWorkHours}
+            disabled={isUpdatingOccurrence}
+            onChange={setPendingWorkHours}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={isUpdatingOccurrence} onClick={() => setPendingWorkLog(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={isUpdatingOccurrence}
+            onClick={() => void completePendingOccurrence()}
+          >
+            Complete
+          </Button>
+        </DialogActions>
+      </Dialog>
       <RecurrentTaskEditorDialog
         key={editingTask?.id ?? 'new-task'}
         open={editingTask !== null}

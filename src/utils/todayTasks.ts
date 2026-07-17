@@ -4,6 +4,11 @@ import { compareSubtaskOrder } from '@/utils/taskOrdering';
 const COMPLETED_VISIBILITY_DAYS = 3;
 const SUGGESTION_DUE_WINDOW_DAYS = 7;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const SUBTASK_STATUS_ORDER: Record<Subtask['status'], number> = {
+  'TO DO': 0,
+  'IN PROGRESS': 1,
+  DONE: 2,
+};
 
 export interface TodaySubtaskItem {
   task: Task;
@@ -27,8 +32,8 @@ export function isVisibleTodaySubtask(subtask: Subtask, now: number): boolean {
 }
 
 export function compareTodaySubtaskItems(left: TodaySubtaskItem, right: TodaySubtaskItem): number {
-  const completionOrder = Number(left.subtask.completed) - Number(right.subtask.completed);
-  if (completionOrder !== 0) return completionOrder;
+  const statusOrder = SUBTASK_STATUS_ORDER[left.subtask.status] - SUBTASK_STATUS_ORDER[right.subtask.status];
+  if (statusOrder !== 0) return statusOrder;
 
   const subtaskOrder = compareSubtaskOrder(left.subtask, right.subtask);
   if (subtaskOrder !== 0) return subtaskOrder;

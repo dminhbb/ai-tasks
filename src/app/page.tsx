@@ -38,7 +38,15 @@ import TodayWorkspace from '@/components/TodayWorkspace';
 import RecurringTasksDialog from '@/components/RecurringTasksDialog';
 import SpaceSelectionScreen from '@/components/SpaceSelectionScreen';
 import AccessErrorScreen from '@/components/AccessErrorScreen';
-import type { Notebook, RecurrentTask, Space, Task, Settings, UserProfile } from '@/types';
+import type {
+  Notebook,
+  RecurrentOccurrenceState,
+  RecurrentTask,
+  Space,
+  Task,
+  Settings,
+  UserProfile,
+} from '@/types';
 import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
 import { requestedSpaceFromPath, spaceUrl } from '@/utils/spaceRouting';
@@ -48,11 +56,13 @@ import LoginScreen from '@/components/LoginScreen';
 import { useAuth } from '@/components/AuthProvider';
 import {
   createNotebook,
+  cycleRecurrentOccurrence,
   deleteNotebook,
   listNotebooks,
   listSpaces,
   moveSubtask,
   readSettings,
+  readRecurrentOccurrenceStates,
   readRecurrentTasks,
   readTasks,
   renameNotebook,
@@ -374,6 +384,28 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
     await deleteRecurrentTask(activeNotebook.id, task.id);
     setRecurrentTasks(await readRecurrentTasks(activeNotebook.id));
   };
+
+  const handleLoadRecurrentOccurrences = useCallback(
+    async (fromDate: string, toDate: string): Promise<RecurrentOccurrenceState[]> => {
+      if (!activeNotebook) return [];
+      return readRecurrentOccurrenceStates(activeNotebook.id, fromDate, toDate);
+    },
+    [activeNotebook]
+  );
+
+  const handleCycleRecurrentOccurrence = useCallback(
+    async (
+      recurrentSubtaskId: string,
+      occurrenceDate: string,
+      workHours?: number
+    ): Promise<RecurrentOccurrenceState> => {
+      if (!activeNotebook?.permissions.manageTasks) {
+        throw new Error('Bạn không có quyền log công việc định kỳ trong notebook này.');
+      }
+      return cycleRecurrentOccurrence(activeNotebook.id, recurrentSubtaskId, occurrenceDate, workHours);
+    },
+    [activeNotebook]
+  );
 
   const closeTaskDetails = () => {
     setSelectedTask(null);
@@ -947,6 +979,8 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             availableTags={settings.tags}
             availableAssignees={uniqueAssignees}
             canManageTasks={activeNotebook?.permissions.manageTasks ?? false}
+            onLoadOccurrenceStates={handleLoadRecurrentOccurrences}
+            onCycleOccurrence={handleCycleRecurrentOccurrence}
             onClose={() => setIsRecurringOpen(false)}
             onSaveTask={handleSaveRecurrentTask}
             onDeleteTask={handleDeleteRecurrentTask}

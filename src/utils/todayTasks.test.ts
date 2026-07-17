@@ -89,6 +89,29 @@ describe('Today task rules', () => {
     expect(getTodaySubtaskItems([task], NOW).map((item) => item.subtask.id)).toEqual(['open', 'done']);
   });
 
+  it('orders Today subtasks by To Do, In Progress, then Done', () => {
+    const task = makeTask({
+      subtasks: [
+        makeSubtask({
+          id: 'done',
+          isToday: true,
+          sortOrder: 0,
+          status: 'DONE',
+          completed: true,
+          completedAt: '2026-07-15T10:00:00.000Z',
+        }),
+        makeSubtask({ id: 'progress', isToday: true, sortOrder: 1, status: 'IN PROGRESS' }),
+        makeSubtask({ id: 'todo', isToday: true, sortOrder: 2, status: 'TO DO' }),
+      ],
+    });
+
+    expect(getTodaySubtaskItems([task], NOW).map((item) => item.subtask.id)).toEqual([
+      'todo',
+      'progress',
+      'done',
+    ]);
+  });
+
   it('reorders and normalizes subtasks', () => {
     const result = reorderSubtasksWithinTask(
       [makeSubtask({ id: 'one', sortOrder: 0 }), makeSubtask({ id: 'two', sortOrder: 1 })],

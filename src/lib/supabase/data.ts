@@ -9,6 +9,7 @@ import type {
   Task,
   TaskStatus,
   UserProfile,
+  RecurrentOccurrenceState,
   RecurrentTask,
   RecurrentSubtask,
 } from '@/types';
@@ -16,6 +17,8 @@ import { getSupabaseBrowserClient } from './client';
 
 const DEFAULT_TAGS = ['Frontend', 'Backend', 'Design', 'Bug', 'Feature'];
 const DEFAULT_SETTINGS: Settings = { tags: DEFAULT_TAGS, assistantIntents: [] };
+const VALID_WORK_HOURS = [0, 0.5, 1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+const workHoursSchema = z.number().refine((value) => VALID_WORK_HOURS.includes(value));
 
 function quotaErrorMessage(message: string): string | null {
   if (message.includes('QUOTA_NOTEBOOKS_PER_SPACE')) return 'Space đã đạt giới hạn 100 notebook.';
@@ -66,7 +69,7 @@ const subtaskRowSchema = z.object({
   completed: z.boolean(),
   is_today: z.boolean(),
   completed_at: z.string().nullable(),
-  work_hours: z.number().int().min(0).max(24),
+  work_hours: workHoursSchema,
   sort_order: z.number(),
 });
 
@@ -109,6 +112,18 @@ const recurrentTaskRowSchema = z.object({
   notes: z.string(),
   sort_order: z.number().int(),
   recurrent_subtasks: z.array(recurrentSubtaskRowSchema).default([]),
+});
+
+const recurrentOccurrenceRowSchema = z.object({
+  recurrent_subtask_id: z.string().uuid(),
+  occurrence_date: z.string(),
+  status: z.enum(['IN PROGRESS', 'DONE']),
+  work_hours: workHoursSchema,
+});
+
+const recurrentOccurrenceCycleResultSchema = z.object({
+  status: z.enum(['TO DO', 'IN PROGRESS', 'DONE']),
+  workHours: workHoursSchema,
 });
 
 const assistantIntentSchema = z.object({
@@ -487,6 +502,57 @@ export async function deleteRecurrentTask(notebookId: string, taskId: string): P
     .eq('notebook_id', notebookId)
     .eq('id', taskId);
   if (error) throw new Error('KhĂ´ng thá»ƒ xĂ³a recurrent task.');
+}
+
+export async function readRecurrentOccurrenceStates(
+  notebookId: string,
+  fromDate: string,
+  toDate: string
+): Promise<RecurrentOccurrenceState[]> {
+  const { data, error } = await getSupabaseBrowserClient()
+    .from('recurrent_subtask_occurrences')
+    .select('recurrent_subtask_id, occurrence_date, status, work_hours')
+    .eq('notebook_id', notebookId)
+    .gte('occurrence_date', fromDate)
+    .lte('occurrence_date', toDate);
+  if (error) throw new Error('Không thể tải trạng thái công việc định kỳ.');
+
+  return z
+    .array(recurrentOccurrenceRowSchema)
+    .parse(data ?? [])
+    .map((row) => ({
+      recurrentSubtaskId: row.recurrent_subtask_id,
+      occurrenceDate: row.occurrence_date,
+      status: row.status,
+      workHours: row.work_hours,
+    }));
+}
+
+export async function cycleRecurrentOccurrence(
+  notebookId: string,
+  recurrentSubtaskId: string,
+  occurrenceDate: string,
+  workHours?: number
+): Promise<RecurrentOccurrenceState> {
+  if (workHours !== undefined && !VALID_WORK_HOURS.includes(workHours)) {
+    throw new Error('Thời gian log work không hợp lệ.');
+  }
+
+  const { data, error } = await getSupabaseBrowserClient().rpc('cycle_recurrent_subtask_occurrence', {
+    requested_notebook_id: notebookId,
+    requested_subtask_id: recurrentSubtaskId,
+    requested_occurrence_date: occurrenceDate,
+    requested_work_hours: workHours ?? null,
+  });
+  if (error) throw new Error('Không thể cập nhật trạng thái công việc định kỳ.');
+
+  const result = recurrentOccurrenceCycleResultSchema.parse(data);
+  return {
+    recurrentSubtaskId,
+    occurrenceDate,
+    status: result.status,
+    workHours: result.workHours,
+  };
 }
 
 export async function readSettings(spaceId: string): Promise<Settings> {

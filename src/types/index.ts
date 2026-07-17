@@ -114,6 +114,14 @@ export interface AssistantConfiguredIntent {
 }
 
 export type RecurrenceType = 'weekly' | 'bi-weekly' | 'monthly' | 'quarterly' | 'half-yearly' | 'yearly';
+export type RecurrentOccurrenceStatus = SubtaskStatus;
+
+export interface RecurrentOccurrenceState {
+  recurrentSubtaskId: string;
+  occurrenceDate: string;
+  status: RecurrentOccurrenceStatus;
+  workHours: number;
+}
 
 export interface RecurrentSubtask {
   id: string;

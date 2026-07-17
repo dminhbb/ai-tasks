@@ -28,7 +28,7 @@ npm.cmd run supabase:migrate-data
 
 The seed script creates or updates `minhd.mbb@gmail.com`, confirms its email, and assigns the `superadmin` role. The password is read only from `SEED_SUPERADMIN_PASSWORD`; it is intentionally absent from source control. For a fresh account without migrated data, the application creates `MAIN` after the first sign-in.
 
-`supabase db push` includes the separate Recurrent Tasks schema (`recurrent_tasks`, `recurrent_subtasks`, RLS, and `save_recurrent_task_bundle`) and database quotas/Notebook log retention. Apply them before opening the `Recurr Task` screen. Matching manual rollbacks are under `supabase/rollbacks/20260716000100_recurrent_tasks.down.sql` and `20260717000100_database_quotas_and_log_retention.down.sql`.
+`supabase db push` includes the separate Recurrent Tasks schema (`recurrent_tasks`, `recurrent_subtasks`, RLS, and `save_recurrent_task_bundle`), occurrence work logs, and database quotas/Notebook log retention. Apply them before opening the `Recurr Task` screen. Matching manual rollbacks are under `supabase/rollbacks/20260716000100_recurrent_tasks.down.sql`, `20260717000100_database_quotas_and_log_retention.down.sql`, and `20260717000200_recurrent_occurrence_work_logs.down.sql`.
 
 Run `supabase:migrate-data` once. It reads `data/task-manager.db`, migrates all notebooks/tasks/subtasks/tags/history to UUID records, and deliberately excludes the legacy Gemini key.
 
@@ -72,6 +72,8 @@ Spaces are opened at `/s/{slug}`. Users who belong to multiple spaces can switch
 ## Recurrent Tasks and notebook search
 
 Recurrent Tasks are schedule templates stored separately from normal Tasks. They only appear in the full-screen `Recurr Task` view, never generate execution tasks automatically, and support weekly, bi-weekly, monthly, quarterly, half-yearly, and yearly rules. Weekly and bi-weekly rules can select multiple weekdays.
+
+Each scheduled occurrence has an independent To Do/In Progress/Done state. Users can log Today or Yesterday occurrences from the timeline; completion records work hours, while cycling Done back to To Do removes that occurrence and its associated work events.
 
 The normal Task toolbar also includes a non-AI title search for Tasks and Subtasks in the current Notebook. Results open the parent Task Details dialog; the X button clears the query and closes the result panel.
 
