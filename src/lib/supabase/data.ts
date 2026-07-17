@@ -17,6 +17,17 @@ import { getSupabaseBrowserClient } from './client';
 const DEFAULT_TAGS = ['Frontend', 'Backend', 'Design', 'Bug', 'Feature'];
 const DEFAULT_SETTINGS: Settings = { tags: DEFAULT_TAGS, assistantIntents: [] };
 
+function quotaErrorMessage(message: string): string | null {
+  if (message.includes('QUOTA_NOTEBOOKS_PER_SPACE')) return 'Space đã đạt giới hạn 100 notebook.';
+  if (message.includes('QUOTA_TASKS_PER_NOTEBOOK')) return 'Notebook đã đạt giới hạn 500 task.';
+  if (message.includes('QUOTA_SUBTASKS_PER_TASK')) return 'Task đã đạt giới hạn 100 subtask.';
+  if (message.includes('QUOTA_RECURRENT_TASKS_PER_NOTEBOOK'))
+    return 'Notebook đã đạt giới hạn 500 recurrent task.';
+  if (message.includes('QUOTA_RECURRENT_SUBTASKS_PER_TASK'))
+    return 'Recurrent task đã đạt giới hạn 100 recurrent subtask.';
+  return null;
+}
+
 const notebookRowSchema = z.object({
   id: z.string().uuid(),
   space_id: z.string().uuid(),
@@ -218,7 +229,9 @@ export async function createNotebook(name: string, spaceId: string): Promise<Not
     requested_name: normalizedName,
   });
   if (createError || typeof notebookId !== 'string') {
-    throw new Error('Bạn không có quyền tạo notebook trong Space này.');
+    throw new Error(
+      quotaErrorMessage(createError?.message ?? '') ?? 'Bạn không có quyền tạo notebook trong Space này.'
+    );
   }
 
   const { data, error } = await supabase
@@ -371,7 +384,11 @@ export async function saveTasks(
         workHours: subtask.workHours,
       })),
     });
-    if (error) throw new Error('Không thể lưu task. Vui lòng tải lại dữ liệu và thử lại.');
+    if (error) {
+      throw new Error(
+        quotaErrorMessage(error.message) ?? 'Không thể lưu task. Vui lòng tải lại dữ liệu và thử lại.'
+      );
+    }
   }
 
   const deletedIds = previousTasks.filter((task) => !nextIds.has(task.id)).map((task) => task.id);
@@ -460,7 +477,7 @@ export async function saveRecurrentTask(notebookId: string, task: RecurrentTask)
       sortOrder: subtask.sortOrder,
     })),
   });
-  if (error) throw new Error('KhĂ´ng thá»ƒ lÆ°u recurrent task.');
+  if (error) throw new Error(quotaErrorMessage(error.message) ?? 'Không thể lưu recurrent task.');
 }
 
 export async function deleteRecurrentTask(notebookId: string, taskId: string): Promise<void> {

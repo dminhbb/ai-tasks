@@ -1,7 +1,7 @@
 # AI TASK — AI Agent Development Guide
 
 > Last reviewed: 2026-07-16  
-> Current database migration source: `20260716000100_recurrent_tasks.sql` (apply status must be verified per Supabase project)  
+> Current database migration source: `20260717000100_database_quotas_and_log_retention.sql` (apply status must be verified per Supabase project)  
 > This document is the primary technical handoff for AI coding agents working in this repository.
 
 ## Quick Start for AI Agent
@@ -259,6 +259,18 @@ Supported `workHours` values are:
 
 The database columns use `numeric(4,1)`. Update both `subtasks.work_hours` and the latest completion event through the existing save/trigger flow.
 
+### 7.5 Capacity limits and log retention
+
+Database triggers enforce these concurrent-safe quotas using transaction advisory locks:
+
+- 100 Notebooks per Space.
+- 500 normal Tasks per Notebook.
+- 100 Subtasks per normal Task.
+- 500 Recurrent Tasks per Notebook.
+- 100 Recurrent Subtasks per Recurrent Task.
+
+The total of `task_status_events`, `task_due_date_events`, and `subtask_completion_events` is retained at 2,000 newest entries per Notebook. Older entries are automatically pruned after a new log insert. This retention does not include user-admin or AI-quota audit records, which are not Notebook logs.
+
 ## 8. Product behavior and UI invariants
 
 ### 8.1 Spaces and Notebooks
@@ -453,10 +465,11 @@ Never modify these after they have been applied. Add a later migration instead.
 | `20260715000800_subtask_status.sql` | Three-state subtask status and completion sync. |
 | `20260715000900_fractional_work_hours.sql` | Decimal work hours and expanded allowed values. |
 | `20260716000100_recurrent_tasks.sql` | Separate recurrent task tables, RLS, triggers, and atomic save RPC. |
+| `20260717000100_database_quotas_and_log_retention.sql` | Database-enforced record quotas and 2,000-entry Notebook log retention. |
 
 Every migration currently has a matching manual rollback in `supabase/rollbacks/`.
 
-Last verified linked-project state on 2026-07-15: local and remote migrations matched through `20260715000900`. `20260716000100_recurrent_tasks.sql` is a newer local migration and must be applied separately. Always run `npx.cmd supabase migration list` again before assuming another environment has the same state.
+Last verified linked-project state on 2026-07-15: local and remote migrations matched through `20260715000900`. `20260716000100_recurrent_tasks.sql` and `20260717000100_database_quotas_and_log_retention.sql` are newer local migrations and must be applied separately. Always run `npx.cmd supabase migration list` again before assuming another environment has the same state.
 
 ## 12. Database change workflow
 

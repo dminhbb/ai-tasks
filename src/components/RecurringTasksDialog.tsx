@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  MenuItem,
   TextField,
   Tooltip,
   Typography,
@@ -54,9 +55,14 @@ const RECURRENCE_TYPES: RecurrenceType[] = [
   'yearly',
 ];
 const SCHEDULE_GRID_COLUMNS =
-  'minmax(180px, 2.5fr) minmax(80px, 1fr) minmax(88px, 1fr) repeat(21, minmax(25px, 0.36fr))';
-const SCHEDULE_MINIMUM_WIDTH = 900;
+  'minmax(180px, 2.25fr) minmax(72px, 0.8fr) minmax(82px, 0.9fr) minmax(150px, 1.65fr) repeat(21, minmax(25px, 0.34fr))';
+const SCHEDULE_MINIMUM_WIDTH = 1000;
 const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
+
+function truncateNotes(notes: string) {
+  const normalizedNotes = notes.trim();
+  return normalizedNotes.length > 70 ? `${normalizedNotes.slice(0, 70)}....` : normalizedNotes || '—';
+}
 
 interface RecurringTasksDialogProps {
   open: boolean;
@@ -379,9 +385,9 @@ function RecurrentSubtaskDialog({
           }
         >
           {RECURRENCE_TYPES.map((type) => (
-            <option key={type} value={type}>
+            <MenuItem key={type} value={type}>
               {RECURRENCE_LABELS[type]}
-            </option>
+            </MenuItem>
           ))}
         </TextField>
         <TextField
@@ -440,16 +446,29 @@ export default function RecurringTasksDialog({
   onDeleteTask,
 }: RecurringTasksDialogProps) {
   const [referenceDate, setReferenceDate] = useState(new Date());
-  const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const [collapsedTaskIds, setCollapsedTaskIds] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<RecurrentTask | null>(null);
+  const [editingSubtask, setEditingSubtask] = useState<{
+    task: RecurrentTask;
+    subtask: RecurrentSubtask;
+  } | null>(null);
   const scheduleDays = useMemo(() => getThreeWeekDays(referenceDate), [referenceDate]);
   const toggleExpanded = (taskId: string) =>
-    setExpandedTaskIds((current) => {
+    setCollapsedTaskIds((current) => {
       const next = new Set(current);
       if (next.has(taskId)) next.delete(taskId);
       else next.add(taskId);
       return next;
     });
+  const saveScheduledSubtask = (updatedSubtask: RecurrentSubtask) => {
+    if (!editingSubtask) return;
+    const task = editingSubtask.task;
+    void onSaveTask({
+      ...task,
+      subtasks: task.subtasks.map((subtask) => (subtask.id === updatedSubtask.id ? updatedSubtask : subtask)),
+    });
+    setEditingSubtask(null);
+  };
 
   return (
     <Dialog
@@ -513,7 +532,7 @@ export default function RecurringTasksDialog({
         <Box
           sx={{
             width: '100%',
-            minWidth: { xs: SCHEDULE_MINIMUM_WIDTH, md: 0 },
+            minWidth: SCHEDULE_MINIMUM_WIDTH,
             backgroundColor: NEO_MINT.surface,
             border: `1px solid ${NEO_MINT.cardBorderSoft}`,
             borderRadius: '12px',
@@ -526,35 +545,55 @@ export default function RecurringTasksDialog({
               gridTemplateColumns: SCHEDULE_GRID_COLUMNS,
               backgroundColor: 'var(--surface-muted)',
               borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
+              '& > *': {
+                boxSizing: 'border-box',
+                minWidth: 0,
+                borderRight: `1px solid ${NEO_MINT.cardBorderSoft}`,
+              },
             }}
           >
-            {['Task', 'Tags', 'Assignee', ...scheduleDays.map((day) => format(day, 'EEE d'))].map(
-              (label, index) => {
-                const day = index >= 3 ? scheduleDays[index - 3] : null;
-                const todayColumn = day ? isTodayScheduleDate(day) : false;
-                const currentWeek = day ? isSameWeek(day, new Date(), WEEK_START_OPTIONS) : false;
-                return (
-                  <Typography
-                    key={label}
-                    sx={{
-                      p: 1,
-                      textAlign: 'center',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      borderRight: `1px solid ${NEO_MINT.cardBorderSoft}`,
-                      color: NEO_MINT.textBody,
-                      backgroundColor: todayColumn
-                        ? 'color-mix(in srgb, var(--primary) 20%, var(--primary-subtle))'
-                        : currentWeek
-                          ? 'color-mix(in srgb, var(--primary-subtle) 72%, var(--surface-muted))'
-                          : 'transparent',
-                    }}
-                  >
-                    {label}
-                  </Typography>
-                );
-              }
-            )}
+            {['Task', 'Tags', 'Assignee', 'Notes'].map((header) => (
+              <Typography
+                key={header}
+                sx={{
+                  p: 1,
+                  textAlign: 'center',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: NEO_MINT.textBody,
+                }}
+              >
+                {header}
+              </Typography>
+            ))}
+            {scheduleDays.map((day) => {
+              const todayColumn = isTodayScheduleDate(day);
+              const currentWeek = isSameWeek(day, new Date(), WEEK_START_OPTIONS);
+              return (
+                <Typography
+                  key={day.toISOString()}
+                  sx={{
+                    p: 1,
+                    textAlign: 'center',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: NEO_MINT.textBody,
+                    backgroundColor: todayColumn
+                      ? 'color-mix(in srgb, var(--primary) 32%, var(--primary-subtle))'
+                      : currentWeek
+                        ? 'color-mix(in srgb, var(--primary) 18%, var(--surface-muted))'
+                        : 'transparent',
+                  }}
+                >
+                  <Box component="span" sx={{ display: 'block' }}>
+                    {format(day, 'EEE')}
+                  </Box>
+                  <Box component="span" sx={{ display: 'block' }}>
+                    {format(day, 'd')}
+                  </Box>
+                </Typography>
+              );
+            })}
           </Box>
           {tasks.map((task) => (
             <Box key={task.id}>
@@ -566,42 +605,65 @@ export default function RecurringTasksDialog({
                   minHeight: 46,
                   backgroundColor: 'color-mix(in srgb, var(--surface-muted) 72%, transparent)',
                   borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                  '& > *': {
+                    boxSizing: 'border-box',
+                    minWidth: 0,
+                    borderRight: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                  },
                 }}
               >
-                <Button
-                  onClick={() => toggleExpanded(task.id)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: NEO_MINT.textTitle,
-                    fontWeight: 800,
-                    textTransform: 'none',
-                  }}
-                >
-                  {expandedTaskIds.has(task.id) ? <ExpandLess /> : <ExpandMore />}
-                  {task.title}
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <IconButton
+                    size="small"
+                    aria-label={
+                      collapsedTaskIds.has(task.id) ? 'Expand recurrent task' : 'Collapse recurrent task'
+                    }
+                    onClick={() => toggleExpanded(task.id)}
+                  >
+                    {collapsedTaskIds.has(task.id) ? <ExpandMore /> : <ExpandLess />}
+                  </IconButton>
+                  <Button
+                    onClick={() => setEditingTask(task)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: NEO_MINT.textTitle,
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {task.title}
+                  </Button>
+                </Box>
                 <Typography sx={{ px: 1, fontSize: '11px' }} noWrap>
                   {task.tags.join(', ') || '—'}
                 </Typography>
                 <Typography sx={{ px: 1, fontSize: '11px' }} noWrap>
                   {task.assignee || '—'}
                 </Typography>
+                <Tooltip title={task.notes || 'No notes'}>
+                  <Typography sx={{ px: 1, fontSize: '11px' }} noWrap>
+                    {truncateNotes(task.notes)}
+                  </Typography>
+                </Tooltip>
                 {scheduleDays.map((day) => (
                   <Box
                     key={day.toISOString()}
                     sx={{
                       height: '100%',
                       backgroundColor: isTodayScheduleDate(day)
-                        ? 'color-mix(in srgb, var(--primary) 13%, var(--primary-subtle))'
+                        ? 'color-mix(in srgb, var(--primary) 22%, var(--primary-subtle))'
                         : isSameWeek(day, new Date(), WEEK_START_OPTIONS)
-                          ? 'color-mix(in srgb, var(--primary-subtle) 48%, transparent)'
+                          ? 'color-mix(in srgb, var(--primary) 12%, var(--surface))'
                           : 'transparent',
-                      borderLeft: `1px solid ${NEO_MINT.cardBorderSoft}`,
                     }}
                   />
                 ))}
               </Box>
-              {expandedTaskIds.has(task.id) &&
+              {!collapsedTaskIds.has(task.id) &&
                 task.subtasks.map((subtask) => (
                   <Box
                     key={subtask.id}
@@ -611,15 +673,23 @@ export default function RecurringTasksDialog({
                       alignItems: 'center',
                       minHeight: 42,
                       borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                      '& > *': {
+                        boxSizing: 'border-box',
+                        minWidth: 0,
+                        borderRight: `1px solid ${NEO_MINT.cardBorderSoft}`,
+                      },
                     }}
                   >
                     <Button
-                      onClick={() => setEditingTask(task)}
+                      onClick={() => setEditingSubtask({ task, subtask })}
                       sx={{
                         justifyContent: 'flex-start',
                         pl: 4,
                         color: NEO_MINT.textBody,
                         textTransform: 'none',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {subtask.title}
@@ -630,6 +700,11 @@ export default function RecurringTasksDialog({
                     <Typography sx={{ px: 1, fontSize: '11px' }} noWrap>
                       {subtask.assignee || '—'}
                     </Typography>
+                    <Tooltip title={subtask.notes || 'No notes'}>
+                      <Typography sx={{ px: 1, fontSize: '11px' }} noWrap>
+                        {truncateNotes(subtask.notes)}
+                      </Typography>
+                    </Tooltip>
                     {scheduleDays.map((day) => (
                       <Box
                         key={day.toISOString()}
@@ -638,11 +713,10 @@ export default function RecurringTasksDialog({
                           minHeight: 42,
                           display: 'grid',
                           placeItems: 'center',
-                          borderLeft: `1px solid ${NEO_MINT.cardBorderSoft}`,
                           backgroundColor: isTodayScheduleDate(day)
-                            ? 'color-mix(in srgb, var(--primary) 13%, var(--primary-subtle))'
+                            ? 'color-mix(in srgb, var(--primary) 22%, var(--primary-subtle))'
                             : isSameWeek(day, new Date(), WEEK_START_OPTIONS)
-                              ? 'color-mix(in srgb, var(--primary-subtle) 48%, transparent)'
+                              ? 'color-mix(in srgb, var(--primary) 12%, var(--surface))'
                               : 'transparent',
                         }}
                       >
@@ -676,6 +750,15 @@ export default function RecurringTasksDialog({
         onClose={() => setEditingTask(null)}
         onSave={onSaveTask}
         onDelete={onDeleteTask}
+      />
+      <RecurrentSubtaskDialog
+        key={editingSubtask?.subtask.id ?? 'scheduled-subtask'}
+        open={editingSubtask !== null}
+        subtask={editingSubtask?.subtask ?? null}
+        availableTags={availableTags}
+        availableAssignees={availableAssignees}
+        onClose={() => setEditingSubtask(null)}
+        onSave={saveScheduledSubtask}
       />
     </Dialog>
   );

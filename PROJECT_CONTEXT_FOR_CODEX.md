@@ -67,4 +67,4 @@ npx.cmd supabase migration list
 
 ## Deployment status
 
-The code and migrations are prepared locally. The recurrent-task migration `20260716000100_recurrent_tasks.sql` has a matching rollback and must be applied to each target Supabase project before opening Recurr Task. A real Supabase project URL and secret key are required before `db push`, user seeding, legacy data migration, or Edge Function deployment can happen.
+The code and migrations are prepared locally. The recurrent-task migration `20260716000100_recurrent_tasks.sql` and quota/retention migration `20260717000100_database_quotas_and_log_retention.sql` have matching rollbacks and must be applied to each target Supabase project before opening Recurr Task. The latter enforces record limits and retains the newest 2,000 Notebook logs. A real Supabase project URL and secret key are required before `db push`, user seeding, legacy data migration, or Edge Function deployment can happen.

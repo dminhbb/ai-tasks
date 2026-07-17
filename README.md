@@ -28,7 +28,7 @@ npm.cmd run supabase:migrate-data
 
 The seed script creates or updates `minhd.mbb@gmail.com`, confirms its email, and assigns the `superadmin` role. The password is read only from `SEED_SUPERADMIN_PASSWORD`; it is intentionally absent from source control. For a fresh account without migrated data, the application creates `MAIN` after the first sign-in.
 
-`supabase db push` includes the separate Recurrent Tasks schema (`recurrent_tasks`, `recurrent_subtasks`, RLS, and `save_recurrent_task_bundle`). Apply it before opening the `Recurr Task` screen. The matching manual rollback is `supabase/rollbacks/20260716000100_recurrent_tasks.down.sql`.
+`supabase db push` includes the separate Recurrent Tasks schema (`recurrent_tasks`, `recurrent_subtasks`, RLS, and `save_recurrent_task_bundle`) and database quotas/Notebook log retention. Apply them before opening the `Recurr Task` screen. Matching manual rollbacks are under `supabase/rollbacks/20260716000100_recurrent_tasks.down.sql` and `20260717000100_database_quotas_and_log_retention.down.sql`.
 
 Run `supabase:migrate-data` once. It reads `data/task-manager.db`, migrates all notebooks/tasks/subtasks/tags/history to UUID records, and deliberately excludes the legacy Gemini key.
 

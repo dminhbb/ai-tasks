@@ -1,0 +1,18 @@
+begin;
+drop trigger if exists subtask_completion_events_prune_notebook_logs on public.subtask_completion_events;
+drop trigger if exists task_due_date_events_prune_notebook_logs on public.task_due_date_events;
+drop trigger if exists task_status_events_prune_notebook_logs on public.task_status_events;
+drop trigger if exists recurrent_subtasks_enforce_quota on public.recurrent_subtasks;
+drop trigger if exists recurrent_tasks_enforce_quota on public.recurrent_tasks;
+drop trigger if exists subtasks_enforce_quota on public.subtasks;
+drop trigger if exists tasks_enforce_quota on public.tasks;
+drop trigger if exists notebooks_enforce_quota on public.notebooks;
+drop function if exists private.prune_notebook_logs_after_insert();
+drop function if exists private.prune_notebook_logs(uuid);
+drop function if exists private.enforce_recurrent_subtask_quota();
+drop function if exists private.enforce_recurrent_task_quota();
+drop function if exists private.enforce_subtask_quota();
+drop function if exists private.enforce_task_quota();
+drop function if exists private.enforce_notebook_quota();
+drop function if exists private.acquire_quota_lock(text);
+commit;
