@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Add, Delete, DragIndicator, DriveFileMoveOutlined } from '@mui/icons-material';
-import { Task, TaskStatus } from '@/types';
+import { SubtaskStatus, Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import {
   applyManualProgress,
@@ -33,7 +33,13 @@ import { sanitizeRichText } from '@/utils/richText';
 import TaskRichTextEditor from '@/components/TaskRichTextEditor';
 import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
 import SubtaskStatusControl from '@/components/SubtaskStatusControl';
-import { cycleSubtaskStatus, setSubtaskWorkHours } from '@/utils/subtaskWork';
+import {
+  setSubtaskAssignee,
+  setSubtaskDueDate,
+  setSubtaskStatus,
+  setSubtaskWorkHours,
+  SUBTASK_ASSIGNEE_MAX_LENGTH,
+} from '@/utils/subtaskWork';
 import TodayMoveSubtaskDialog from '@/components/TodayMoveSubtaskDialog';
 
 const STATUS_ORDER: Record<TaskStatus, number> = {
@@ -192,7 +198,10 @@ export default function TaskDetailDialog({
             status: 'TO DO',
             completed: false,
             isToday: false,
+            createdAt: new Date().toISOString(),
             completedAt: null,
+            assignee: '',
+            dueDate: null,
             workHours: 0,
           },
         ],
@@ -201,12 +210,12 @@ export default function TaskDetailDialog({
     setNewSubtaskTitle('');
   };
 
-  const handleToggleSubtask = (id: string) => {
+  const handleSetSubtaskStatus = (id: string, status: SubtaskStatus) => {
     setLocalTask(
       syncTaskProgress({
         ...localTask,
         subtasks: (localTask.subtasks || []).map((subtask) =>
-          subtask.id === id ? cycleSubtaskStatus(subtask, new Date().toISOString()) : subtask
+          subtask.id === id ? setSubtaskStatus(subtask, status, new Date().toISOString()) : subtask
         ),
       })
     );
@@ -217,6 +226,24 @@ export default function TaskDetailDialog({
       ...localTask,
       subtasks: localTask.subtasks.map((subtask) =>
         subtask.id === id ? setSubtaskWorkHours(subtask, workHours) : subtask
+      ),
+    });
+  };
+
+  const handleSubtaskAssigneeChange = (id: string, assignee: string) => {
+    setLocalTask({
+      ...localTask,
+      subtasks: (localTask.subtasks || []).map((subtask) =>
+        subtask.id === id ? setSubtaskAssignee(subtask, assignee) : subtask
+      ),
+    });
+  };
+
+  const handleSubtaskDueDateChange = (id: string, dueDate: string | null) => {
+    setLocalTask({
+      ...localTask,
+      subtasks: (localTask.subtasks || []).map((subtask) =>
+        subtask.id === id ? setSubtaskDueDate(subtask, dueDate) : subtask
       ),
     });
   };
@@ -598,7 +625,7 @@ export default function TaskDetailDialog({
                       </Box>
                       <SubtaskStatusControl
                         status={subtask.status}
-                        onCycle={() => handleToggleSubtask(subtask.id)}
+                        onSelect={(status) => handleSetSubtaskStatus(subtask.id, status)}
                       />
                       <Typography
                         sx={{
@@ -613,6 +640,41 @@ export default function TaskDetailDialog({
                       >
                         {subtask.title}
                       </Typography>
+                      <TextField
+                        size="small"
+                        placeholder="Assignee"
+                        title={subtask.assignee}
+                        value={subtask.assignee}
+                        onChange={(e) => handleSubtaskAssigneeChange(subtask.id, e.target.value)}
+                        slotProps={{ htmlInput: { maxLength: SUBTASK_ASSIGNEE_MAX_LENGTH } }}
+                        sx={{
+                          width: '8ch',
+                          flexShrink: 0,
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                            backgroundColor: NEO_MINT.surface,
+                            fontSize: '12px',
+                          },
+                          '& .MuiOutlinedInput-input': { px: 1, py: 0.5 },
+                        }}
+                      />
+                      <TextField
+                        type="date"
+                        size="small"
+                        value={toDateInputValue(subtask.dueDate)}
+                        onChange={(e) => handleSubtaskDueDateChange(subtask.id, e.target.value || null)}
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        sx={{
+                          width: '148px',
+                          flexShrink: 0,
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                            backgroundColor: NEO_MINT.surface,
+                            fontSize: '12px',
+                          },
+                          '& .MuiOutlinedInput-input': { px: 1, py: 0.5 },
+                        }}
+                      />
                       <FormControlLabel
                         label="Today"
                         labelPlacement="start"

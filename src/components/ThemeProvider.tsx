@@ -14,7 +14,13 @@ import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/st
 const THEME_STORAGE_KEY = 'ai-task-theme';
 const THEME_CHANGE_EVENT = 'ai-task-theme-change';
 
-export type AppThemeName = 'neo-mint' | 'pastel-rose' | 'elegant-grey' | 'midnight' | 'cobalt-contrast';
+export type AppThemeName =
+  | 'neo-mint'
+  | 'pastel-rose'
+  | 'elegant-grey'
+  | 'midnight'
+  | 'cobalt-contrast'
+  | 'colorful';
 
 export interface AppThemeOption {
   id: AppThemeName;
@@ -45,14 +51,20 @@ export const APP_THEME_OPTIONS: AppThemeOption[] = [
   {
     id: 'midnight',
     label: 'Midnight',
-    description: 'Dark navy surfaces with a bright mint accent.',
-    swatches: ['#5EEAD4', '#070B14', '#172033'],
+    description: 'Dark navy surfaces with a refined charcoal primary accent.',
+    swatches: ['#2A2B2E', '#070B14', '#172033'],
   },
   {
     id: 'cobalt-contrast',
     label: 'Cobalt Contrast',
     description: 'High-contrast navy text, stronger borders, and cobalt actions.',
     swatches: ['#1746A2', '#D7E3F4', '#FFFFFF'],
+  },
+  {
+    id: 'colorful',
+    label: 'Colorful Business',
+    description: 'Dark gray app background with crisp light gray panels, deep blue primary, and light blue accents.',
+    swatches: ['#1E293B', '#F1F5F9', '#1E40AF'],
   },
 ];
 
@@ -110,8 +122,8 @@ const THEME_PALETTES: Record<
   midnight: {
     appBg: '#070B14',
     surface: '#111827',
-    primary: '#5EEAD4',
-    primaryHover: '#99F6E4',
+    primary: '#2A2B2E',
+    primaryHover: '#3F4045',
     textTitle: '#F8FAFC',
     textMuted: '#94A3B8',
     success: '#4ADE80',
@@ -130,6 +142,18 @@ const THEME_PALETTES: Record<
     warning: '#9A4D00',
     danger: '#B42318',
     info: '#1746A2',
+  },
+  colorful: {
+    appBg: '#1E293B',
+    surface: '#F8FAFC',
+    primary: '#1E40AF',
+    primaryHover: '#1E3A8A',
+    textTitle: '#0F172A',
+    textMuted: '#475569',
+    success: '#167A4D',
+    warning: '#A85A05',
+    danger: '#B42318',
+    info: '#3B82F6',
   },
 };
 
@@ -226,7 +250,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         primary: {
           main: colors.primary,
           dark: colors.primaryHover,
-          contrastText: themeName === 'midnight' ? '#07111F' : '#FFFFFF',
+          contrastText: '#FFFFFF',
         },
         secondary: { main: colors.textTitle },
         success: { main: colors.success },

@@ -1,7 +1,7 @@
 # AI TASK — AI Agent Development Guide
 
-> Last reviewed: 2026-07-16  
-> Current database migration source: `20260717000100_database_quotas_and_log_retention.sql` (apply status must be verified per Supabase project)  
+> Last reviewed: 2026-09-13  
+> Current database migration source: `20260913141652_recurrent_occurrence_any_date.sql` (apply status must be verified per Supabase project)  
 > This document is the primary technical handoff for AI coding agents working in this repository.
 
 ## Quick Start for AI Agent
@@ -15,7 +15,7 @@
 7. Authorization must be enforced by Supabase RLS, RPC, or Edge Functions. Hiding a button is only a UI convenience.
 8. Space URLs use `/s/{slug}`. A signed-in user without a slug first selects an accessible Space.
 9. Global roles are `superadmin`, `admin`, and `user`; actual Space and Notebook access also depends on membership records.
-10. A subtask cycles through `TO DO → IN PROGRESS → DONE → TO DO`. Only `DONE` means `completed = true`.
+10. A subtask supports six status states (`TO DO`, `IN PROGRESS`, `WAITING`, `PENDING`, `CANCELLED`, `DONE`). Only `DONE` means `completed = true`. Subtasks also support optional `assignee` and `due_date`.
 11. Keep subtask `status`, `completed`, `completedAt`, completion events, and `workHours` consistent.
 12. Do not edit an already-applied migration. Add a new timestamped migration and a matching rollback file.
 13. Never expose `SUPABASE_SECRET_KEY`, the Supabase service-role key, or `GEMINI_API_KEY` to client code or `NEXT_PUBLIC_*` variables.
@@ -231,24 +231,25 @@ Task status values:
 URGENT | IN PROGRESS | TO DO | PENDING | CANCELLED | DONE
 ```
 
-Task progress is derived from completed subtasks unless a supported manual-progress rule applies. Use `src/utils/taskProgress.ts` and `src/utils/taskTimestamps.ts` rather than reimplementing this logic.
+Task progress is derived from completed subtasks (excluding `CANCELLED` subtasks from the denominator) unless a supported manual-progress rule applies. Use `src/utils/taskProgress.ts` and `src/utils/taskTimestamps.ts` rather than reimplementing this logic.
 
 ### 7.4 Subtask status invariant
 
 Subtask status values:
 
 ```text
-TO DO → IN PROGRESS → DONE → TO DO
+TO DO | IN PROGRESS | WAITING | PENDING | CANCELLED | DONE
 ```
 
 Required invariants:
 
 - `DONE` means `completed = true`.
-- `TO DO` and `IN PROGRESS` mean `completed = false`.
+- `TO DO`, `IN PROGRESS`, `WAITING`, `PENDING`, and `CANCELLED` mean `completed = false`.
+- Subtasks support optional `assignee` (string, max 15 chars) and optional `due_date` (`timestamptz`).
 - Entering `DONE` records `completedAt` and a completion event.
 - Leaving `DONE` clears `completedAt` and resets `workHours` to `0` in the client domain utility.
-- `SubtaskStatusControl` is used in Task Details, Today Tasks, and the Today right panel.
-- Legacy completion actions, including Mindmap Done, must update status consistently.
+- `SubtaskStatusControl` is used in Task Details, Today Tasks, Today right panel, and Mindmap view.
+- Legacy completion actions, including Mindmap status toggles, must update status consistently.
 - The database trigger `private.sync_subtask_status_and_completion()` is the final consistency guard.
 
 Supported `workHours` values are:
@@ -314,6 +315,7 @@ The total of `task_status_events`, `task_due_date_events`, and `subtask_completi
 - Supported recurrence values are `weekly`, `bi-weekly`, `monthly`, `quarterly`, `half-yearly`, and `yearly`.
 - Weekly and bi-weekly subtasks support one or more weekdays, numbered Monday `1` through Sunday `7`; all types use an anchor date.
 - Highlight the full Today column and the week containing Today whenever it is visible.
+- Occurrence statuses (`TO DO`, `IN PROGRESS`, `DONE`) and work hours can be cycled via `cycle_recurrent_subtask_occurrence` on ANY valid recurrence date along the timeline view.
 - CRUD is scoped to the active Notebook. Deleting a recurrent task requires two UI confirmations and cascades its recurrent subtasks; deleting a recurrent subtask requires one confirmation.
 
 ### 8.5 Notebook title search
@@ -324,11 +326,22 @@ The total of `task_status_events`, `task_due_date_events`, and `subtask_completi
 
 ### 8.6 Mindmap
 
-- Normal mode renders task hierarchy.
-- Today mode shows a `##TODAY` root connected directly to Today subtasks, omitting parent Task nodes.
-- Done actions must set both subtask `status = 'DONE'` and completion metadata consistently.
+- Full-screen interactive visual mindmap modal (`TaskMindmapDialog.tsx`).
+- **4 View Modes**:
+  1. `tag`: Root -> Tag -> Task -> Subtask
+  2. `assignee`: Root -> Assignee -> Task -> Subtask
+  3. `status`: Root -> Status -> Task -> Subtask
+  4. `today`: `##TODAY` Root -> Today Task / Subtask
+- **SVG Canvas & Navigation**: Rendered using cubic bezier connection curves, dynamic node widths based on title length, smooth click-and-drag canvas panning, and zoom control (0.45x to 2.2x).
+- **Node Expansion & Filtering**: Nodes (tags, assignees, statuses, tasks) can be individually expanded or collapsed. Supports filtering tasks by tags and toggling `showAllTasks` (active vs completed tasks/subtasks).
+- **Interactive Drag-and-Drop**: Supports dragging tasks/subtasks within their parent groups to reorder them visually in Mindmap view.
+- **In-place Actions**:
+  - Add subtask directly from a Task node.
+  - Subtask completion/status toggles sync directly with subtask state and triggers completion events.
+  - Clicking edit or task label opens the standard Task Details dialog.
+- **Persistence**: Pan, zoom, expanded nodes, view mode, tag filters, and `showAllTasks` state are persisted per Notebook in browser `localStorage` (`task-manager-mindmap-state:<notebook_id>`).
 
-### 8.5 Settings
+### 8.7 Settings
 
 Settings uses a fixed footer and a scrollable left menu/content layout. Current sections are:
 

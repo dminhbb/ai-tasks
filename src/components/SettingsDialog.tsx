@@ -123,9 +123,9 @@ function AppearancePanel() {
               }}
             >
               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {option.swatches.map((color) => (
+                {option.swatches.map((color, index) => (
                   <Box
-                    key={color}
+                    key={`${option.id}-${color}-${index}`}
                     component="span"
                     sx={{ width: 26, height: 26, borderRadius: '7px', backgroundColor: color }}
                   />

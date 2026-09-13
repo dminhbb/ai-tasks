@@ -2,12 +2,17 @@ import type { Subtask, Task } from '@/types';
 import { compareSubtaskOrder } from '@/utils/taskOrdering';
 
 const COMPLETED_VISIBILITY_DAYS = 3;
+const TODAY_FLAG_EXPIRY_DAYS = 7;
 const SUGGESTION_DUE_WINDOW_DAYS = 7;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 const SUBTASK_STATUS_ORDER: Record<Subtask['status'], number> = {
   'TO DO': 0,
   'IN PROGRESS': 1,
-  DONE: 2,
+  WARNING: 2,
+  WAITING: 3,
+  PENDING: 4,
+  CANCELLED: 5,
+  DONE: 6,
 };
 
 export interface TodaySubtaskItem {
@@ -31,13 +36,81 @@ export function isVisibleTodaySubtask(subtask: Subtask, now: number): boolean {
   return now - completedTime <= COMPLETED_VISIBILITY_DAYS * MILLISECONDS_PER_DAY;
 }
 
-export function compareTodaySubtaskItems(left: TodaySubtaskItem, right: TodaySubtaskItem): number {
-  const statusOrder = SUBTASK_STATUS_ORDER[left.subtask.status] - SUBTASK_STATUS_ORDER[right.subtask.status];
-  if (statusOrder !== 0) return statusOrder;
+export interface ClearExpiredTodayFlagsResult {
+  tasks: Task[];
+  changed: boolean;
+}
 
-  const subtaskOrder = compareSubtaskOrder(left.subtask, right.subtask);
-  if (subtaskOrder !== 0) return subtaskOrder;
-  return left.task.id.localeCompare(right.task.id);
+export function clearExpiredTodayFlags(tasks: Task[], now: number): ClearExpiredTodayFlagsResult {
+  let changed = false;
+
+  const nextTasks = tasks.map((task) => {
+    let taskChanged = false;
+    const subtasks = task.subtasks.map((subtask) => {
+      if (!subtask.isToday || !subtask.completed || !subtask.completedAt) return subtask;
+
+      const completedTime = new Date(subtask.completedAt).getTime();
+      if (Number.isNaN(completedTime)) return subtask;
+      if (now - completedTime < TODAY_FLAG_EXPIRY_DAYS * MILLISECONDS_PER_DAY) return subtask;
+
+      taskChanged = true;
+      return { ...subtask, isToday: false };
+    });
+
+    if (!taskChanged) return task;
+    changed = true;
+    return { ...task, subtasks };
+  });
+
+  return changed ? { tasks: nextTasks, changed: true } : { tasks, changed: false };
+}
+
+function compareByDueDate(left: TodaySubtaskItem, right: TodaySubtaskItem): number {
+  const leftTime = left.subtask.dueDate ? new Date(left.subtask.dueDate).getTime() : NaN;
+  const rightTime = right.subtask.dueDate ? new Date(right.subtask.dueDate).getTime() : NaN;
+  const leftValid = !Number.isNaN(leftTime);
+  const rightValid = !Number.isNaN(rightTime);
+
+  if (!leftValid && !rightValid) return 0;
+  if (!leftValid) return 1;
+  if (!rightValid) return -1;
+  return leftTime - rightTime;
+}
+
+export type TodaySortCriteria = 'status' | 'dueDate' | 'assignee' | 'parentTask';
+
+export function compareTodaySubtaskItemsBy(
+  criteria: TodaySortCriteria
+): (left: TodaySubtaskItem, right: TodaySubtaskItem) => number {
+  return (left, right) => {
+    let primaryOrder = 0;
+    switch (criteria) {
+      case 'status':
+        primaryOrder = SUBTASK_STATUS_ORDER[left.subtask.status] - SUBTASK_STATUS_ORDER[right.subtask.status];
+        break;
+      case 'assignee':
+        primaryOrder = (left.subtask.assignee || '').localeCompare(right.subtask.assignee || '');
+        break;
+      case 'parentTask':
+        primaryOrder = left.task.title.localeCompare(right.task.title);
+        break;
+      case 'dueDate':
+        primaryOrder = 0;
+        break;
+    }
+    if (primaryOrder !== 0) return primaryOrder;
+
+    const dueDateOrder = compareByDueDate(left, right);
+    if (dueDateOrder !== 0) return dueDateOrder;
+
+    const subtaskOrder = compareSubtaskOrder(left.subtask, right.subtask);
+    if (subtaskOrder !== 0) return subtaskOrder;
+    return left.task.id.localeCompare(right.task.id);
+  };
+}
+
+export function compareTodaySubtaskItems(left: TodaySubtaskItem, right: TodaySubtaskItem): number {
+  return compareTodaySubtaskItemsBy('status')(left, right);
 }
 
 export function getTodaySubtaskItems(tasks: Task[], now: number): TodaySubtaskItem[] {

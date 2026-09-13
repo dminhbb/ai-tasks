@@ -27,10 +27,11 @@ The archive includes a consistent SQLite snapshot and legacy settings. Treat it 
 - `src/lib/supabase/client.ts`: browser Supabase client and public env validation.
 - `src/lib/supabase/data.ts`: Space, Notebook, normal task, recurrent task, and settings data access.
 - `src/components/TodayWorkspace.tsx`: Today right panel and popup, including the five-second Undo deletion toast.
+- `src/components/TaskMindmapDialog.tsx`: interactive SVG Mindmap modal with 4 view modes (tag, assignee, status, today), pan/zoom, drag-reorder, and localStorage state persistence.
 - `src/components/RecurringTasksDialog.tsx`: separate full-screen recurrent schedule; it does not generate normal tasks.
 - `src/utils/recurrentSchedule.ts`: weekly through yearly schedule matching and Monday-based three-week calendar.
 - `src/lib/supabase/functions.ts`: typed Edge Function calls.
-- `supabase/migrations/`: schema, RLS, task bundle RPC, and AI quota.
+- `supabase/migrations/`: schema, RLS, task bundle RPC, subtask statuses/assignee/due_date, recurrent occurrences, and AI quota.
 - `supabase/rollbacks/`: matching manual rollback scripts.
 - `supabase/functions/`: authenticated Gemini functions.
 - `scripts/seed-supabase-admin.mjs`: safe admin seed using the Supabase Admin API.
@@ -67,4 +68,4 @@ npx.cmd supabase migration list
 
 ## Deployment status
 
-The code and migrations are prepared locally. The recurrent-task migration `20260716000100_recurrent_tasks.sql`, quota/retention migration `20260717000100_database_quotas_and_log_retention.sql`, and occurrence-log migration `20260717000200_recurrent_occurrence_work_logs.sql` have matching rollbacks and must be applied to each target Supabase project before using all Recurr Task features. Occurrence status/work hours are stored per recurrent subtask and scheduled date; only Today and Yesterday may be changed. The quota layer retains the newest 2,000 aggregate Notebook logs, including recurrent work events. A real Supabase project URL and secret key are required before `db push`, user seeding, legacy data migration, or Edge Function deployment can happen.
+The code and migrations are prepared locally. Up to migration `20260913141652_recurrent_occurrence_any_date.sql`, migrations cover extended subtask statuses (`TO DO`, `IN PROGRESS`, `WAITING`, `PENDING`, `CANCELLED`, `DONE`), subtask assignee/due_date columns, quota/log retention, and flexible recurrent occurrence cycling across any schedule date along the timeline view. A real Supabase project URL and secret key are required before `db push`, user seeding, legacy data migration, or Edge Function deployment can happen.

@@ -27,6 +27,7 @@
     "@mui/material": "^9.0.1",
     "@mui/material-nextjs": "^9.0.1",
     "@mui/x-data-grid": "^9.1.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.110.3",
     "better-sqlite3": "^12.10.0",
     "date-fns": "^4.1.0",

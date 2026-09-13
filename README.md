@@ -69,11 +69,13 @@ Database RLS is the source of truth. Hiding a button in the frontend is only a u
 
 Spaces are opened at `/s/{slug}`. Users who belong to multiple spaces can switch from the compact Space selector in the top toolbar. Space share links use the same slug route. Deleting a space cascades its notebooks, tasks, subtasks, tags, and logs at the database layer, so test deletion on staging and keep a database backup.
 
-## Recurrent Tasks and notebook search
+## Recurrent Tasks, Mindmap, and notebook search
 
 Recurrent Tasks are schedule templates stored separately from normal Tasks. They only appear in the full-screen `Recurr Task` view, never generate execution tasks automatically, and support weekly, bi-weekly, monthly, quarterly, half-yearly, and yearly rules. Weekly and bi-weekly rules can select multiple weekdays.
 
-Each scheduled occurrence has an independent To Do/In Progress/Done state. Users can log Today or Yesterday occurrences from the timeline; completion records work hours, while cycling Done back to To Do removes that occurrence and its associated work events.
+Each scheduled occurrence has an independent To Do/In Progress/Done state and can be cycled with work hours directly on any valid occurrence date along the timeline view.
+
+The application includes a full-screen interactive **Mindmap** (`TaskMindmapDialog`) with 4 view modes (`tag`, `assignee`, `status`, `today`), smooth SVG canvas pan/zoom, node expansion/collapsing, tag filtering, task/subtask drag-to-reorder, inline subtask addition, and per-notebook `localStorage` state persistence.
 
 The normal Task toolbar also includes a non-AI title search for Tasks and Subtasks in the current Notebook. Results open the parent Task Details dialog; the X button clears the query and closes the result panel.
 

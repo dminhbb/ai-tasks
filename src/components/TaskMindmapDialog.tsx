@@ -19,7 +19,8 @@ import {
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
 } from '@mui/icons-material';
-import type { Subtask, Task } from '@/types';
+import type { Subtask, SubtaskStatus, Task } from '@/types';
+import SubtaskStatusControl from '@/components/SubtaskStatusControl';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import { getTaskProgress } from '@/utils/taskProgress';
 import {
@@ -51,7 +52,7 @@ const MIN_NODE_WIDTH = 56;
 const TAG_MAX_WIDTH = 200;
 const TASK_MAX_WIDTH = 400;
 const SUBTASK_MAX_WIDTH = 600;
-const NODE_ACTION_ZONE_WIDTH = 68;
+const NODE_ACTION_ZONE_WIDTH = 82;
 const MIN_ZOOM = 0.45;
 const MAX_ZOOM = 2.2;
 const ZOOM_STEP = 1.14;
@@ -772,6 +773,35 @@ export default function TaskMindmapDialog({
     );
   };
 
+  const handleSubtaskStatusChange = (
+    parentTask: Task,
+    subtask: Subtask,
+    nextStatus: SubtaskStatus
+  ) => {
+    const isDone = nextStatus === 'DONE';
+    const completedAt = isDone ? (subtask.completedAt || new Date().toISOString()) : null;
+
+    onSaveTasks(
+      tasks.map((task) =>
+        task.id === parentTask.id
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((candidate) =>
+                candidate.id === subtask.id
+                  ? {
+                      ...candidate,
+                      status: nextStatus,
+                      completed: isDone,
+                      completedAt,
+                    }
+                  : candidate
+              ),
+            }
+          : task
+      )
+    );
+  };
+
   const clearDragState = () => {
     setDraggedTaskId(null);
     setDragOverTaskId(null);
@@ -895,13 +925,22 @@ export default function TaskMindmapDialog({
         ? dragOverSubtask?.taskId === node.parentTask.id && dragOverSubtask.subtaskId === node.subtask.id
         : false;
 
+    const subtaskStatus = node.subtask?.status || (node.completed ? 'DONE' : 'TO DO');
     const backgroundColor =
       isRoot || isTag
         ? NEO_MINT.primary
         : isSubtask
-          ? node.completed
+          ? subtaskStatus === 'DONE'
             ? 'var(--surface-muted)'
-            : 'var(--warning-bg)'
+            : subtaskStatus === 'IN PROGRESS'
+              ? 'var(--primary-subtle)'
+              : subtaskStatus === 'WARNING'
+                ? 'var(--warning-bg)'
+                : subtaskStatus === 'WAITING'
+                  ? 'var(--due-date-change-bg)'
+                  : subtaskStatus === 'CANCELLED'
+                    ? 'var(--danger-bg)'
+                    : 'var(--surface-soft)'
           : node.task?.status === 'TO DO'
             ? 'var(--surface-muted)'
             : node.urgent
@@ -998,7 +1037,7 @@ export default function TaskMindmapDialog({
               alignItems: 'center',
               justifyContent: 'flex-start',
               gap: 0.25,
-              opacity: 0.46,
+              opacity: 0.65,
               transition: 'opacity 0.15s ease',
             }}
           >
@@ -1033,33 +1072,44 @@ export default function TaskMindmapDialog({
             )}
 
             {isSubtask && node.parentTask && node.subtask && (
-              <Tooltip title="Drag to reorder within this task">
-                <Box
-                  component="span"
-                  draggable
-                  onDragStart={(event) => handleSubtaskDragStart(event, node.parentTask!, node.subtask!)}
-                  onDragEnd={clearDragState}
-                  sx={{
-                    width: 18,
-                    height: 18,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '6px',
-                    color: NEO_MINT.textBody,
-                    cursor: 'grab',
-                    '&:hover': {
-                      color: NEO_MINT.primary,
-                      backgroundColor: 'rgba(255, 255, 255, 0.64)',
-                    },
-                    '&:active': {
-                      cursor: 'grabbing',
-                    },
-                  }}
-                >
-                  <DragIndicatorIcon sx={{ fontSize: 15 }} />
-                </Box>
-              </Tooltip>
+              <>
+                <Tooltip title="Drag to reorder within this task">
+                  <Box
+                    component="span"
+                    draggable
+                    onDragStart={(event) => handleSubtaskDragStart(event, node.parentTask!, node.subtask!)}
+                    onDragEnd={clearDragState}
+                    sx={{
+                      width: 18,
+                      height: 18,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '6px',
+                      color: NEO_MINT.textBody,
+                      cursor: 'grab',
+                      '&:hover': {
+                        color: NEO_MINT.primary,
+                        backgroundColor: 'rgba(255, 255, 255, 0.64)',
+                      },
+                      '&:active': {
+                        cursor: 'grabbing',
+                      },
+                    }}
+                  >
+                    <DragIndicatorIcon sx={{ fontSize: 15 }} />
+                  </Box>
+                </Tooltip>
+
+                <SubtaskStatusControl
+                  status={node.subtask.status || (node.subtask.completed ? 'DONE' : 'TO DO')}
+                  size={20}
+                  iconSize={14}
+                  onSelect={(nextStatus) =>
+                    handleSubtaskStatusChange(node.parentTask!, node.subtask!, nextStatus)
+                  }
+                />
+              </>
             )}
 
             {viewMode === 'today' &&

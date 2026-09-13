@@ -51,6 +51,7 @@ import { applyTaskTimestamps } from '@/utils/taskTimestamps';
 import { applyProgressRules } from '@/utils/taskProgress';
 import { requestedSpaceFromPath, spaceUrl } from '@/utils/spaceRouting';
 import { NEO_MINT } from '@/styles/neoMintTokens';
+import { FOOTER_TEXT } from '@/config/version';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LoginScreen from '@/components/LoginScreen';
 import { useAuth } from '@/components/AuthProvider';
@@ -900,7 +901,7 @@ function TaskManagerApp({ profile, onSignOut }: { profile: UserProfile; onSignOu
             {/* Footer */}
             <Box sx={{ py: 3, textAlign: 'center' }}>
               <Typography sx={{ color: NEO_MINT.textMuted, fontSize: '13px', fontWeight: 500 }}>
-                (C) AI TASK v1.5
+                {FOOTER_TEXT}
               </Typography>
             </Box>
           </Box>

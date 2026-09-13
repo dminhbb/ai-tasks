@@ -23,12 +23,20 @@ describe('subtask work log', () => {
     });
   });
 
-  it('cycles through To Do, In Progress, Done and back to To Do', () => {
-    const started = cycleSubtaskStatus(makeSubtask(), '2026-07-15T08:00:00.000Z');
-    const completed = cycleSubtaskStatus(started, '2026-07-15T09:00:00.000Z');
+  it('cycles through To Do, In Progress, Warning, Waiting, Pending, Cancelled, Done and back to To Do', () => {
+    const inProgress = cycleSubtaskStatus(makeSubtask(), 'unused');
+    const warning = cycleSubtaskStatus(inProgress, 'unused');
+    const waiting = cycleSubtaskStatus(warning, 'unused');
+    const pending = cycleSubtaskStatus(waiting, 'unused');
+    const cancelled = cycleSubtaskStatus(pending, 'unused');
+    const completed = cycleSubtaskStatus(cancelled, '2026-07-15T09:00:00.000Z');
     const reset = cycleSubtaskStatus(completed, 'unused');
 
-    expect(started).toMatchObject({ status: 'IN PROGRESS', completed: false, completedAt: null });
+    expect(inProgress).toMatchObject({ status: 'IN PROGRESS', completed: false, completedAt: null });
+    expect(warning).toMatchObject({ status: 'WARNING', completed: false, completedAt: null });
+    expect(waiting).toMatchObject({ status: 'WAITING', completed: false, completedAt: null });
+    expect(pending).toMatchObject({ status: 'PENDING', completed: false, completedAt: null });
+    expect(cancelled).toMatchObject({ status: 'CANCELLED', completed: false, completedAt: null });
     expect(completed).toMatchObject({
       status: 'DONE',
       completed: true,

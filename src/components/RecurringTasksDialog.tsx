@@ -28,7 +28,7 @@ import {
   NavigateNext,
   Repeat,
 } from '@mui/icons-material';
-import { addDays, addWeeks, format, isSameDay, isSameWeek, subDays } from 'date-fns';
+import { addDays, addWeeks, format, isSameWeek } from 'date-fns';
 import type { RecurrentOccurrenceState, RecurrentSubtask, RecurrentTask, RecurrenceType } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
@@ -70,11 +70,6 @@ function occurrenceStateKey(recurrentSubtaskId: string, occurrenceDate: string):
   return `${recurrentSubtaskId}:${occurrenceDate}`;
 }
 
-function isOccurrenceEditable(date: Date): boolean {
-  const today = new Date();
-  return isSameDay(date, today) || isSameDay(date, subDays(today, 1));
-}
-
 function truncateNotes(notes: string) {
   const normalizedNotes = notes.trim();
   return normalizedNotes.length > 70 ? `${normalizedNotes.slice(0, 70)}....` : normalizedNotes || '—';
@@ -82,23 +77,20 @@ function truncateNotes(notes: string) {
 
 interface OccurrenceStatusMarkerProps {
   status: RecurrentOccurrenceState['status'];
-  editable: boolean;
   disabled: boolean;
   onClick: () => void;
 }
 
-function OccurrenceStatusMarker({ status, editable, disabled, onClick }: OccurrenceStatusMarkerProps) {
+function OccurrenceStatusMarker({ status, disabled, onClick }: OccurrenceStatusMarkerProps) {
   const statusLabel = status === 'TO DO' ? 'To Do' : status === 'IN PROGRESS' ? 'In Progress' : 'Done';
-  const tooltip = editable
-    ? `${statusLabel} — click to change status`
-    : `${statusLabel} — only Today and Yesterday can be changed`;
+  const tooltip = `${statusLabel} — click to change status`;
 
   return (
     <Tooltip title={tooltip}>
       <span>
         <IconButton
           size="small"
-          disabled={disabled || !editable}
+          disabled={disabled}
           aria-label={`Recurrent occurrence status: ${statusLabel}`}
           onClick={onClick}
           sx={{ width: 24, height: 24, p: 0.25 }}
@@ -571,7 +563,7 @@ export default function RecurringTasksDialog({
   };
 
   const handleOccurrenceClick = async (subtask: RecurrentSubtask, date: Date) => {
-    if (!canManageTasks || !isOccurrenceEditable(date) || isUpdatingOccurrence) return;
+    if (!canManageTasks || isUpdatingOccurrence) return;
     const occurrenceDate = format(date, 'yyyy-MM-dd');
     const currentState = occurrenceStateByKey.get(occurrenceStateKey(subtask.id, occurrenceDate));
     if (currentState?.status === 'IN PROGRESS') {
@@ -885,7 +877,6 @@ export default function RecurringTasksDialog({
                             return (
                               <OccurrenceStatusMarker
                                 status={state?.status ?? 'TO DO'}
-                                editable={isOccurrenceEditable(day)}
                                 disabled={!canManageTasks || isUpdatingOccurrence}
                                 onClick={() => void handleOccurrenceClick(subtask, day)}
                               />

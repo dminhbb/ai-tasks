@@ -14,7 +14,11 @@ export const WORK_HOUR_OPTIONS = [
 
 const NEXT_SUBTASK_STATUS: Record<SubtaskStatus, SubtaskStatus> = {
   'TO DO': 'IN PROGRESS',
-  'IN PROGRESS': 'DONE',
+  'IN PROGRESS': 'WARNING',
+  WARNING: 'WAITING',
+  WAITING: 'PENDING',
+  PENDING: 'CANCELLED',
+  CANCELLED: 'DONE',
   DONE: 'TO DO',
 };
 
@@ -42,4 +46,14 @@ export function setSubtaskWorkHours(subtask: Subtask, workHours: number): Subtas
     throw new RangeError('Work hours must be one of the supported values from 0 to 24.');
   }
   return { ...subtask, workHours };
+}
+
+export const SUBTASK_ASSIGNEE_MAX_LENGTH = 15;
+
+export function setSubtaskAssignee(subtask: Subtask, assignee: string): Subtask {
+  return { ...subtask, assignee: assignee.slice(0, SUBTASK_ASSIGNEE_MAX_LENGTH) };
+}
+
+export function setSubtaskDueDate(subtask: Subtask, dueDate: string | null): Subtask {
+  return { ...subtask, dueDate: dueDate || null };
 }

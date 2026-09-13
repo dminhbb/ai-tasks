@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { DragEvent } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import {
   Box,
   Button,
@@ -11,27 +11,31 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  Menu,
+  MenuItem,
   Snackbar,
   Switch,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Close, Delete, DragIndicator, DriveFileMoveOutlined, PlaylistAdd } from '@mui/icons-material';
-import type { Subtask, Task, UserProfile } from '@/types';
+import { Close, Delete, DragIndicator, DriveFileMoveOutlined, PlaylistAdd, Sort } from '@mui/icons-material';
+import type { Subtask, SubtaskStatus, Task, UserProfile } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import {
+  clearExpiredTodayFlags,
   compareTodaySubtaskItems,
+  compareTodaySubtaskItemsBy,
   getSuggestedTodaySubtaskItems,
   getTodaySubtaskItems,
   reorderTodaySubtasks,
 } from '@/utils/todayTasks';
-import type { TodaySubtaskItem } from '@/utils/todayTasks';
+import type { TodaySortCriteria, TodaySubtaskItem } from '@/utils/todayTasks';
 import { addBatchSubtasksToTodayTask } from '@/utils/todayBatch';
 import TodayBatchAddDialog from '@/components/TodayBatchAddDialog';
 import SubtaskWorkLogSelect from '@/components/SubtaskWorkLogSelect';
 import TodayMoveSubtaskDialog from '@/components/TodayMoveSubtaskDialog';
 import SubtaskStatusControl from '@/components/SubtaskStatusControl';
-import { cycleSubtaskStatus, setSubtaskWorkHours } from '@/utils/subtaskWork';
+import { setSubtaskStatus, setSubtaskWorkHours } from '@/utils/subtaskWork';
 
 const VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000;
 const PENDING_DELETE_DURATION_MS = 5 * 1000;
@@ -41,6 +45,41 @@ const TODAY_DIALOG_GRID_COLUMNS = {
 };
 const TODAY_DIALOG_TABLE_MIN_WIDTH = 900;
 const TODAY_TABLE_BORDER = '1px solid color-mix(in srgb, var(--outline) 72%, transparent)';
+const PARENT_TASK_TITLE_SUBTITLE_MAX_LENGTH = 40;
+const TODAY_SORT_OPTIONS: { value: TodaySortCriteria; label: string }[] = [
+  { value: 'status', label: 'Status' },
+  { value: 'dueDate', label: 'Due date' },
+  { value: 'assignee', label: 'Assignee' },
+  { value: 'parentTask', label: 'Parent task' },
+];
+
+function truncateForSubtitle(value: string, maxLength: number): string {
+  const trimmed = value.trim();
+  return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength)}…` : trimmed;
+}
+
+function InfoBadge({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: 0.65,
+        py: 0.1,
+        borderRadius: '999px',
+        fontSize: '9.5px',
+        fontWeight: 700,
+        lineHeight: 1.6,
+        whiteSpace: 'nowrap',
+        backgroundColor: 'var(--primary-subtle)',
+        color: NEO_MINT.primary,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
 
 interface TodayWorkspaceProps {
   tasks: Task[];
@@ -84,6 +123,8 @@ export default function TodayWorkspace({
 }: TodayWorkspaceProps) {
   const [visibilityReferenceTime, setVisibilityReferenceTime] = useState(0);
   const [includeSuggestedTasks, setIncludeSuggestedTasks] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState<TodaySortCriteria>('status');
+  const [sortMenuAnchor, setSortMenuAnchor] = useState<HTMLElement | null>(null);
   const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
   const [dragOverSubtaskId, setDragOverSubtaskId] = useState<string | null>(null);
   const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
@@ -113,6 +154,14 @@ export default function TodayWorkspace({
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    if (!canManageTasks || !visibilityReferenceTime) return;
+    const { tasks: nextTasks, changed } = clearExpiredTodayFlags(tasks, visibilityReferenceTime);
+    if (changed) {
+      void latestSaveTasksRef.current(nextTasks);
+    }
+  }, [canManageTasks, tasks, visibilityReferenceTime]);
+
   const todayItems = useMemo<TodaySubtaskItem[]>(
     () => getTodaySubtaskItems(tasks, visibilityReferenceTime),
     [tasks, visibilityReferenceTime]
@@ -135,6 +184,51 @@ export default function TodayWorkspace({
     [pendingDeletionId, todayItems]
   );
 
+  const currentPanelItemIds = visiblePanelItems.map((item) => item.subtask.id);
+  const [panelOrder, setPanelOrder] = useState<string[]>(() =>
+    [...visiblePanelItems].sort(compareTodaySubtaskItemsBy(sortCriteria)).map((item) => item.subtask.id)
+  );
+  const [orderedSortCriteria, setOrderedSortCriteria] = useState(sortCriteria);
+  const [orderedItemIds, setOrderedItemIds] = useState<string[]>(currentPanelItemIds);
+
+  // Adjust the sticky panel order during render (React's documented pattern for
+  // derived state) rather than in an effect, so cascading re-renders are avoided.
+  if (sortCriteria !== orderedSortCriteria) {
+    // The user explicitly picked a new sort option — resort from scratch.
+    setOrderedSortCriteria(sortCriteria);
+    setOrderedItemIds(currentPanelItemIds);
+    setPanelOrder(
+      [...visiblePanelItems].sort(compareTodaySubtaskItemsBy(sortCriteria)).map((item) => item.subtask.id)
+    );
+  } else {
+    const previousIdSet = new Set(orderedItemIds);
+    const idsChanged =
+      currentPanelItemIds.length !== orderedItemIds.length ||
+      currentPanelItemIds.some((id) => !previousIdSet.has(id));
+    if (idsChanged) {
+      // A subtask was added to or removed from Today — keep everyone else's
+      // position and just drop removed ids / append newly added ones.
+      const nextIdSet = new Set(currentPanelItemIds);
+      const kept = panelOrder.filter((id) => nextIdSet.has(id));
+      const keptSet = new Set(kept);
+      const added = currentPanelItemIds.filter((id) => !keptSet.has(id));
+      setOrderedItemIds(currentPanelItemIds);
+      setPanelOrder([...kept, ...added]);
+    }
+  }
+
+  const panelItemById = useMemo(
+    () => new Map(visiblePanelItems.map((item) => [item.subtask.id, item])),
+    [visiblePanelItems]
+  );
+  const sortedPanelItems = useMemo(
+    () => panelOrder.flatMap((id) => {
+      const item = panelItemById.get(id);
+      return item ? [item] : [];
+    }),
+    [panelItemById, panelOrder]
+  );
+
   const updateSubtask = (
     taskId: string,
     subtaskId: string,
@@ -154,9 +248,9 @@ export default function TodayWorkspace({
     void onSaveTasks(nextTasks);
   };
 
-  const cycleStatus = (item: TodaySubtaskItem) => {
+  const selectStatus = (item: TodaySubtaskItem, status: SubtaskStatus) => {
     updateSubtask(item.task.id, item.subtask.id, (subtask) =>
-      cycleSubtaskStatus(subtask, new Date().toISOString())
+      setSubtaskStatus(subtask, status, new Date().toISOString())
     );
   };
 
@@ -252,74 +346,126 @@ export default function TodayWorkspace({
     <>
       <Box sx={{ height: '100%', minWidth: 0, backgroundColor: 'var(--sidebar-bg)' }}>
         <Box sx={{ px: 1.75, py: 1.5, borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}` }}>
-          <Typography
-            sx={{ fontSize: '12px', fontWeight: 800, letterSpacing: '-0.015em', color: NEO_MINT.textTitle }}
-          >
-            {profile.nickname || profile.email.split('@')[0]} | {profile.role}
-          </Typography>
-          <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted, mt: 0.2 }} noWrap>
-            {profile.email}
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: '10px',
-              fontWeight: 800,
-              letterSpacing: '0.09em',
-              color: NEO_MINT.primary,
-              mt: 1.25,
-            }}
-          >
-            ##TODAY
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 0.5 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{ fontSize: '12px', fontWeight: 800, letterSpacing: '-0.015em', color: NEO_MINT.textTitle }}
+              >
+                {profile.nickname || profile.email.split('@')[0]} | {profile.role}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: NEO_MINT.textMuted, mt: 0.2 }} noWrap>
+                {profile.email}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  letterSpacing: '0.09em',
+                  color: NEO_MINT.primary,
+                  mt: 1.25,
+                }}
+              >
+                ##TODAY
+              </Typography>
+            </Box>
+            <Tooltip title={`Sort by ${TODAY_SORT_OPTIONS.find((o) => o.value === sortCriteria)?.label}`}>
+              <IconButton
+                size="small"
+                aria-label="Sort Today tasks"
+                onClick={(event) => setSortMenuAnchor(event.currentTarget)}
+                sx={{ flexShrink: 0, color: NEO_MINT.textMuted, '&:hover': { color: NEO_MINT.primary } }}
+              >
+                <Sort fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={sortMenuAnchor}
+              open={sortMenuAnchor !== null}
+              onClose={() => setSortMenuAnchor(null)}
+            >
+              {TODAY_SORT_OPTIONS.map((option) => (
+                <MenuItem
+                  key={option.value}
+                  selected={option.value === sortCriteria}
+                  onClick={() => {
+                    setSortCriteria(option.value);
+                    setSortMenuAnchor(null);
+                  }}
+                  sx={{ fontSize: '13px' }}
+                >
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
         </Box>
         <Box sx={{ overflowY: 'auto', height: 'calc(100% - 82px)' }}>
-          {visiblePanelItems.length === 0 ? (
+          {sortedPanelItems.length === 0 ? (
             <Typography sx={{ p: 2, fontSize: '12px', lineHeight: 1.6, color: NEO_MINT.textMuted }}>
               No subtasks selected for Today.
             </Typography>
           ) : (
-            visiblePanelItems.map((item) => (
+            sortedPanelItems.map((item) => (
               <Box
                 key={item.subtask.id}
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
                   px: 0.75,
                   py: 0.5,
                   borderBottom: `1px solid ${NEO_MINT.cardBorderSoft}`,
                 }}
               >
-                <SubtaskStatusControl
-                  disabled={!canManageTasks}
-                  status={item.subtask.status}
-                  onCycle={() => cycleStatus(item)}
-                />
-                <Tooltip title={item.task.title} placement="left">
-                  <ButtonBase
-                    onClick={() => openParentTask(item.task)}
-                    sx={{ minWidth: 0, flex: 1, justifyContent: 'flex-start', borderRadius: '6px' }}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 0.5,
+                    pl: '34px',
+                    mb: 0.3,
+                  }}
+                >
+                  <TruncatedText
+                    sx={{ flex: 1, minWidth: 0, fontSize: '9.5px', fontWeight: 600, color: NEO_MINT.textMuted }}
                   >
-                    <TruncatedText
-                      sx={{
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        color: item.subtask.completed ? NEO_MINT.textMuted : NEO_MINT.textTitle,
-                        textDecoration: item.subtask.completed ? 'line-through' : 'none',
-                      }}
-                    >
-                      {item.subtask.title}
-                    </TruncatedText>
-                  </ButtonBase>
-                </Tooltip>
-                {item.subtask.completed && (
-                  <SubtaskWorkLogSelect
-                    value={item.subtask.workHours}
+                    {truncateForSubtitle(item.task.title, PARENT_TASK_TITLE_SUBTITLE_MAX_LENGTH)}
+                  </TruncatedText>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
+                    <InfoBadge>{item.subtask.assignee || '—'}</InfoBadge>
+                    <InfoBadge>{item.subtask.dueDate ? item.subtask.dueDate.substring(0, 10) : '—'}</InfoBadge>
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <SubtaskStatusControl
                     disabled={!canManageTasks}
-                    compact
-                    onChange={(workHours) => updateWorkHours(item, workHours)}
+                    status={item.subtask.status}
+                    onSelect={(status) => selectStatus(item, status)}
                   />
-                )}
+                  <Tooltip title={item.task.title} placement="left">
+                    <ButtonBase
+                      onClick={() => openParentTask(item.task)}
+                      sx={{ minWidth: 0, flex: 1, justifyContent: 'flex-start', borderRadius: '6px' }}
+                    >
+                      <TruncatedText
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: item.subtask.completed ? NEO_MINT.textMuted : NEO_MINT.textTitle,
+                          textDecoration: item.subtask.completed ? 'line-through' : 'none',
+                        }}
+                      >
+                        {item.subtask.title}
+                      </TruncatedText>
+                    </ButtonBase>
+                  </Tooltip>
+                  {item.subtask.completed && (
+                    <SubtaskWorkLogSelect
+                      value={item.subtask.workHours}
+                      disabled={!canManageTasks}
+                      compact
+                      onChange={(workHours) => updateWorkHours(item, workHours)}
+                    />
+                  )}
+                </Box>
               </Box>
             ))
           )}
@@ -454,7 +600,7 @@ export default function TodayWorkspace({
                     <SubtaskStatusControl
                       disabled={!canManageTasks}
                       status={item.subtask.status}
-                      onCycle={() => cycleStatus(item)}
+                      onSelect={(status) => selectStatus(item, status)}
                     />
                     <ButtonBase
                       onClick={() => openParentTask(item.task)}

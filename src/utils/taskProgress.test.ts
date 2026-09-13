@@ -9,6 +9,18 @@ describe('task progress', () => {
     expect(syncTaskProgress(task).progress).toBe(50);
   });
 
+  it('excludes CANCELLED subtasks from the denominator', () => {
+    const task = makeTask({
+      subtasks: [
+        makeSubtask({ status: 'DONE', completed: true }),
+        makeSubtask({ status: 'TO DO', completed: false }),
+        makeSubtask({ status: 'CANCELLED', completed: false }),
+      ],
+    });
+    // 1 DONE out of 2 active (DONE + TO DO), excluding 1 CANCELLED -> 50%
+    expect(getTaskProgress(task)).toBe(50);
+  });
+
   it('maps manual completion to Done', () => {
     expect(applyManualProgress(makeTask(), 100).status).toBe('DONE');
     expect(applyManualProgress(makeTask(), 40).status).toBe('IN PROGRESS');

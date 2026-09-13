@@ -1,5 +1,12 @@
 export type TaskStatus = 'URGENT' | 'IN PROGRESS' | 'TO DO' | 'PENDING' | 'CANCELLED' | 'DONE';
-export type SubtaskStatus = 'TO DO' | 'IN PROGRESS' | 'DONE';
+export type SubtaskStatus =
+  | 'TO DO'
+  | 'IN PROGRESS'
+  | 'WARNING'
+  | 'WAITING'
+  | 'PENDING'
+  | 'CANCELLED'
+  | 'DONE';
 export type AppRole = 'superadmin' | 'admin' | 'user';
 
 export interface UserProfile {
@@ -60,7 +67,10 @@ export interface Subtask {
   status: SubtaskStatus;
   completed: boolean;
   isToday: boolean;
+  createdAt: string;
   completedAt: string | null;
+  assignee: string;
+  dueDate: string | null;
   workHours: number;
   sortOrder?: number;
 }

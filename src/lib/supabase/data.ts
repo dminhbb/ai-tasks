@@ -65,10 +65,13 @@ const membershipRowSchema = z.object({
 const subtaskRowSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
-  status: z.enum(['TO DO', 'IN PROGRESS', 'DONE']),
+  status: z.enum(['TO DO', 'IN PROGRESS', 'WARNING', 'WAITING', 'PENDING', 'CANCELLED', 'DONE']),
   completed: z.boolean(),
   is_today: z.boolean(),
+  created_at: z.string(),
   completed_at: z.string().nullable(),
+  assignee: z.string(),
+  due_date: z.string().nullable(),
   work_hours: workHoursSchema,
   sort_order: z.number(),
 });
@@ -300,7 +303,7 @@ export async function readTasks(notebookId: string): Promise<Task[]> {
       `
       id, title, details, assignee, status, progress, sort_order,
       start_date, due_date, notes, created_at, in_progress_at, done_at,
-      subtasks(id, title, status, completed, is_today, completed_at, work_hours, sort_order),
+      subtasks(id, title, status, completed, is_today, created_at, completed_at, assignee, due_date, work_hours, sort_order),
       task_tags(tag),
       task_due_date_events(id)
     `
@@ -337,7 +340,10 @@ export async function readTasks(notebookId: string): Promise<Task[]> {
           status: subtask.status,
           completed: subtask.completed,
           isToday: subtask.is_today,
+          createdAt: subtask.created_at,
           completedAt: subtask.completed_at,
+          assignee: subtask.assignee,
+          dueDate: subtask.due_date,
           workHours: subtask.work_hours,
           sortOrder: subtask.sort_order,
         })),
@@ -390,6 +396,9 @@ export async function saveTasks(
         status: subtask.status,
         completed: subtask.completed,
         isToday: subtask.isToday,
+        createdAt: subtask.createdAt,
+        assignee: subtask.assignee,
+        dueDate: subtask.dueDate,
         workHours: subtask.workHours,
         sortOrder: subtask.sortOrder ?? 0,
       })),

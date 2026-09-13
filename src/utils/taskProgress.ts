@@ -10,10 +10,11 @@ export function clampProgress(value: unknown): number {
 
 export function getTaskProgress(task: Pick<Task, 'progress' | 'subtasks'>): number {
   const subtasks = task.subtasks || [];
-  if (subtasks.length === 0) return clampProgress(task.progress);
+  const activeSubtasks = subtasks.filter((subtask) => subtask.status !== 'CANCELLED');
+  if (activeSubtasks.length === 0) return clampProgress(task.progress);
 
-  const completed = subtasks.filter((subtask) => subtask.completed).length;
-  return clampProgress((completed / subtasks.length) * 100);
+  const completed = activeSubtasks.filter((subtask) => subtask.completed).length;
+  return clampProgress((completed / activeSubtasks.length) * 100);
 }
 
 export function syncTaskProgress(task: Task): Task {

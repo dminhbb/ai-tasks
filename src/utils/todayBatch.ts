@@ -34,7 +34,10 @@ export function addBatchSubtasksToTodayTask(
     status: 'TO DO',
     completed: false,
     isToday: true,
+    createdAt: nowIso,
     completedAt: null,
+    assignee: '',
+    dueDate: null,
     workHours: 0,
     sortOrder: nextSubtaskSortOrder + index,
   }));
