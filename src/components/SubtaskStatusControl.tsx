@@ -123,12 +123,15 @@ export default function SubtaskStatusControl({
                 setAnchorEl(null);
                 if (candidate !== activeStatus) onSelect(candidate);
               }}
-              sx={{ fontSize: '13px', gap: 1 }}
+              sx={{ fontSize: '12px', py: 0.75, gap: 1 }}
             >
               <ListItemIcon sx={{ minWidth: 0, color: STATUS_COLORS[candidate] }}>
-                <CandidateIcon aria-hidden="true" size={16} weight="bold" />
+                <CandidateIcon aria-hidden="true" size={15} weight="bold" />
               </ListItemIcon>
-              <ListItemText primary={STATUS_LABELS[candidate]} />
+              <ListItemText
+                primary={STATUS_LABELS[candidate]}
+                slotProps={{ primary: { sx: { fontSize: '12px', fontWeight: 600 } } }}
+              />
             </MenuItem>
           );
         })}

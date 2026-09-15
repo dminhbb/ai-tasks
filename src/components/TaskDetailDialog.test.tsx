@@ -32,7 +32,8 @@ describe('TaskDetailDialog', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Move subtask' }));
+    await user.click(screen.getByRole('button', { name: 'Subtask options' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Move subtask' }));
     expect(screen.getByRole('heading', { name: 'Move subtask' })).toBeInTheDocument();
     expect(screen.getByText('Target task')).toBeInTheDocument();
   });

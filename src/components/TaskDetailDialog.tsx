@@ -9,16 +9,18 @@ import {
   DialogActions,
   Autocomplete,
   Button,
+  Divider,
   FormControlLabel,
   IconButton,
+  Menu,
+  MenuItem,
+  Select,
   Switch,
   TextField,
   Box,
-  Select,
-  MenuItem,
   Typography,
 } from '@mui/material';
-import { Add, Delete, DragIndicator, DriveFileMoveOutlined } from '@mui/icons-material';
+import { Add, Delete, DragIndicator, DriveFileMoveOutlined, MoreVert } from '@mui/icons-material';
 import { SubtaskStatus, Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import {
@@ -162,6 +164,10 @@ export default function TaskDetailDialog({
   const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
   const [dragOverSubtaskId, setDragOverSubtaskId] = useState<string | null>(null);
   const [movingSubtaskId, setMovingSubtaskId] = useState<string | null>(null);
+  const [subtaskMenuAnchor, setSubtaskMenuAnchor] = useState<{
+    element: HTMLElement;
+    subtaskId: string;
+  } | null>(null);
 
   if (!localTask) return null;
 
@@ -598,7 +604,7 @@ export default function TaskDetailDialog({
                         alignItems: 'center',
                         gap: 1,
                         px: 1.25,
-                        py: 1,
+                        py: 0.85,
                         borderTop: index === 0 ? 'none' : '1px solid var(--surface-muted)',
                         outline: dragOverSubtaskId === subtask.id ? `2px solid ${NEO_MINT.primary}` : 'none',
                         outlineOffset: -2,
@@ -631,8 +637,8 @@ export default function TaskDetailDialog({
                         sx={{
                           flex: 1,
                           minWidth: 0,
-                          fontSize: '14px',
-                          fontWeight: 500,
+                          fontSize: '13px',
+                          fontWeight: 600,
                           color: subtask.completed ? NEO_MINT.textMuted : NEO_MINT.textTitle,
                           textDecoration: subtask.completed ? 'line-through' : 'none',
                           overflowWrap: 'anywhere',
@@ -640,97 +646,143 @@ export default function TaskDetailDialog({
                       >
                         {subtask.title}
                       </Typography>
-                      <TextField
-                        size="small"
-                        placeholder="Assignee"
-                        title={subtask.assignee}
-                        value={subtask.assignee}
-                        onChange={(e) => handleSubtaskAssigneeChange(subtask.id, e.target.value)}
-                        slotProps={{ htmlInput: { maxLength: SUBTASK_ASSIGNEE_MAX_LENGTH } }}
-                        sx={{
-                          width: '8ch',
-                          flexShrink: 0,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            backgroundColor: NEO_MINT.surface,
-                            fontSize: '12px',
-                          },
-                          '& .MuiOutlinedInput-input': { px: 1, py: 0.5 },
-                        }}
-                      />
-                      <TextField
-                        type="date"
-                        size="small"
-                        value={toDateInputValue(subtask.dueDate)}
-                        onChange={(e) => handleSubtaskDueDateChange(subtask.id, e.target.value || null)}
-                        slotProps={{ inputLabel: { shrink: true } }}
-                        sx={{
-                          width: '148px',
-                          flexShrink: 0,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            backgroundColor: NEO_MINT.surface,
-                            fontSize: '12px',
-                          },
-                          '& .MuiOutlinedInput-input': { px: 1, py: 0.5 },
-                        }}
-                      />
-                      <FormControlLabel
-                        label="Today"
-                        labelPlacement="start"
-                        control={
-                          <Switch
-                            size="small"
-                            checked={subtask.isToday}
-                            onChange={() => handleToggleToday(subtask.id)}
-                            color="primary"
-                          />
-                        }
-                        sx={{
-                          m: 0,
-                          gap: 0.25,
-                          flexShrink: 0,
-                          '& .MuiFormControlLabel-label': {
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            color: subtask.isToday ? NEO_MINT.primary : NEO_MINT.textMuted,
-                          },
-                        }}
-                      />
-                      {subtask.completed && (
-                        <SubtaskWorkLogSelect
-                          value={subtask.workHours}
-                          onChange={(workHours) => handleWorkHoursChange(subtask.id, workHours)}
-                        />
-                      )}
+
                       <IconButton
                         size="small"
-                        aria-label="Move subtask"
-                        onClick={() => setMovingSubtaskId(subtask.id)}
+                        aria-label="Subtask options"
+                        onClick={(event) =>
+                          setSubtaskMenuAnchor({ element: event.currentTarget, subtaskId: subtask.id })
+                        }
                         sx={{
                           color: NEO_MINT.textMuted,
                           borderRadius: '8px',
+                          p: 0.5,
                           '&:hover': { color: NEO_MINT.primary, backgroundColor: 'var(--primary-subtle)' },
                         }}
                       >
-                        <DriveFileMoveOutlined sx={{ fontSize: 18 }} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteSubtask(subtask.id)}
-                        sx={{
-                          color: NEO_MINT.textMuted,
-                          borderRadius: '8px',
-                          '&:hover': { color: NEO_MINT.danger, backgroundColor: NEO_MINT.dangerSoft },
-                        }}
-                      >
-                        <Delete sx={{ fontSize: 18 }} />
+                        <MoreVert sx={{ fontSize: 18 }} />
                       </IconButton>
                     </Box>
                   ))}
                 </Box>
               )}
             </Box>
+
+            {/* Subtask Action Popup Menu */}
+            {subtaskMenuAnchor && (() => {
+              const activeSubtask = (localTask.subtasks || []).find((s) => s.id === subtaskMenuAnchor.subtaskId);
+              if (!activeSubtask) return null;
+
+              return (
+                <Menu
+                  anchorEl={subtaskMenuAnchor.element}
+                  open={Boolean(subtaskMenuAnchor)}
+                  onClose={() => setSubtaskMenuAnchor(null)}
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        borderRadius: '12px',
+                        p: 0.75,
+                        width: 275,
+                        border: '1px solid var(--card-border-soft)',
+                        boxShadow: 'var(--shadow-md)',
+                      },
+                    },
+                  }}
+                >
+                  <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NEO_MINT.textMuted, minWidth: 64 }}>
+                      Assignee
+                    </Typography>
+                    <TextField
+                      size="small"
+                      placeholder="Assignee"
+                      value={activeSubtask.assignee}
+                      onChange={(e) => handleSubtaskAssigneeChange(activeSubtask.id, e.target.value)}
+                      slotProps={{ htmlInput: { maxLength: SUBTASK_ASSIGNEE_MAX_LENGTH } }}
+                      sx={{
+                        flex: 1,
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          backgroundColor: 'var(--surface-soft)',
+                        },
+                        '& .MuiOutlinedInput-input': { px: 1, py: 0.4 },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NEO_MINT.textMuted, minWidth: 64 }}>
+                      Due Date
+                    </Typography>
+                    <TextField
+                      type="date"
+                      size="small"
+                      value={toDateInputValue(activeSubtask.dueDate)}
+                      onChange={(e) => handleSubtaskDueDateChange(activeSubtask.id, e.target.value || null)}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      sx={{
+                        flex: 1,
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          backgroundColor: 'var(--surface-soft)',
+                        },
+                        '& .MuiOutlinedInput-input': { px: 1, py: 0.4 },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: activeSubtask.isToday ? NEO_MINT.primary : NEO_MINT.textMuted }}>
+                      Today Task
+                    </Typography>
+                    <Switch
+                      size="small"
+                      checked={activeSubtask.isToday}
+                      onChange={() => handleToggleToday(activeSubtask.id)}
+                      color="primary"
+                    />
+                  </Box>
+
+                  <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NEO_MINT.textMuted, minWidth: 64 }}>
+                      Log Work
+                    </Typography>
+                    <SubtaskWorkLogSelect
+                      value={activeSubtask.workHours}
+                      onChange={(workHours) => handleWorkHoursChange(activeSubtask.id, workHours)}
+                    />
+                  </Box>
+
+                  <Divider sx={{ my: 0.75 }} />
+
+                  <MenuItem
+                    aria-label="Move subtask"
+                    onClick={() => {
+                      setSubtaskMenuAnchor(null);
+                      setMovingSubtaskId(activeSubtask.id);
+                    }}
+                    sx={{ fontSize: '12px', fontWeight: 600, py: 0.75, borderRadius: '6px', gap: 1.25 }}
+                  >
+                    <DriveFileMoveOutlined sx={{ fontSize: 16, color: NEO_MINT.textMuted }} />
+                    Move to another task
+                  </MenuItem>
+
+                  <MenuItem
+                    onClick={() => {
+                      setSubtaskMenuAnchor(null);
+                      handleDeleteSubtask(activeSubtask.id);
+                    }}
+                    sx={{ fontSize: '12px', fontWeight: 600, color: NEO_MINT.danger, py: 0.75, borderRadius: '6px', gap: 1.25 }}
+                  >
+                    <Delete sx={{ fontSize: 16, color: NEO_MINT.danger }} />
+                    Delete subtask
+                  </MenuItem>
+                </Menu>
+              );
+            })()}
           </Box>
 
           {/* Rich text editor */}
