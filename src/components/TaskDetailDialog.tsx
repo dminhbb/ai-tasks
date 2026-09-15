@@ -14,13 +14,16 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  MenuList,
+  Popover,
   Select,
   Switch,
   TextField,
   Box,
   Typography,
 } from '@mui/material';
-import { Add, Delete, DragIndicator, DriveFileMoveOutlined, MoreVert } from '@mui/icons-material';
+import { Add, Delete, DragIndicator, DriveFileMoveOutlined } from '@mui/icons-material';
+import { SlidersHorizontal } from '@phosphor-icons/react/dist/csr/SlidersHorizontal';
 import { SubtaskStatus, Task, TaskStatus } from '@/types';
 import { NEO_MINT } from '@/styles/neoMintTokens';
 import {
@@ -660,7 +663,7 @@ export default function TaskDetailDialog({
                           '&:hover': { color: NEO_MINT.primary, backgroundColor: 'var(--primary-subtle)' },
                         }}
                       >
-                        <MoreVert sx={{ fontSize: 18 }} />
+                        <SlidersHorizontal size={18} weight="bold" />
                       </IconButton>
                     </Box>
                   ))}
@@ -674,10 +677,18 @@ export default function TaskDetailDialog({
               if (!activeSubtask) return null;
 
               return (
-                <Menu
+                <Popover
                   anchorEl={subtaskMenuAnchor.element}
                   open={Boolean(subtaskMenuAnchor)}
                   onClose={() => setSubtaskMenuAnchor(null)}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
                   slotProps={{
                     paper: {
                       sx: {
@@ -758,29 +769,31 @@ export default function TaskDetailDialog({
 
                   <Divider sx={{ my: 0.75 }} />
 
-                  <MenuItem
-                    aria-label="Move subtask"
-                    onClick={() => {
-                      setSubtaskMenuAnchor(null);
-                      setMovingSubtaskId(activeSubtask.id);
-                    }}
-                    sx={{ fontSize: '12px', fontWeight: 600, py: 0.75, borderRadius: '6px', gap: 1.25 }}
-                  >
-                    <DriveFileMoveOutlined sx={{ fontSize: 16, color: NEO_MINT.textMuted }} />
-                    Move to another task
-                  </MenuItem>
+                  <MenuList disablePadding>
+                    <MenuItem
+                      aria-label="Move subtask"
+                      onClick={() => {
+                        setSubtaskMenuAnchor(null);
+                        setMovingSubtaskId(activeSubtask.id);
+                      }}
+                      sx={{ fontSize: '12px', fontWeight: 600, py: 0.75, borderRadius: '6px', gap: 1.25 }}
+                    >
+                      <DriveFileMoveOutlined sx={{ fontSize: 16, color: NEO_MINT.textMuted }} />
+                      Move to another task
+                    </MenuItem>
 
-                  <MenuItem
-                    onClick={() => {
-                      setSubtaskMenuAnchor(null);
-                      handleDeleteSubtask(activeSubtask.id);
-                    }}
-                    sx={{ fontSize: '12px', fontWeight: 600, color: NEO_MINT.danger, py: 0.75, borderRadius: '6px', gap: 1.25 }}
-                  >
-                    <Delete sx={{ fontSize: 16, color: NEO_MINT.danger }} />
-                    Delete subtask
-                  </MenuItem>
-                </Menu>
+                    <MenuItem
+                      onClick={() => {
+                        setSubtaskMenuAnchor(null);
+                        handleDeleteSubtask(activeSubtask.id);
+                      }}
+                      sx={{ fontSize: '12px', fontWeight: 600, color: NEO_MINT.danger, py: 0.75, borderRadius: '6px', gap: 1.25 }}
+                    >
+                      <Delete sx={{ fontSize: 16, color: NEO_MINT.danger }} />
+                      Delete subtask
+                    </MenuItem>
+                  </MenuList>
+                </Popover>
               );
             })()}
           </Box>
